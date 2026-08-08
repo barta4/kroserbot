@@ -1,0 +1,31 @@
+# Dependencies
+node_modules/
+.venv/
+venv/
+__pycache__/
+*.pyc
+
+# Environment & Secrets
+.env
+.env.local
+.env.production
+*.pem
+
+# Build & Cache
+dist/
+build/
+.next/
+out/
+.cache/
+*.log
+
+# IDE & System
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+
+# Docker volumes / scratch
+data/
+scratch/
