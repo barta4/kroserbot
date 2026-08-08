@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Panel Admin — Bot Kroser</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card-bg: #1e293b;
+      --border: #334155;
+      --primary: #3b82f6;
+      --primary-hover: #2563eb;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --accent: #8b5cf6;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 260px;
+      background-color: #0b1120;
+      border-right: 1px solid var(--border);
+      padding: 1.5rem 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+    .brand {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .nav-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    .nav-btn {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      border-radius: 0.5rem;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      font-weight: 500;
+      text-align: left;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .nav-btn:hover, .nav-btn.active {
+      background-color: var(--card-bg);
+      color: var(--text);
+    }
+    .nav-btn.active {
+      border-left: 3px solid var(--primary);
+    }
+
+    /* Main Container */
+    .main-content {
+      flex: 1;
+      padding: 2rem;
+      overflow-y: auto;
+    }
+
+    /* Top bar */
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .page-title { font-size: 1.5rem; font-weight: 700; }
+
+    /* Cards & Grids */
+    .grid-metrics {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1.25rem;
+      margin-bottom: 2rem;
+    }
+    .metric-card {
+      background-color: var(--card-bg);
+      padding: 1.25rem;
+      border-radius: 0.75rem;
+      border: 1px solid var(--border);
+    }
+    .metric-val { font-size: 2rem; font-weight: 700; color: var(--primary); margin-top: 0.5rem; }
+
+    /* Tab Sections */
+    .tab-section { display: none; }
+    .tab-section.active { display: block; }
+
+    /* Form & Controls */
+    textarea, input, select {
+      width: 100%;
+      padding: 0.75rem;
+      border-radius: 0.5rem;
+      border: 1px solid var(--border);
+      background-color: #0f172a;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.95rem;
+      margin-top: 0.5rem;
+    }
+    button.btn-action {
+      padding: 0.6rem 1.2rem;
+      border-radius: 0.5rem;
+      border: none;
+      background-color: var(--primary);
+      color: white;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    button.btn-action:hover { background-color: var(--primary-hover); }
+    button.btn-danger { background-color: var(--danger); }
+    button.btn-success { background-color: var(--success); }
+
+    /* Tables */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+      background-color: var(--card-bg);
+      border-radius: 0.5rem;
+      overflow: hidden;
+    }
+    th, td {
+      padding: 0.85rem 1rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    th { background-color: #0b1120; color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase; }
+
+    /* Status Badges */
+    .badge {
+      padding: 0.25rem 0.6rem;
+      border-radius: 1rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-transform: capitalize;
+    }
+    .badge.pendiente { background-color: rgba(245, 158, 11, 0.2); color: var(--warning); }
+    .badge.confirmado { background-color: rgba(16, 185, 129, 0.2); color: var(--success); }
+    .badge.rechazado { background-color: rgba(239, 68, 68, 0.2); color: var(--danger); }
+
+    /* Scraper Live Monitor */
+    .scraper-status-box {
+      background-color: var(--card-bg);
+      padding: 1.5rem;
+      border-radius: 0.75rem;
+      border: 1px solid var(--border);
+      margin-top: 1rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="sidebar">
+    <div class="brand">🤖 Bot Kroser Admin</div>
+    <ul class="nav-list">
+      <li><button class="nav-btn active" onclick="switchTab('dashboard')">📊 Dashboard</button></li>
+      <li><button class="nav-btn" onclick="switchTab('prompt')">📝 Prompt & Mensajes</button></li>
+      <li><button class="nav-btn" onclick="switchTab('pedidos')">🛒 Pedidos</button></li>
+      <li><button class="nav-btn" onclick="switchTab('catalogo')">📦 Catálogo Scrapeado</button></li>
+      <li><button class="nav-btn" onclick="switchTab('locales')">🏪 Locales</button></li>
+      <li><button class="nav-btn" onclick="switchTab('scraper')">🕷️ Control Scraper</button></li>
+    </ul>
+  </div>
+
+  <div class="main-content">
+    <div class="topbar">
+      <h1 class="page-title" id="page-title">Dashboard</h1>
+      <span id="user-info">Usuario: admin</span>
+    </div>
+
+    <!-- TAB 1: DASHBOARD -->
+    <div id="tab-dashboard" class="tab-section active">
+      <div class="grid-metrics">
+        <div class="metric-card">
+          <div style="color:var(--text-muted);">Total Pedidos</div>
+          <div class="metric-val" id="metric-orders">--</div>
+        </div>
+        <div class="metric-card">
+          <div style="color:var(--text-muted);">Productos en Catálogo</div>
+          <div class="metric-val" id="metric-products">--</div>
+        </div>
+        <div class="metric-card">
+          <div style="color:var(--text-muted);">Derivaciones a Humano</div>
+          <div class="metric-val" id="metric-derivations">--</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2: PROMPT & MESSAGES -->
+    <div id="tab-prompt" class="tab-section">
+      <h3>System Prompt (Editable)</h3>
+      <textarea id="system-prompt-input" rows="6"></textarea>
+      <button class="btn-action" style="margin-top:0.75rem;" onclick="saveConfig('system_prompt', 'system-prompt-input')">Guardar Prompt</button>
+
+      <h3 style="margin-top:2rem;">Mensajes Fijos</h3>
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:1rem; margin-top:0.5rem;">
+        <div>
+          <label>Pedido Pendiente</label>
+          <textarea id="msg-pendiente" rows="3"></textarea>
+          <button class="btn-action" style="margin-top:0.5rem;" onclick="saveConfig('msg_pedido_pendiente', 'msg-pendiente')">Guardar</button>
+        </div>
+        <div>
+          <label>Pedido Listo/Confirmado</label>
+          <textarea id="msg-listo" rows="3"></textarea>
+          <button class="btn-action" style="margin-top:0.5rem;" onclick="saveConfig('msg_pedido_listo', 'msg-listo')">Guardar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3: PEDIDOS -->
+    <div id="tab-pedidos" class="tab-section">
+      <h3>Gestión de Pedidos</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Conv #</th>
+            <th>Cliente</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="pedidos-table-body">
+          <!-- Rendered via JS -->
+        </tbody>
+      </table>
+    </div>
+
+    <!-- TAB 4: CATALOGO -->
+    <div id="tab-catalogo" class="tab-section">
+      <h3>Catálogo de Productos Scrapeados</h3>
+      <input type="text" id="product-search" placeholder="Buscar por SKU, nombre o marca..." onkeyup="loadProducts()" style="margin-bottom:1rem;">
+      <table>
+        <thead>
+          <tr>
+            <th>SKU</th>
+            <th>Nombre</th>
+            <th>Precio</th>
+            <th>Marca</th>
+            <th>Estado Stock</th>
+          </tr>
+        </thead>
+        <tbody id="products-table-body">
+          <!-- Rendered via JS -->
+        </tbody>
+      </table>
+    </div>
+
+    <!-- TAB 5: LOCALES -->
+    <div id="tab-locales" class="tab-section">
+      <h3>Locales Kroser</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Nombre</th>
+            <th>Zona</th>
+            <th>Dirección</th>
+            <th>Teléfono</th>
+            <th>Horario</th>
+          </tr>
+        </thead>
+        <tbody id="locales-table-body">
+          <!-- Rendered via JS -->
+        </tbody>
+      </table>
+    </div>
+
+    <!-- TAB 6: SCRAPER CONTROL -->
+    <div id="tab-scraper" class="tab-section">
+      <h3>Control del Scraper de Catálogo</h3>
+      <div class="scraper-status-box">
+        <p>Estado actual: <strong id="scraper-status">Detenido</strong></p>
+        <div style="margin-top:1rem; display:flex; gap:1rem;">
+          <button class="btn-action btn-success" onclick="startScraper()">▶️ Iniciar Scraping</button>
+          <button class="btn-action btn-danger" onclick="stopScraper()">⏹️ Detener</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = '/api';
+
+    function switchTab(tabName) {
+      document.querySelectorAll('.tab-section').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
+
+      document.getElementById(`tab-${tabName}`).classList.add('active');
+      event.target.classList.add('active');
+      document.getElementById('page-title').innerText = tabName.toUpperCase();
+
+      if (tabName === 'dashboard') loadDashboard();
+      if (tabName === 'prompt') loadConfig();
+      if (tabName === 'pedidos') loadPedidos();
+      if (tabName === 'catalogo') loadProducts();
+      if (tabName === 'locales') loadLocales();
+      if (tabName === 'scraper') loadScraperStatus();
+    }
+
+    async function loadDashboard() {
+      try {
+        const res = await fetch(`${API_BASE}/analytics/dashboard`);
+        const data = await res.json();
+        document.getElementById('metric-orders').innerText = data.metrics.totalOrders;
+        document.getElementById('metric-products').innerText = data.metrics.totalProducts;
+        document.getElementById('metric-derivations').innerText = data.metrics.totalDerivations;
+      } catch (err) { console.error(err); }
+    }
+
+    async function loadConfig() {
+      try {
+        const res = await fetch(`${API_BASE}/configuracion`);
+        const data = await res.json();
+        const cfg = data.config || {};
+        document.getElementById('system-prompt-input').value = cfg.system_prompt || '';
+        document.getElementById('msg-pendiente').value = cfg.msg_pedido_pendiente || '';
+        document.getElementById('msg-listo').value = cfg.msg_pedido_listo || '';
+      } catch (err) { console.error(err); }
+    }
+
+    async function saveConfig(key, elementId) {
+      const val = document.getElementById(elementId).value;
+      await fetch(`${API_BASE}/configuracion`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key, value: val })
+      });
+      alert(`Configuración '${key}' guardada exitosamente.`);
+    }
+
+    async function loadPedidos() {
+      const res = await fetch(`${API_BASE}/pedidos`);
+      const data = await res.json();
+      const tbody = document.getElementById('pedidos-table-body');
+      tbody.innerHTML = data.map(p => `
+        <tr>
+          <td>#${p.id}</td>
+          <td>${p.conversation_id}</td>
+          <td>${p.cliente?.nombre || 'Cliente'}</td>
+          <td><span class="badge ${p.estado}">${p.estado}</span></td>
+          <td>
+            ${p.estado === 'pendiente' ? `
+              <button class="btn-action btn-success" onclick="changeOrderStatus(${p.id}, 'confirmado')">Confirmar</button>
+              <button class="btn-action btn-danger" onclick="changeOrderStatus(${p.id}, 'rechazado')">Rechazar</button>
+            ` : '-'}
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    async function changeOrderStatus(id, nuevoEstado) {
+      if (!confirm(`¿Estás seguro de cambiar el estado del pedido #${id} a '${nuevoEstado}'?`)) return;
+      await fetch(`${API_BASE}/pedidos/${id}/estado`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ estado: nuevoEstado })
+      });
+      loadPedidos();
+    }
+
+    async function loadProducts() {
+      const q = document.getElementById('product-search').value;
+      const res = await fetch(`${API_BASE}/productos?search=${encodeURIComponent(q)}`);
+      const data = await res.json();
+      const tbody = document.getElementById('products-table-body');
+      tbody.innerHTML = data.map(p => `
+        <tr>
+          <td>${p.sku}</td>
+          <td>${p.nombre}</td>
+          <td>$${p.precio}</td>
+          <td>${p.marca || '-'}</td>
+          <td>${p.stock_status}</td>
+        </tr>
+      `).join('');
+    }
+
+    async function loadLocales() {
+      const res = await fetch(`${API_BASE}/locales`);
+      const data = await res.json();
+      const tbody = document.getElementById('locales-table-body');
+      tbody.innerHTML = data.map(l => `
+        <tr>
+          <td>${l.nombre}</td>
+          <td>${l.zona}</td>
+          <td>${l.direccion}</td>
+          <td>${l.telefono}</td>
+          <td>${l.horario}</td>
+        </tr>
+      `).join('');
+    }
+
+    async function loadScraperStatus() {
+      const res = await fetch(`${API_BASE}/scraper/status`);
+      const data = await res.json();
+      document.getElementById('scraper-status').innerText = data.currentRun ? data.currentRun.status.toUpperCase() : 'Inactivo';
+    }
+
+    async function startScraper() {
+      await fetch(`${API_BASE}/scraper/start`, { method: 'POST' });
+      loadScraperStatus();
+    }
+
+    async function stopScraper() {
+      await fetch(`${API_BASE}/scraper/stop`, { method: 'POST' });
+      loadScraperStatus();
+    }
+
+    // Load initial tab
+    loadDashboard();
+  </script>
+</body>
+</html>
