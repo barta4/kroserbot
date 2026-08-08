@@ -6,7 +6,7 @@ Actualizar esta tabla ANTES de empezar una tarea y ANTES de mergear el resultado
 |---|---|---|---|---|
 | 00-setup | - | en_progreso | Agente-1 | tarea/00-setup |
 | 01-base-datos | 00 | pendiente | | |
-| 02-scraper | 00, 01 | pendiente | | |
+| 02-scraper | 00, 01 | en_progreso | opencode | tarea/02-scraper |
 | 03-embeddings-rag | 01, 02 | pendiente | | |
 | 04-backend-api | 00, 01 | pendiente | | |
 | 05-pedidos | 01, 04 | pendiente | | |
