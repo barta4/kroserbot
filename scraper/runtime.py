@@ -1,0 +1,172 @@
+"""Orquestación de la corrida de scraping.
+
+Flujo:
+- valida robots.txt
+- warmup de sesión (home -> cookies)
+- descubre producto_urls desde el sitemap primario
+- crea la corrida (status=running)
+- por cada producto: chequea stop_requested -> fetch (retries/backoff) -> parse ->
+  compara hash -> upsert solo si cambió (incremental)
+- guarda checkpoint posicional (página_actual/producto_actual)
+- al terminar marca discontinuos y cierra la corrida (completed/stopped/failed)
+"""
+
+from __future__ import annotations
+
+import logging
+import time
+
+from .db import Database
+from .logger import log_event
+from .products import parse_product, sku_from_url
+from .site import BlockedError, SiteClient, robots_allows
+from .sitemap import discover_product_urls
+
+logger = logging.getLogger("kroker.scraper.runtime")
+
+
+class _EmptyArgs:
+    limit = 0
+    no_sleep = False
+    resume = False
+    fresh = False
+
+
+class ScraperRuntime:
+    def __init__(self, db: Database, args=None, site: SiteClient | None = None):
+        self.db = db
+        self.site = site if site is not None else SiteClient()
+        args = args or _EmptyArgs()
+        self.limit = int(getattr(args, "limit", 0))
+        self.no_sleep = bool(getattr(args, "no_sleep", False))
+        self.resume = bool(getattr(args, "resume", False))
+        self.fresh = bool(getattr(args, "fresh", False))
+        if self.no_sleep:
+            self.site.no_sleep = True
+
+    # ------------------------------------------------------------ status
+    def status(self) -> int:
+        import json as _json
+
+        run = self.db.active_run()
+        last = self.db.last_run_status()
+        payload = {
+            "state": (run or {}).get("status", "idle"),
+            "last": last,
+            "run_id": (run or {}).get("id"),
+            "producto_actual": (run or {}).get("producto_actual"),
+            "nuevos": (run or {}).get("productos_nuevos", 0),
+            "actu": (run or {}).get("productos_actualizados", 0),
+            "discont": (run or {}).get("productos_discontinuados", 0),
+            "stop_requested": bool((run or {}).get("stop_requested")),
+        }
+        print(_json.dumps(payload, ensure_ascii=False, indent=2))
+        return 0
+
+    # ------------------------------------------------------------- run
+    def execute(self) -> int:
+        if not self.no_sleep and not robots_allows(self.site.base_url):
+            log_event("robots_denied", {})
+            print("[scraper] robots.txt no permite scrapear el catálogo")
+            return 3
+
+        try:
+            self.site.warmup()
+        except Exception as exc:
+            log_event("warmup_failed", {"exc": str(exc)})
+            return 3
+
+        urls = self._urls()
+        if not urls:
+            log_event("empty_sitemap", {})
+            print("[scraper] No se obtuvieron URLs del sitemap")
+            return 3
+
+        active = self.db.active_run()
+        if active and not (self.fresh or self.resume):
+            print(f"[scraper] Ya hay corrida activa id={active['id']}. Usá stop o --resume.")
+            return 1
+
+        run_id = self.db.create_run()
+        contadores = {"nuevos": 0, "actu": 0, "discont": 0, "errores": 0}
+
+        start = 0
+        if self.resume:
+            prev = self.db.active_run()
+            if prev and prev.get("producto_actual"):
+                url = prev["producto_actual"]
+                for idx, u in enumerate(urls):
+                    if u == url:
+                        start = idx
+                        break
+
+        log_event("run", {"run_id": run_id, "total": len(urls), "desde": start})
+        start_ts = time.time()
+
+        try:
+            for i in range(start, len(urls)):
+                if self.db.need_stop(run_id):
+                    self.db.finish_run(run_id, "stopped", contadores)
+                    log_event("stop_requested", {"run_id": run_id, "pos": i})
+                    return 0
+
+                url = urls[i]
+                self.db.update_checkpoint(run_id, i, url, contadores)
+
+                try:
+                    html = self.site.get_html(url)
+                except BlockedError as exc:
+                    log_event("blocked", {"url": url, "exc": str(exc)})
+                    self.db.finish_run(run_id, "failed", contadores)
+                    return 2
+                except Exception as exc:
+                    contadores["errores"] += 1
+                    log_event("error_fetch", {"url": url, "exc": str(exc)})
+                    continue
+
+                product = parse_product(html, url)
+                if product is None:
+                    contadores["errores"] += 1
+                    log_event("error_parse", {"url": url})
+                    continue
+
+                cached = self.db.fetch_hash(product.sku)
+                if cached == product.hash:
+                    log_event("unchanged", {"sku": product.sku})
+                    continue
+
+                resultado = self.db.upsert_product(product.sku, product.to_dict())
+                key = "nuevo" if resultado == "nuevo" else "actu"
+                contadores[key] += 1
+                log_event(resultado, {"sku": product.sku, "nombre": product.nombre})
+
+            if self.db.need_stop(run_id):
+                self.db.finish_run(run_id, "stopped", contadores)
+            else:
+                disc = self._mark_discontinued(urls)
+                contadores["discont"] += disc
+                self.db.finish_run(run_id, "completed", contadores)
+                contadores["duracion_s"] = round(time.time() - start_ts, 1)
+                log_event("completed", {"run_id": run_id, "duracion_s": contadores["duracion_s"]})
+            return 0
+        except KeyboardInterrupt:
+            self.db.finish_run(run_id, "stopped", contadores)
+            print("[scraper] Interrumpido.")
+            return 2
+
+    # ------------------------------------------------------------- helpers
+    def _urls(self) -> list[str]:
+        urls = discover_product_urls(self.site)
+        if self.limit:
+            urls = urls[: self.limit]
+        return urls
+
+    def _mark_discontinued(self, urls: list[str]) -> int:
+        seen = {sku_from_url(u) for u in urls}
+        current = self.db.active_skus()
+        n = 0
+        for sku in sorted(current - seen):
+            self.db.mark_discontinued(sku)
+            log_event("discontinuado", {"sku": sku})
+            n += 1
+        return n
