@@ -4,14 +4,14 @@ Actualizar esta tabla ANTES de empezar una tarea y ANTES de mergear el resultado
 
 | Tarea | Depende de | Estado | Agente | Rama |
 |---|---|---|---|---|
-| 00-setup | - | en_progreso | Agente-1 | tarea/00-setup |
-| 01-base-datos | 00 | pendiente | | |
+| 00-setup | - | done | barta4 | tarea/00-setup |
+| 01-base-datos | 00 | done | barta4 | tarea/01-base-datos |
 | 02-scraper | 00, 01 | en_progreso | opencode | tarea/02-scraper |
 | 03-embeddings-rag | 01, 02 | pendiente | | |
-| 04-backend-api | 00, 01 | pendiente | | |
-| 05-pedidos | 01, 04 | pendiente | | |
-| 06-panel-admin | 00, 01 | pendiente | | |
-| 07-deploy | 04, 06 | pendiente | | |
+| 04-backend-api | 00, 01 | done | barta4 | tarea/04-backend-api |
+| 05-pedidos | 01, 04 | done | barta4 | tarea/05-pedidos |
+| 06-panel-admin | 00, 01 | done | barta4 | tarea/06-panel-admin |
+| 07-deploy | 04, 06 | done | barta4 | tarea/07-deploy |
 | 08-observabilidad | 04 | pendiente | | |
 
 Estados posibles: `pendiente` → `en_progreso` → `done`.
