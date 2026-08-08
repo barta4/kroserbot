@@ -1,5 +1,8 @@
+const embeddingProvider = require('./embeddingProvider');
 const productosRepo = require('../../repositories/productosRepository');
 const localesRepo = require('../../repositories/localesRepository');
+
+const SIMILARITY_THRESHOLD = 0.3; // Minimum cosine similarity to avoid unrelated products
 
 module.exports = {
   async getRelevantContext(queryText) {
@@ -7,10 +10,22 @@ module.exports = {
     let locales = [];
 
     try {
-      // Search products using keyword matching fallback or vector search
-      productos = await productosRepo.searchByKeyword(queryText, 5);
+      // 1. Generate Query Vector Embedding
+      const queryEmbedding = await embeddingProvider.generateSingleEmbedding(queryText);
 
-      // Search stores if store/location related terms in query
+      // 2. Perform Vector Search on active products
+      if (queryEmbedding && queryEmbedding.length > 0) {
+        const rawResults = await productosRepo.searchVector(queryEmbedding, 5);
+        // Filter out results below similarity threshold
+        productos = rawResults.filter((p) => (p.similarity === undefined || p.similarity >= SIMILARITY_THRESHOLD));
+      }
+
+      // Fallback to keyword search if vector search returns no results
+      if (productos.length === 0) {
+        productos = await productosRepo.searchByKeyword(queryText, 5);
+      }
+
+      // 3. Search Store Locations if store-related terms present
       const lowerQ = queryText.toLowerCase();
       if (
         lowerQ.includes('local') ||
@@ -18,15 +33,19 @@ module.exports = {
         lowerQ.includes('horario') ||
         lowerQ.includes('direccion') ||
         lowerQ.includes('donde') ||
-        lowerQ.includes('abierto')
+        lowerQ.includes('abierto') ||
+        lowerQ.includes('telefono')
       ) {
         locales = await localesRepo.getAll();
       }
     } catch (err) {
-      console.warn(`[RAG Search Error] ${err.message}`);
+      console.warn(`[RAG Search Warning] ${err.message}. Falling back to keyword search.`);
+      try {
+        productos = await productosRepo.searchByKeyword(queryText, 5);
+      } catch (_e) {}
     }
 
-    // Format context for system prompt
+    // 4. Format Prompt Context
     let contextStr = '';
 
     if (productos.length > 0) {
@@ -37,6 +56,8 @@ module.exports = {
         if (p.descripcion) contextStr += `  Descripción: ${p.descripcion.substring(0, 150)}...\n`;
       });
       contextStr += '\n';
+    } else {
+      contextStr += 'PRODUCTOS ENCONTRADOS EN CATÁLOGO: Ninguno con suficiente relevancia para la consulta.\n\n';
     }
 
     if (locales.length > 0) {
