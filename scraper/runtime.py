@@ -92,7 +92,9 @@ class ScraperRuntime:
 
         start = 0
         if self.resume:
-            prev = self.db.active_run()
+            # el checkpoint vive en la corrida anterior (stopped/failed); la recién
+            # creada todavía no tiene producto_actual
+            prev = self.db.last_run_checkpoint()
             if prev and prev.get("producto_actual"):
                 url = prev["producto_actual"]
                 for idx, u in enumerate(urls):

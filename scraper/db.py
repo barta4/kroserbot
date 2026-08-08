@@ -125,6 +125,15 @@ class Database:
                 row = cur.fetchone()
                 return row["status"] if row else None
 
+    def last_run_checkpoint(self) -> dict | None:
+        """Última corrida con checkpoint, sin importar su estado (para retomar)."""
+        with self.connect() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "SELECT * FROM scraper_runs WHERE producto_actual IS NOT NULL ORDER BY id DESC LIMIT 1"
+                )
+                return cur.fetchone()
+
     # ------------------------------------------------------------- productos
     def fetch_hash(self, sku: str) -> str | None:
         with self.connect() as conn:
