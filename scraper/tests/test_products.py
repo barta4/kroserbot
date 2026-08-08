@@ -45,7 +45,7 @@ def test_parse_product_basico():
     assert p.nombre.startswith("HOJA DE")
     assert p.precio == 121
     assert p.stock_status == "in_stock"
-    assert p.imagen_url == "https://f.fcdn.app/imgs/xxx/1.jpg"
+    assert p.imagen_url == "https://f.fcdn.app/imgs/xxx/460x460/foja.jpg"
     assert p.producto_url == SAMPLE["variante"]["url"]
 
 
@@ -74,7 +74,13 @@ def test_sku_from_url():
 
 
 def test_parse_product_list_escaped_json():
-    raw = json.dumps(SAMPLE).replace("&", "&amp;")
+    raw = (
+        json.dumps(SAMPLE)
+        .replace("&", "&amp;")
+        .replace('"', "&quot;")
+        .replace("<", "&lt;")
+        .replace(">", "&gt;")
+    )
     html = '<input type="hidden" class="json" value="%s">' % raw
     items = parse_product_list(html)
     assert len(items) == 1
