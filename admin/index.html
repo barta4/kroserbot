@@ -171,8 +171,7 @@
     .badge.confirmado { background-color: rgba(16, 185, 129, 0.2); color: var(--success); }
     .badge.rechazado { background-color: rgba(239, 68, 68, 0.2); color: var(--danger); }
 
-    /* Scraper Live Monitor */
-    .scraper-status-box {
+    .card-box {
       background-color: var(--card-bg);
       padding: 1.5rem;
       border-radius: 0.75rem;
@@ -187,6 +186,7 @@
     <ul class="nav-list">
       <li><button class="nav-btn active" onclick="switchTab('dashboard')">📊 Dashboard</button></li>
       <li><button class="nav-btn" onclick="switchTab('prompt')">📝 Prompt & Mensajes</button></li>
+      <li><button class="nav-btn" onclick="switchTab('llm')">🤖 Conector Agente IA</button></li>
       <li><button class="nav-btn" onclick="switchTab('pedidos')">🛒 Pedidos</button></li>
       <li><button class="nav-btn" onclick="switchTab('catalogo')">📦 Catálogo Scrapeado</button></li>
       <li><button class="nav-btn" onclick="switchTab('locales')">🏪 Locales</button></li>
@@ -239,7 +239,43 @@
       </div>
     </div>
 
-    <!-- TAB 3: PEDIDOS -->
+    <!-- TAB 3: LLM CONNECTOR -->
+    <div id="tab-llm" class="tab-section">
+      <h3>Conector Dinámico de Agente IA (Multi-Proveedor / Multi-Modelo)</h3>
+      <p style="color:var(--text-muted); font-size:0.9rem; margin-top:0.25rem;">
+        Permite seleccionar dinámicamente cualquier modelo disponible llamando al API del proveedor (Google Gemini, OpenAI, Groq, Together, DeepSeek, Ollama).
+      </p>
+
+      <div class="card-box">
+        <label>Proveedor de IA</label>
+        <select id="llm-provider-select" onchange="fetchAvailableModels()">
+          <option value="gemini">Google Gemini (Gemini 1.5 Flash, Gemini 1.5 Pro, Gemini 2.0)</option>
+          <option value="openai">OpenAI (GPT-4o, GPT-4o-mini, GPT-3.5-turbo)</option>
+          <option value="compatible">OpenAI-Compatible (Groq, Together, DeepSeek, Ollama, LocalAI)</option>
+        </select>
+
+        <label style="margin-top:1rem; display:block;">API Key del Proveedor</label>
+        <input type="password" id="llm-apikey-input" placeholder="Clave API (ej. AIza... / sk-...)">
+
+        <label style="margin-top:1rem; display:block;">Base URL Personalizado (opcional, para Groq / Ollama / LocalAI)</label>
+        <input type="text" id="llm-baseurl-input" placeholder="https://api.openai.com/v1 (o https://api.groq.com/openai/v1)">
+
+        <div style="margin-top:1rem;">
+          <button class="btn-action" onclick="fetchAvailableModels()">🔍 Cargar Lista de Modelos Disponibles</button>
+        </div>
+
+        <label style="margin-top:1.5rem; display:block; font-weight:600;">Modelo Seleccionado (Sin Hardcoding)</label>
+        <select id="llm-model-select">
+          <option value="">Cargando modelos...</option>
+        </select>
+
+        <div style="margin-top:1.5rem;">
+          <button class="btn-action btn-success" onclick="saveLLMConfig()">💾 Guardar Configuración del Agente IA</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 4: PEDIDOS -->
     <div id="tab-pedidos" class="tab-section">
       <h3>Gestión de Pedidos</h3>
       <table>
@@ -258,7 +294,7 @@
       </table>
     </div>
 
-    <!-- TAB 4: CATALOGO -->
+    <!-- TAB 5: CATALOGO -->
     <div id="tab-catalogo" class="tab-section">
       <h3>Catálogo de Productos Scrapeados</h3>
       <input type="text" id="product-search" placeholder="Buscar por SKU, nombre o marca..." onkeyup="loadProducts()" style="margin-bottom:1rem;">
@@ -278,7 +314,7 @@
       </table>
     </div>
 
-    <!-- TAB 5: LOCALES -->
+    <!-- TAB 6: LOCALES -->
     <div id="tab-locales" class="tab-section">
       <h3>Locales Kroser</h3>
       <table>
@@ -297,10 +333,10 @@
       </table>
     </div>
 
-    <!-- TAB 6: SCRAPER CONTROL -->
+    <!-- TAB 7: SCRAPER CONTROL -->
     <div id="tab-scraper" class="tab-section">
       <h3>Control del Scraper de Catálogo</h3>
-      <div class="scraper-status-box">
+      <div class="card-box">
         <p>Estado actual: <strong id="scraper-status">Detenido</strong></p>
         <div style="margin-top:1rem; display:flex; gap:1rem;">
           <button class="btn-action btn-success" onclick="startScraper()">▶️ Iniciar Scraping</button>
@@ -323,6 +359,7 @@
 
       if (tabName === 'dashboard') loadDashboard();
       if (tabName === 'prompt') loadConfig();
+      if (tabName === 'llm') fetchAvailableModels();
       if (tabName === 'pedidos') loadPedidos();
       if (tabName === 'catalogo') loadProducts();
       if (tabName === 'locales') loadLocales();
@@ -348,6 +385,45 @@
         document.getElementById('msg-pendiente').value = cfg.msg_pedido_pendiente || '';
         document.getElementById('msg-listo').value = cfg.msg_pedido_listo || '';
       } catch (err) { console.error(err); }
+    }
+
+    async function fetchAvailableModels() {
+      const provider = document.getElementById('llm-provider-select').value;
+      const apiKey = document.getElementById('llm-apikey-input').value;
+      const baseUrl = document.getElementById('llm-baseurl-input').value;
+
+      const modelSelect = document.getElementById('llm-model-select');
+      modelSelect.innerHTML = '<option value="">Consultando catálogo de modelos del proveedor...</option>';
+
+      try {
+        const query = new URLSearchParams({ provider, apiKey, baseUrl }).toString();
+        const res = await fetch(`${API_BASE}/llm/models?${query}`);
+        const data = await res.json();
+
+        if (data.models && data.models.length > 0) {
+          modelSelect.innerHTML = data.models.map(m => `
+            <option value="${m.id}">${m.name} (${m.id})</option>
+          `).join('');
+        } else {
+          modelSelect.innerHTML = '<option value="gemini-1.5-flash">Gemini 1.5 Flash (Predeterminado)</option>';
+        }
+      } catch (err) {
+        modelSelect.innerHTML = '<option value="gemini-1.5-flash">Gemini 1.5 Flash</option><option value="gpt-4o-mini">GPT-4o Mini</option>';
+      }
+    }
+
+    async function saveLLMConfig() {
+      const provider = document.getElementById('llm-provider-select').value;
+      const apiKey = document.getElementById('llm-apikey-input').value;
+      const baseUrl = document.getElementById('llm-baseurl-input').value;
+      const model = document.getElementById('llm-model-select').value;
+
+      await fetch(`${API_BASE}/llm/config`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ provider, model, apiKey, baseUrl })
+      });
+      alert(`Configuración del Agente IA guardada exitosamente.\nProveedor: ${provider}\nModelo: ${model}`);
     }
 
     async function saveConfig(key, elementId) {
