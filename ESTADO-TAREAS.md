@@ -12,7 +12,7 @@ Actualizar esta tabla ANTES de empezar una tarea y ANTES de mergear el resultado
 | 05-pedidos | 01, 04 | done | barta4 | tarea/05-pedidos |
 | 06-panel-admin | 00, 01 | done | barta4 | tarea/06-panel-admin |
 | 07-deploy | 04, 06 | done | barta4 | tarea/07-deploy |
-| 08-observabilidad | 04 | pendiente | | |
+| 08-observabilidad | 04 | en_progreso | barta4 | tarea/08-observabilidad |
 
 Estados posibles: `pendiente` → `en_progreso` → `done`.
 
