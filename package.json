@@ -1,0 +1,32 @@
+{
+  "name": "kroserbot",
+  "version": "1.0.0",
+  "description": "Bot Kroser - RAG + Pedidos + Scraper + Admin Panel",
+  "main": "backend/index.js",
+  "scripts": {
+    "dev:backend": "node backend/index.js",
+    "dev:admin": "npm run dev --prefix admin",
+    "migrate:up": "node db/migrate.js up",
+    "migrate:down": "node db/migrate.js down",
+    "lint": "eslint . --ext .js,.ts",
+    "format": "prettier --write ."
+  },
+  "keywords": [
+    "bot",
+    "rag",
+    "chatwoot",
+    "pgvector",
+    "kroser"
+  ],
+  "author": "barta4",
+  "license": "ISC",
+  "devDependencies": {
+    "eslint": "^8.57.0",
+    "prettier": "^3.2.5"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "node-pg-migrate": "^7.0.0",
+    "pg": "^8.11.3"
+  }
+}
