@@ -3,7 +3,7 @@ const router = express.Router();
 const db = require('../config/db');
 const redis = require('../config/redis');
 
-router.get('/health', async (req, res) => {
+const getHealthHandler = async (req, res) => {
   let dbStatus = 'down';
   let redisStatus = 'down';
 
@@ -30,6 +30,9 @@ router.get('/health', async (req, res) => {
       redis: redisStatus,
     },
   });
-});
+};
+
+router.get('/', getHealthHandler);
+router.get('/health', getHealthHandler);
 
 module.exports = router;

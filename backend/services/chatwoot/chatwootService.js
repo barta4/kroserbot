@@ -7,15 +7,24 @@ try {
   axios = null;
 }
 
-const CHATWOOT_URL = process.env.CHATWOOT_API_URL || 'https://app.chatwoot.com';
-const CHATWOOT_TOKEN = process.env.CHATWOOT_API_TOKEN || '';
+const configuracionRepo = require('../../repositories/configuracionRepository');
+const logger = require('../../config/logger');
 
-let client = null;
-if (axios && CHATWOOT_TOKEN) {
-  client = axios.create({
-    baseURL: CHATWOOT_URL,
+async function getChatwootClient() {
+  if (!axios) return null;
+
+  const dbUrl = await configuracionRepo.get('chatwoot_base_url');
+  const dbToken = await configuracionRepo.get('chatwoot_api_token');
+
+  const baseURL = (dbUrl && dbUrl.trim()) || process.env.CHATWOOT_BASE_URL || process.env.CHATWOOT_API_URL || 'https://app.chatwoot.com';
+  const token = (dbToken && dbToken.trim()) || process.env.CHATWOOT_API_ACCESS_TOKEN || process.env.CHATWOOT_API_TOKEN || '';
+
+  if (!token) return null;
+
+  return axios.create({
+    baseURL,
     headers: {
-      api_access_token: CHATWOOT_TOKEN,
+      api_access_token: token,
       'Content-Type': 'application/json',
     },
     timeout: 10000,
@@ -24,8 +33,9 @@ if (axios && CHATWOOT_TOKEN) {
 
 module.exports = {
   async sendMessage(accountId, conversationId, content) {
+    const client = await getChatwootClient();
     if (!client) {
-      console.log(`[Chatwoot Outgoing Mock] Conv #${conversationId}: "${content}"`);
+      logger.info('Chatwoot outgoing mock', { conversationId, contentLength: content.length });
       return { success: true, mock: true };
     }
 
@@ -40,14 +50,15 @@ module.exports = {
       );
       return response.data;
     } catch (err) {
-      console.error(`[Chatwoot Error] Conv #${conversationId}:`, err.message);
+      logger.error('Chatwoot send error', { conversationId, error: err.message });
       return { success: false, error: err.message };
     }
   },
 
   async assignAgent(accountId, conversationId, assigneeId) {
+    const client = await getChatwootClient();
     if (!client) {
-      console.log(`[Chatwoot Assign Mock] Conv #${conversationId} -> Agent #${assigneeId}`);
+      logger.info('Chatwoot assign mock', { conversationId, assigneeId });
       return { success: true, mock: true };
     }
 
@@ -60,8 +71,9 @@ module.exports = {
       );
       return response.data;
     } catch (err) {
-      console.error(`[Chatwoot Assign Error] Conv #${conversationId}:`, err.message);
+      logger.error('Chatwoot assign error', { conversationId, error: err.message });
       return { success: false, error: err.message };
     }
   },
 };
+

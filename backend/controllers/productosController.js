@@ -4,7 +4,7 @@ module.exports = {
   async listProductos(req, res, next) {
     try {
       const { search, categoria, limit = 50, offset = 0 } = req.query;
-      let sql = 'SELECT id, sku, nombre, precio, precio_oferta, marca, categoria, stock_status, discontinuado, updated_at FROM productos WHERE 1=1';
+      let sql = 'SELECT id, sku, nombre, precio, precio_oferta, marca, categoria, imagen_url, producto_url, stock_status, discontinuado, updated_at FROM productos WHERE 1=1';
       const params = [];
 
       if (search) {

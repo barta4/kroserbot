@@ -14,6 +14,7 @@ COPY admin ./admin
 COPY db ./db
 
 EXPOSE 3000
-HEALTHCHECK --interval=10s --timeout=5s --retries=3 CMD wget -qO- http://localhost:3000/health || exit 1
+HEALTHCHECK --interval=10s --timeout=5s --retries=3 CMD wget -qO- http://localhost:3000/api/health || exit 1
 
-CMD ["node", "backend/index.js"]
+# Correr migraciones automáticamente antes de iniciar el servidor
+CMD sh -c "node db/migrate.js up && node backend/index.js"

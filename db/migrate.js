@@ -72,7 +72,7 @@ async function runMigrations() {
       console.log('[DB Migration] Rollback completed. All tables dropped.');
     }
   } catch (err) {
-    console.error('[DB Migration] Migration failed:', err.message);
+    console.error('[DB Migration] Migration failed:', err.stack || err.message || err);
     process.exit(1);
   } finally {
     await client.end();

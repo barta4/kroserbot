@@ -14,8 +14,12 @@ import sys
 def _conn_string() -> str:
     url = os.environ.get("DATABASE_URL")
     if not url:
-        print("[scraper] Falta DATABASE_URL. Ver /scraper/.env.example", file=sys.stderr)
-        sys.exit(2)
+        host = os.environ.get("POSTGRES_HOST", "postgres")
+        port = os.environ.get("POSTGRES_PORT", "5432")
+        user = os.environ.get("POSTGRES_USER", "kroser")
+        password = os.environ.get("POSTGRES_PASSWORD", "kroser")
+        dbname = os.environ.get("POSTGRES_DB", "kroserbot")
+        return f"postgresql://{user}:{password}@{host}:{port}/{dbname}"
     return url
 
 

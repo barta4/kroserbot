@@ -31,6 +31,82 @@ services:
       timeout: 5s
       retries: 5
 
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: kroserbot-backend
+    restart: always
+    environment:
+      - NODE_ENV=${NODE_ENV:-production}
+      - PORT=3000
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=${POSTGRES_USER:-kroser}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-kroser}
+      - POSTGRES_DB=${POSTGRES_DB:-kroserbot}
+      - DATABASE_URL=postgres://${POSTGRES_USER:-kroser}:${POSTGRES_PASSWORD:-kroser}@postgres:5432/${POSTGRES_DB:-kroserbot}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - ADMIN_USER=${ADMIN_USER:-admin}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-kroser2026}
+      - DEPOSITO_USER=${DEPOSITO_USER:-deposito}
+      - DEPOSITO_PASSWORD=${DEPOSITO_PASSWORD:-deposito2026}
+      - JWT_SECRET=${JWT_SECRET:-kroserbot_jwt_secret_key_2026_super_secure_min_32_chars}
+      - WEBHOOK_BASIC_AUTH=${WEBHOOK_BASIC_AUTH:-kroser:kroser2026}
+      - CORS_ORIGINS=${CORS_ORIGINS}
+      - CHATWOOT_API_URL=${CHATWOOT_API_URL}
+      - CHATWOOT_API_TOKEN=${CHATWOOT_API_TOKEN}
+      - CHATWOOT_ACCOUNT_ID=${CHATWOOT_ACCOUNT_ID}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - MERCADOPAGO_ACCESS_TOKEN=${MERCADOPAGO_ACCESS_TOKEN}
+      - MERCADOPAGO_PUBLIC_KEY=${MERCADOPAGO_PUBLIC_KEY}
+      - MERCADOPAGO_WEBHOOK_SECRET=${MERCADOPAGO_WEBHOOK_SECRET}
+      - MERCADOPAGO_WEBHOOK_URL=${MERCADOPAGO_WEBHOOK_URL}
+      - MERCADOPAGO_SUCCESS_URL=${MERCADOPAGO_SUCCESS_URL}
+      - MERCADOPAGO_FAILURE_URL=${MERCADOPAGO_FAILURE_URL}
+      - MERCADOPAGO_PENDING_URL=${MERCADOPAGO_PENDING_URL}
+      - SMTP_HOST=${SMTP_HOST}
+      - SMTP_PORT=${SMTP_PORT}
+      - SMTP_USER=${SMTP_USER}
+      - SMTP_PASS=${SMTP_PASS}
+      - MAIL_FROM=${MAIL_FROM}
+    ports:
+      - "${PORT:-3000}:3000"
+    volumes:
+      - ./admin:/app/admin
+      - ./backend:/app/backend
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/api/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  scraper:
+    build:
+      context: .
+      dockerfile: scraper/Dockerfile
+    container_name: kroserbot-scraper
+    restart: "no"
+    environment:
+      - PYTHONUNBUFFERED=1
+      - POSTGRES_USER=${POSTGRES_USER:-kroser}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-kroser}
+      - POSTGRES_DB=${POSTGRES_DB:-kroserbot}
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - KROSER_DATA_SOURCE=${KROSER_DATA_SOURCE:-scraping}
+      - KROSER_FALLBACK_SCRAPING=${KROSER_FALLBACK_SCRAPING:-true}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
 volumes:
   postgres_data:
   redis_data:

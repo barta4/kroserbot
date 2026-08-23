@@ -2,11 +2,21 @@ const embeddingProvider = require('./embeddingProvider');
 const productosRepo = require('../../repositories/productosRepository');
 const localesRepo = require('../../repositories/localesRepository');
 
-const SIMILARITY_THRESHOLD = 0.3; // Minimum cosine similarity to avoid unrelated products
+const SIMILARITY_THRESHOLD = 0.45; // Increased cosine similarity threshold to reduce noise
+
+// Cross-selling category mapping dictionary
+const CROSS_SELLING_MAP = {
+  pintura: ['pincel', 'rodillo', 'cinta', 'lija', 'bandeja'],
+  taladro: ['broca', 'mecha', 'disco', 'proteccion'],
+  herramienta: ['guante', 'disco', 'organizador'],
+  impermeabilizante: ['malla', 'rodillo', 'sellador'],
+};
 
 module.exports = {
   async getRelevantContext(queryText) {
     let productos = [];
+    let alternativas = [];
+    let complementarios = [];
     let locales = [];
 
     try {
@@ -25,7 +35,36 @@ module.exports = {
         productos = await productosRepo.searchByKeyword(queryText, 5);
       }
 
-      // 3. Search Store Locations if store-related terms present
+      // 3. Smart Substitution for Out-of-Stock Products
+      const outOfStockItem = productos.find((p) => p.stock_status === 'out_of_stock');
+      if (outOfStockItem || productos.length === 0) {
+        const targetCategory = outOfStockItem ? outOfStockItem.categoria : queryText;
+        const targetBrand = outOfStockItem ? outOfStockItem.marca : '';
+        alternativas = await productosRepo.getAlternatives({
+          categoria: targetCategory,
+          marca: targetBrand,
+          excludeSku: outOfStockItem ? outOfStockItem.sku : '',
+          limit: 3,
+        });
+      }
+
+      // 4. Cross-Selling / Complementary Products Suggestion
+      if (productos.length > 0) {
+        const categoriesFound = productos.map((p) => `${p.categoria || ''} ${p.nombre || ''}`.toLowerCase()).join(' ');
+        const matchedComplementaryTerms = new Set();
+
+        Object.keys(CROSS_SELLING_MAP).forEach((key) => {
+          if (categoriesFound.includes(key)) {
+            CROSS_SELLING_MAP[key].forEach((term) => matchedComplementaryTerms.add(term));
+          }
+        });
+
+        if (matchedComplementaryTerms.size > 0) {
+          complementarios = await productosRepo.getComplementaryItems(Array.from(matchedComplementaryTerms), 3);
+        }
+      }
+
+      // 5. Search Store Locations if store-related terms present
       const lowerQ = queryText.toLowerCase();
       if (
         lowerQ.includes('local') ||
@@ -45,7 +84,7 @@ module.exports = {
       } catch (_e) {}
     }
 
-    // 4. Format Prompt Context
+    // 6. Format Prompt Context
     let contextStr = '';
 
     if (productos.length > 0) {
@@ -57,7 +96,25 @@ module.exports = {
       });
       contextStr += '\n';
     } else {
-      contextStr += 'PRODUCTOS ENCONTRADOS EN CATÁLOGO: Ninguno con suficiente relevancia para la consulta.\n\n';
+      contextStr += 'PRODUCTOS ENCONTRADOS EN CATÁLOGO: Ninguno con suficiente relevancia directa para la consulta.\n\n';
+    }
+
+    if (alternativas.length > 0) {
+      contextStr += 'ALTERNATIVAS RECOMENDADAS CON STOCK (Para ofrecer si el producto principal está agotado o no disponible):\n';
+      alternativas.forEach((p) => {
+        const precioText = p.precio_oferta ? `$${p.precio_oferta} (Oferta)` : `$${p.precio}`;
+        contextStr += `- SKU: ${p.sku} | ${p.nombre} | Marca: ${p.marca || 'N/A'} | Precio: ${precioText} | Stock: ${p.stock_status}\n`;
+      });
+      contextStr += '\n';
+    }
+
+    if (complementarios.length > 0) {
+      contextStr += 'SUGERENCIAS DE VENTA CRUZADA (CROSS-SELLING - Para ofrecer amablemente como complemento):\n';
+      complementarios.forEach((p) => {
+        const precioText = p.precio_oferta ? `$${p.precio_oferta} (Oferta)` : `$${p.precio}`;
+        contextStr += `- SKU: ${p.sku} | ${p.nombre} | Precio: ${precioText}\n`;
+      });
+      contextStr += '\n';
     }
 
     if (locales.length > 0) {
@@ -71,6 +128,8 @@ module.exports = {
     return {
       contextStr,
       productosEncontrados: productos,
+      alternativasEncontradas: alternativas,
+      complementariosEncontrados: complementarios,
       localesEncontrados: locales,
     };
   },

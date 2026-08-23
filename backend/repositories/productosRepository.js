@@ -33,4 +33,36 @@ module.exports = {
     const res = await db.query('SELECT * FROM productos WHERE sku = $1', [sku]);
     return res.rows[0] || null;
   },
+
+  async getAlternatives({ categoria, marca, excludeSku, limit = 3 }) {
+    const sql = `
+      SELECT id, sku, nombre, precio, precio_oferta, marca, categoria, descripcion, stock_status
+      FROM productos
+      WHERE discontinuado = FALSE
+        AND stock_status != 'out_of_stock'
+        AND sku != $1
+        AND (categoria ILIKE $2 OR marca ILIKE $3)
+      LIMIT $4;
+    `;
+    const cat = categoria ? `%${categoria}%` : '___NONE___';
+    const mar = marca ? `%${marca}%` : '___NONE___';
+    const res = await db.query(sql, [excludeSku || '', cat, mar, limit]);
+    return res.rows;
+  },
+
+  async getComplementaryItems(categories = [], limit = 3) {
+    if (!categories || categories.length === 0) return [];
+    const conditions = categories.map((_, i) => `categoria ILIKE $${i + 1} OR nombre ILIKE $${i + 1}`).join(' OR ');
+    const sql = `
+      SELECT id, sku, nombre, precio, precio_oferta, marca, categoria, stock_status
+      FROM productos
+      WHERE discontinuado = FALSE
+        AND stock_status != 'out_of_stock'
+        AND (${conditions})
+      LIMIT ${limit};
+    `;
+    const params = categories.map((c) => `%${c}%`);
+    const res = await db.query(sql, params);
+    return res.rows;
+  },
 };

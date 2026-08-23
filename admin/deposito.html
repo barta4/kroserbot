@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Depósito & Preparación de Pedidos — Kroser</title>
+  <link rel="shortcut icon" href="https://f.fcdn.app/assets/commerce/www.kroser.com.uy/94f6_e862/public/web/favicon.ico">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=PT+Sans:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f4f5f7;
+      --card-bg: #ffffff;
+      --border: #e0e0e0;
+      --primary: #CC0000;
+      --primary-hover: #a80000;
+      --primary-light: #fce4e4;
+      --text: #1e1e2f;
+      --text-muted: #6b7280;
+      --success: #16a34a;
+      --success-light: #dcfce7;
+      --warning: #d97706;
+      --warning-light: #fef3c7;
+      --danger: #dc2626;
+      --danger-light: #fee2e2;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'PT Sans', sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    header {
+      background: #1a1a2e;
+      color: white;
+      padding: 0.85rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    .brand img { height: 32px; }
+    .brand-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      color: #fff;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 2rem auto;
+      padding: 0 1.5rem;
+    }
+
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    .page-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .filter-bar {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+    .filter-btn {
+      padding: 0.5rem 1rem;
+      border-radius: 0.4rem;
+      border: 1px solid var(--border);
+      background: var(--card-bg);
+      color: var(--text-muted);
+      cursor: pointer;
+      font-family: 'PT Sans', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 700;
+      transition: all 0.15s;
+    }
+    .filter-btn:hover { border-color: var(--primary); color: var(--primary); }
+    .filter-btn.active {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+      box-shadow: 0 2px 6px rgba(204,0,0,0.25);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background-color: var(--card-bg);
+      border-radius: 0.65rem;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    th, td {
+      padding: 0.85rem 1.1rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.92rem;
+    }
+    th {
+      background-color: #f9fafb;
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      font-weight: 700;
+      letter-spacing: 0.4px;
+    }
+    tr:hover { background-color: #fafafa; }
+
+    .badge {
+      padding: 0.25rem 0.75rem;
+      border-radius: 1rem;
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: capitalize;
+    }
+    .badge.pendiente { background-color: var(--warning-light); color: var(--warning); }
+    .badge.confirmado { background-color: var(--success-light); color: var(--success); }
+    .badge.rechazado { background-color: var(--danger-light); color: var(--danger); }
+    .badge.entregado { background-color: var(--primary-light); color: var(--primary); }
+
+    button.btn-action {
+      padding: 0.5rem 1rem;
+      border-radius: 0.4rem;
+      border: none;
+      background-color: var(--primary);
+      color: white;
+      font-family: 'PT Sans', sans-serif;
+      font-weight: 700;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: all 0.15s;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+    button.btn-action:hover { background-color: var(--primary-hover); transform: translateY(-1px); }
+    button.btn-danger { background-color: var(--danger); }
+    button.btn-danger:hover { background-color: #b91c1c; }
+    button.btn-success { background-color: var(--success); }
+    button.btn-success:hover { background-color: #15803d; }
+    button.btn-secondary { background-color: #6b7280; }
+    button.btn-secondary:hover { background-color: #4b5563; }
+
+    /* Modal */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: rgba(0,0,0,0.5);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+    .modal-overlay.active { display: flex; }
+    .modal-card {
+      background-color: var(--card-bg);
+      border-radius: 0.65rem;
+      width: 92%;
+      max-width: 800px;
+      max-height: 90vh;
+      overflow-y: auto;
+      padding: 1.75rem;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.25);
+    }
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 0.75rem;
+      border-bottom: 2px solid var(--primary);
+      margin-bottom: 1.25rem;
+    }
+    label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      margin-top: 1rem;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+    textarea, input {
+      width: 100%;
+      padding: 0.65rem 0.75rem;
+      border-radius: 0.4rem;
+      border: 1px solid var(--border);
+      font-family: 'PT Sans', sans-serif;
+      font-size: 0.92rem;
+      margin-top: 0.35rem;
+    }
+
+    @media print {
+      body { background: white; color: black; }
+      header, .top-bar, .modal-header button, .no-print { display: none !important; }
+      .modal-card { border: none; width: 100%; max-width: 100%; box-shadow: none; padding: 0; }
+      table { background: white; color: black; border: 1px solid #ccc; }
+      th, td { border: 1px solid #ccc; color: black; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <img src="https://f.fcdn.app/assets/commerce/www.kroser.com.uy/e76c_966a/public/web/img/logo.svg" alt="Kroser">
+      <span class="brand-title">Módulo de Depósito & Preparación</span>
+    </div>
+    <div>
+      <button class="btn-action btn-secondary" onclick="logout()">🔒 Cerrar Sesión</button>
+    </div>
+  </header>
+
+  <div class="container">
+    <div class="top-bar">
+      <h1 class="page-title">📦 Pedidos para Depósito</h1>
+      <div class="filter-bar">
+        <button class="filter-btn active" onclick="filterPedidos('deposito', event)">🏬 Por Preparar</button>
+        <button class="filter-btn" onclick="filterPedidos('todos', event)">📋 Todos</button>
+        <button class="filter-btn" onclick="filterPedidos('confirmado', event)">✅ Listos / Confirmados</button>
+        <button class="filter-btn" onclick="filterPedidos('entregado', event)">🚚 Entregados</button>
+      </div>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th># Pedido</th>
+          <th>Origen</th>
+          <th>Cliente</th>
+          <th>Teléfono / WA</th>
+          <th>Pago</th>
+          <th>Estado</th>
+          <th>Acción Depósito</th>
+        </tr>
+      </thead>
+      <tbody id="pedidos-table-body">
+        <tr><td colspan="7" style="text-align:center; padding:2rem;">Cargando pedidos...</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Modal Detalle & Edición Depósito -->
+  <div class="modal-overlay" id="pedido-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="modal-pedido-title" style="color:var(--text); font-size:1.2rem;">Detalle del Pedido</h3>
+        <div style="display:flex; gap:0.5rem;" class="no-print">
+          <button class="btn-action btn-secondary" onclick="window.print()">🖨️ Imprimir Picking</button>
+          <button class="btn-action btn-danger" onclick="closeModal('pedido-modal')">✕ Cerrar</button>
+        </div>
+      </div>
+      <div id="modal-pedido-content"></div>
+    </div>
+  </div>
+
+  <!-- Modal Login Depósito -->
+  <div class="modal-overlay" id="login-modal" style="background: rgba(15,23,42,0.85); backdrop-filter: blur(4px); z-index: 9999;">
+    <div class="modal-card" style="max-width: 420px; padding: 2rem; border-radius: 1rem; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.3);">
+      <div style="text-align: center; margin-bottom: 1.5rem;">
+        <img src="https://f.fcdn.app/assets/commerce/www.kroser.com.uy/94f6_e862/public/web/favicon.ico" style="height: 48px; margin-bottom: 0.75rem;">
+        <h2 style="font-size: 1.35rem; color: var(--text); font-weight: 700;">Acceso a Depósito</h2>
+        <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0.25rem;">Ingrese sus credenciales de preparación de pedidos</p>
+      </div>
+      
+      <form id="deposito-login-form" onsubmit="handleLoginSubmit(event)">
+        <div style="margin-bottom: 1rem;">
+          <label style="display:block; font-size: 0.85rem; font-weight: 700; margin-bottom: 0.35rem;">Usuario</label>
+          <input type="text" id="login-username" value="deposito" style="width:100%; padding:0.65rem 0.85rem; border-radius:0.4rem; border:1px solid var(--border); background:#f8fafc; font-weight:bold; color:#334155;">
+        </div>
+        <div style="margin-bottom: 1.25rem;">
+          <label style="display:block; font-size: 0.85rem; font-weight: 700; margin-bottom: 0.35rem;">Contraseña</label>
+          <input type="password" id="login-password" placeholder="Ingrese contraseña" required style="width:100%; padding:0.65rem 0.85rem; border-radius:0.4rem; border:1px solid var(--border); font-size:0.95rem;">
+        </div>
+        <div id="login-error" style="display:none; color: var(--danger); font-size: 0.85rem; font-weight:700; margin-bottom: 1rem; text-align:center; padding:0.5rem; background:var(--danger-light); border-radius:0.4rem;"></div>
+        <button type="submit" class="btn-action btn-success" style="width: 100%; padding: 0.75rem; font-size: 1rem; font-weight:700; justify-content:center;">🔑 Iniciar Sesión</button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = '/api';
+    let currentPedidosList = [];
+    let currentFilter = 'deposito';
+    let pendingAuthResolver = null;
+
+    function showLoginModal() {
+      document.getElementById('login-modal').classList.add('active');
+      document.getElementById('login-password').focus();
+    }
+
+    function hideLoginModal() {
+      document.getElementById('login-modal').classList.remove('active');
+    }
+
+    async function handleLoginSubmit(event) {
+      event.preventDefault();
+      const username = document.getElementById('login-username').value.trim();
+      const password = document.getElementById('login-password').value;
+      const errorDiv = document.getElementById('login-error');
+      errorDiv.style.display = 'none';
+
+      try {
+        const loginRes = await fetch(`${API_BASE}/auth/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ username, password })
+        });
+        const data = await loginRes.json();
+        if (!loginRes.ok || !data.success) {
+          throw new Error(data.error || 'Credenciales incorrectas');
+        }
+        localStorage.setItem('kroser_deposito_token', data.token);
+        hideLoginModal();
+        if (pendingAuthResolver) {
+          pendingAuthResolver(data.token);
+          pendingAuthResolver = null;
+        } else {
+          loadPedidos();
+        }
+      } catch (err) {
+        errorDiv.textContent = err.message || 'Contraseña o usuario incorrecto';
+        errorDiv.style.display = 'block';
+      }
+    }
+
+    async function apiFetch(url, options = {}) {
+      let token = localStorage.getItem('kroser_deposito_token');
+      if (!token && !url.includes('/auth/login')) {
+        showLoginModal();
+        token = await new Promise(resolve => { pendingAuthResolver = resolve; });
+      }
+      options.credentials = 'include';
+      if (token) {
+        options.headers = { ...options.headers, 'Authorization': `Bearer ${token}` };
+      }
+      const response = await fetch(url, options);
+      if (response.status === 401) {
+        localStorage.removeItem('kroser_deposito_token');
+        showLoginModal();
+        throw new Error('401 Unauthorized');
+      }
+      return response;
+    }
+
+    function logout() {
+      localStorage.removeItem('kroser_deposito_token');
+      location.reload();
+    }
+
+    function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+    function openModal(id) { document.getElementById(id).classList.add('active'); }
+
+    async function loadPedidos() {
+      try {
+        const res = await apiFetch(`${API_BASE}/pedidos`);
+        currentPedidosList = await res.json();
+        renderPedidos();
+      } catch (err) { console.error(err); }
+    }
+
+    function filterPedidos(filter, event) {
+      currentFilter = filter;
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      if (event && event.target) event.target.classList.add('active');
+      renderPedidos();
+    }
+
+    function renderPedidos() {
+      let filtered = currentPedidosList;
+      if (currentFilter === 'deposito') {
+        filtered = currentPedidosList.filter(p => p.estado === 'confirmado' || p.estado === 'pendiente' || p.estado === 'en_preparacion');
+      } else if (currentFilter !== 'todos') {
+        filtered = currentPedidosList.filter(p => p.estado === currentFilter);
+      }
+
+      const tbody = document.getElementById('pedidos-table-body');
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:2rem; color:var(--text-muted);">No hay pedidos en esta vista</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = filtered.map(p => {
+        const cliente = typeof p.cliente === 'string' ? JSON.parse(p.cliente) : (p.cliente || {});
+
+        let origenBadge = '<span class="badge" style="background:#f3e8ff; color:#6b21a8;">🤖 Bot</span>';
+        if (p.origen === 'ecommerce') {
+          origenBadge = '<span class="badge" style="background:#e0f2fe; color:#0369a1;">🛒 Ecommerce</span>';
+        } else if (p.origen === 'admin') {
+          origenBadge = '<span class="badge" style="background:#f3f4f6; color:#374151;">👤 Admin</span>';
+        }
+
+        let pagoBadge = '<span class="badge" style="background:#f3f4f6; color:#6b7280;">—</span>';
+        if (p.pago_estado === 'pagado') {
+          pagoBadge = '<span class="badge" style="background:#dcfce7; color:#15803d;">💳 Pagado</span>';
+        } else if (p.pago_estado === 'pendiente_pago') {
+          pagoBadge = '<span class="badge" style="background:#fef3c7; color:#b45309;">⏳ Pendiente</span>';
+        }
+
+        return `
+          <tr>
+            <td><strong>#${p.id} ${p.ecommerce_order_number ? `<br><small style="color:var(--text-muted);">${p.ecommerce_order_number}</small>` : ''}</strong></td>
+            <td>${origenBadge}</td>
+            <td><strong>${cliente.nombre || 'Cliente'}</strong></td>
+            <td>${cliente.telefono || cliente.whatsapp || '-'}</td>
+            <td>${pagoBadge}</td>
+            <td><span class="badge ${p.estado}">${p.estado}</span></td>
+            <td>
+              <button class="btn-action" onclick="viewPedidoDetails(${p.id})">📦 Preparar / Editar</button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    async function viewPedidoDetails(id) {
+      const p = currentPedidosList.find(item => item.id === id);
+      if (!p) return;
+      const cliente = typeof p.cliente === 'string' ? JSON.parse(p.cliente) : (p.cliente || {});
+      const items = typeof p.items === 'string' ? JSON.parse(p.items) : (p.items || []);
+
+      let html = `
+        <div style="background:#f9fafb; padding:1rem; border-radius:0.5rem; margin-bottom:1.25rem; border:1px solid var(--border);">
+          <p style="margin-bottom:0.3rem;"><strong>Pedido ID:</strong> #${p.id} ${p.ecommerce_order_number ? `(${p.ecommerce_order_number})` : ''} | <strong>Origen:</strong> ${p.origen || 'bot'} | <strong>Estado:</strong> <span class="badge ${p.estado}">${p.estado}</span></p>
+          <p style="margin-bottom:0.3rem;"><strong>Estado de Pago:</strong> ${p.pago_estado || 'sin_pago'} ${p.pago_referencia ? `(Ref: ${p.pago_referencia})` : ''}</p>
+          <p style="margin-bottom:0.3rem;"><strong>Cliente:</strong> ${cliente.nombre || 'No especificado'} | <strong>Tel/WA:</strong> ${cliente.telefono || cliente.whatsapp || 'No especificado'}</p>
+          <p style="margin-bottom:0.3rem;"><strong>Email:</strong> ${cliente.email || 'No especificado'}</p>
+          <p><strong>Dirección de Entrega:</strong> ${cliente.direccion || 'Retiro en sucursal'}</p>
+        </div>
+
+        <h4 style="margin-bottom:0.75rem; color:var(--primary);">📦 Lista de Productos para Armado (Control de Stock)</h4>
+        <table id="pedido-items-table" style="margin-bottom:1.25rem;">
+          <thead>
+            <tr>
+              <th>SKU</th>
+              <th>Producto</th>
+              <th style="width:100px;">Cantidad</th>
+              <th>Precio Unit.</th>
+              <th class="no-print" style="width:90px;">Acción</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${items.map((item, idx) => `
+              <tr id="item-row-${idx}">
+                <td><strong>${item.sku || '-'}</strong></td>
+                <td>${item.nombre || item.producto || 'Producto'}</td>
+                <td><input type="number" id="item-cant-${idx}" value="${item.cantidad || 1}" style="width:70px; text-align:center;" min="0"></td>
+                <td>$${item.precio || 0}</td>
+                <td class="no-print"><button class="btn-action btn-danger" onclick="removeItemRow(${idx})">🗑️ Quitar</button></td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+
+        <div class="no-print">
+          <label>Motivo de Modificación / Nota para la IA y el Cliente (ej. Faltó stock del ítem X)</label>
+          <textarea id="pedido-motivo-input" rows="2" placeholder="Describir brevemente si falta stock o se modifica el pedido...">${p.motivo_modificacion || ''}</textarea>
+
+          <label>Notas Internas del Depósito</label>
+          <textarea id="pedido-notas-input" rows="2" placeholder="Notas de empaque, estantería o bultos...">${p.notas || ''}</textarea>
+
+          <div style="margin-top:1.5rem; display:flex; gap:0.6rem; flex-wrap:wrap;">
+            <button class="btn-action btn-success" onclick="savePedidoChanges(${p.id}, 'confirmado')">✅ Confirmar / Pedido Listo</button>
+            <button class="btn-action btn-primary" onclick="savePedidoChanges(${p.id}, 'entregado')">🚚 Marcar Entregado</button>
+            <button class="btn-action btn-danger" onclick="savePedidoChanges(${p.id}, 'rechazado')">❌ Rechazar Pedido</button>
+            <button class="btn-action btn-secondary" onclick="savePedidoChanges(${p.id}, '${p.estado}')">💾 Guardar Cambios</button>
+          </div>
+        </div>
+      `;
+
+      document.getElementById('modal-pedido-title').innerText = `Pedido #${p.id} — Control de Depósito`;
+      document.getElementById('modal-pedido-content').innerHTML = html;
+      openModal('pedido-modal');
+    }
+
+    function removeItemRow(idx) {
+      const row = document.getElementById(`item-row-${idx}`);
+      if (row) row.remove();
+    }
+
+    async function savePedidoChanges(id, nuevoEstado) {
+      const p = currentPedidosList.find(item => item.id === id);
+      const originalItems = typeof p.items === 'string' ? JSON.parse(p.items) : (p.items || []);
+
+      const newItems = [];
+      originalItems.forEach((item, idx) => {
+        const cantInput = document.getElementById(`item-cant-${idx}`);
+        if (cantInput) {
+          const cant = parseInt(cantInput.value, 10);
+          if (cant > 0) {
+            newItems.push({ ...item, cantidad: cant });
+          }
+        }
+      });
+
+      const motivo = document.getElementById('pedido-motivo-input').value;
+      const notas = document.getElementById('pedido-notas-input').value;
+
+      await apiFetch(`${API_BASE}/pedidos/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          estado: nuevoEstado,
+          items: newItems,
+          motivo_modificacion: motivo,
+          notas: notas
+        })
+      });
+
+      alert(`Pedido #${id} actualizado correctamente.`);
+      closeModal('pedido-modal');
+      loadPedidos();
+    }
+
+    // Init
+    loadPedidos();
+  </script>
+</body>
+</html>

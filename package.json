@@ -10,7 +10,11 @@
     "migrate:down": "node db/migrate.js down",
     "db:backup": "node db/backup.js",
     "lint": "eslint . --ext .js,.ts",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "test": "jest --runInBand --forceExit",
+    "test:python": "python -m pytest scraper/tests -q",
+    "test:all": "npm test && npm run test:python",
+    "test:schema": "node db/test-schema.js"
   },
   "keywords": [
     "bot",
@@ -23,18 +27,26 @@
   "license": "ISC",
   "devDependencies": {
     "eslint": "^8.57.0",
-    "prettier": "^3.2.5"
+    "jest": "^30.4.2",
+    "prettier": "^3.2.5",
+    "supertest": "^7.2.2"
   },
   "dependencies": {
     "@google/generative-ai": "^0.14.0",
     "axios": "^1.7.2",
+    "bcryptjs": "^3.0.3",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.6",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
     "express-rate-limit": "^7.3.1",
     "ioredis": "^5.4.1",
+    "jsonwebtoken": "^9.0.3",
+    "mercadopago": "^2.0.15",
     "node-pg-migrate": "^7.0.0",
     "nodemailer": "^6.9.14",
     "openai": "^4.52.7",
-    "pg": "^8.11.3"
+    "pg": "^8.11.3",
+    "zod": "^3.25.76"
   }
 }

@@ -29,6 +29,17 @@ class Database:
     def connect(self):
         return psycopg.connect(self.conn_str, row_factory=dict_row)
 
+    # ------------------------------------------------------------- configuracion
+    def get_config(self, key: str, default: str | None = None) -> str | None:
+        try:
+            with self.connect() as conn:
+                with conn.cursor() as cur:
+                    cur.execute("SELECT value FROM configuracion WHERE key = %s", (key,))
+                    row = cur.fetchone()
+                    return row["value"] if row else default
+        except Exception:
+            return default
+
     # ------------------------------------------------------------- corridas
     def create_run(self) -> int:
         now = _dt.datetime.now(_dt.timezone.utc)

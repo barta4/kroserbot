@@ -3,28 +3,36 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Panel Admin — Bot Kroser</title>
+  <title>Panel de Administración — Bot Kroser</title>
+  <link rel="shortcut icon" href="https://f.fcdn.app/assets/commerce/www.kroser.com.uy/94f6_e862/public/web/favicon.ico">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=PT+Sans:wght@400;700&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg: #0f172a;
-      --card-bg: #1e293b;
-      --border: #334155;
-      --primary: #3b82f6;
-      --primary-hover: #2563eb;
-      --text: #f8fafc;
-      --text-muted: #94a3b8;
-      --success: #10b981;
-      --warning: #f59e0b;
-      --danger: #ef4444;
-      --accent: #8b5cf6;
+      --bg: #f4f5f7;
+      --sidebar-bg: #1a1a2e;
+      --sidebar-hover: #16213e;
+      --card-bg: #ffffff;
+      --border: #e0e0e0;
+      --primary: #CC0000;
+      --primary-hover: #a80000;
+      --primary-light: #fce4e4;
+      --text: #1e1e2f;
+      --text-muted: #6b7280;
+      --text-sidebar: #cbd5e1;
+      --success: #16a34a;
+      --success-light: #dcfce7;
+      --warning: #d97706;
+      --warning-light: #fef3c7;
+      --danger: #dc2626;
+      --danger-light: #fee2e2;
+      --accent: #CC0000;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      font-family: 'Inter', sans-serif;
+      font-family: 'PT Sans', sans-serif;
       background-color: var(--bg);
       color: var(--text);
       display: flex;
@@ -35,113 +43,168 @@
     /* Sidebar */
     .sidebar {
       width: 260px;
-      background-color: #0b1120;
-      border-right: 1px solid var(--border);
-      padding: 1.5rem 1rem;
+      background: linear-gradient(180deg, #1a1a2e 0%, #0f0f1e 100%);
+      padding: 0;
       display: flex;
       flex-direction: column;
-      gap: 1.5rem;
+      overflow-y: auto;
+      box-shadow: 2px 0 12px rgba(0,0,0,0.15);
     }
     .brand {
-      font-size: 1.25rem;
-      font-weight: 700;
-      color: var(--primary);
+      padding: 1.25rem 1.25rem 1rem;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
       display: flex;
       align-items: center;
-      gap: 0.5rem;
+      gap: 0.75rem;
+    }
+    .brand img {
+      height: 32px;
+    }
+    .brand-text {
+      color: #fff;
+      font-size: 0.8rem;
+      font-weight: 700;
+      opacity: 0.7;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
     .nav-list {
       list-style: none;
       display: flex;
       flex-direction: column;
-      gap: 0.5rem;
+      padding: 0.75rem 0.65rem;
+      gap: 2px;
     }
     .nav-btn {
       width: 100%;
-      padding: 0.75rem 1rem;
-      border-radius: 0.5rem;
+      padding: 0.6rem 0.85rem;
+      border-radius: 0.4rem;
       border: none;
       background: transparent;
-      color: var(--text-muted);
-      font-size: 0.95rem;
-      font-weight: 500;
+      color: var(--text-sidebar);
+      font-family: 'PT Sans', sans-serif;
+      font-size: 0.88rem;
+      font-weight: 400;
       text-align: left;
       cursor: pointer;
-      transition: all 0.2s;
+      transition: all 0.15s ease;
       display: flex;
       align-items: center;
-      gap: 0.75rem;
+      gap: 0.6rem;
     }
-    .nav-btn:hover, .nav-btn.active {
-      background-color: var(--card-bg);
-      color: var(--text);
+    .nav-btn:hover {
+      background-color: var(--sidebar-hover);
+      color: #fff;
     }
     .nav-btn.active {
-      border-left: 3px solid var(--primary);
+      background-color: var(--primary);
+      color: #fff;
+      font-weight: 700;
+      box-shadow: 0 2px 8px rgba(204,0,0,0.35);
     }
 
-    /* Main Container */
+    /* Main */
     .main-content {
       flex: 1;
-      padding: 2rem;
+      padding: 1.75rem 2rem;
       overflow-y: auto;
     }
 
-    /* Top bar */
     .topbar {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 2rem;
-      padding-bottom: 1rem;
-      border-bottom: 1px solid var(--border);
+      margin-bottom: 1.5rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 2px solid var(--primary);
     }
-    .page-title { font-size: 1.5rem; font-weight: 700; }
+    .page-title {
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+    #user-info {
+      color: var(--text-muted);
+      font-size: 0.85rem;
+    }
 
-    /* Cards & Grids */
+    /* Cards */
     .grid-metrics {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
       gap: 1.25rem;
-      margin-bottom: 2rem;
+      margin-bottom: 1.5rem;
     }
     .metric-card {
       background-color: var(--card-bg);
       padding: 1.25rem;
-      border-radius: 0.75rem;
+      border-radius: 0.65rem;
       border: 1px solid var(--border);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+      transition: box-shadow 0.2s;
     }
-    .metric-val { font-size: 2rem; font-weight: 700; color: var(--primary); margin-top: 0.5rem; }
+    .metric-card:hover {
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    .metric-val {
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--primary);
+      margin-top: 0.5rem;
+    }
 
-    /* Tab Sections */
     .tab-section { display: none; }
     .tab-section.active { display: block; }
 
-    /* Form & Controls */
+    /* Forms */
+    label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      margin-top: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
     textarea, input, select {
       width: 100%;
-      padding: 0.75rem;
-      border-radius: 0.5rem;
+      padding: 0.65rem 0.75rem;
+      border-radius: 0.4rem;
       border: 1px solid var(--border);
-      background-color: #0f172a;
+      background-color: #fff;
       color: var(--text);
-      font-family: inherit;
-      font-size: 0.95rem;
-      margin-top: 0.5rem;
+      font-family: 'PT Sans', sans-serif;
+      font-size: 0.9rem;
+      margin-top: 0.3rem;
+      transition: border-color 0.2s;
+    }
+    textarea:focus, input:focus, select:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(204,0,0,0.1);
     }
     button.btn-action {
-      padding: 0.6rem 1.2rem;
-      border-radius: 0.5rem;
+      padding: 0.5rem 1rem;
+      border-radius: 0.4rem;
       border: none;
       background-color: var(--primary);
       color: white;
-      font-weight: 600;
+      font-family: 'PT Sans', sans-serif;
+      font-weight: 700;
+      font-size: 0.85rem;
       cursor: pointer;
-      transition: background 0.2s;
+      transition: all 0.15s;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
     }
-    button.btn-action:hover { background-color: var(--primary-hover); }
+    button.btn-action:hover { background-color: var(--primary-hover); transform: translateY(-1px); }
     button.btn-danger { background-color: var(--danger); }
+    button.btn-danger:hover { background-color: #b91c1c; }
     button.btn-success { background-color: var(--success); }
+    button.btn-success:hover { background-color: #15803d; }
+    button.btn-secondary { background-color: #6b7280; }
+    button.btn-secondary:hover { background-color: #4b5563; }
 
     /* Tables */
     table {
@@ -151,46 +214,144 @@
       background-color: var(--card-bg);
       border-radius: 0.5rem;
       overflow: hidden;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
     }
     th, td {
-      padding: 0.85rem 1rem;
+      padding: 0.7rem 1rem;
       text-align: left;
       border-bottom: 1px solid var(--border);
+      font-size: 0.88rem;
     }
-    th { background-color: #0b1120; color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase; }
+    th {
+      background-color: #f9fafb;
+      color: var(--text-muted);
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      font-weight: 700;
+      letter-spacing: 0.4px;
+    }
+    tr:hover { background-color: #fafafa; }
 
-    /* Status Badges */
     .badge {
-      padding: 0.25rem 0.6rem;
+      padding: 0.2rem 0.6rem;
       border-radius: 1rem;
-      font-size: 0.8rem;
-      font-weight: 600;
+      font-size: 0.75rem;
+      font-weight: 700;
       text-transform: capitalize;
     }
-    .badge.pendiente { background-color: rgba(245, 158, 11, 0.2); color: var(--warning); }
-    .badge.confirmado { background-color: rgba(16, 185, 129, 0.2); color: var(--success); }
-    .badge.rechazado { background-color: rgba(239, 68, 68, 0.2); color: var(--danger); }
+    .badge.pendiente { background-color: var(--warning-light); color: var(--warning); }
+    .badge.confirmado { background-color: var(--success-light); color: var(--success); }
+    .badge.rechazado { background-color: var(--danger-light); color: var(--danger); }
+    .badge.entregado { background-color: var(--primary-light); color: var(--primary); }
 
     .card-box {
       background-color: var(--card-bg);
-      padding: 1.5rem;
-      border-radius: 0.75rem;
+      padding: 1.25rem;
+      border-radius: 0.65rem;
       border: 1px solid var(--border);
       margin-top: 1rem;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    }
+
+    .img-thumb {
+      width: 45px;
+      height: 45px;
+      object-fit: cover;
+      border-radius: 0.35rem;
+      border: 1px solid var(--border);
+      background-color: #f9fafb;
+    }
+
+    /* Modal */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: rgba(0,0,0,0.45);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+    .modal-overlay.active { display: flex; }
+    .modal-card {
+      background-color: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 0.65rem;
+      width: 90%;
+      max-width: 750px;
+      max-height: 90vh;
+      overflow-y: auto;
+      padding: 1.5rem;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+    }
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 0.75rem;
+      border-bottom: 2px solid var(--primary);
+      margin-bottom: 1rem;
+    }
+
+    /* Filters */
+    .filter-bar {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+    }
+    .filter-btn {
+      padding: 0.4rem 0.8rem;
+      border-radius: 0.4rem;
+      border: 1px solid var(--border);
+      background: var(--card-bg);
+      color: var(--text-muted);
+      cursor: pointer;
+      font-family: 'PT Sans', sans-serif;
+      font-size: 0.85rem;
+      font-weight: 700;
+      transition: all 0.15s;
+    }
+    .filter-btn:hover {
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+    .filter-btn.active {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+    }
+
+    h3 { color: var(--text); font-size: 1.1rem; }
+
+    @media print {
+      body { background: white; color: black; }
+      .sidebar, .topbar, .filter-bar, .modal-header button, .no-print { display: none !important; }
+      .modal-card { border: none; width: 100%; max-width: 100%; box-shadow: none; }
+      table { background: white; color: black; border: 1px solid #ccc; }
+      th, td { border: 1px solid #ccc; color: black; }
     }
   </style>
 </head>
 <body>
   <div class="sidebar">
-    <div class="brand">🤖 Bot Kroser Admin</div>
+    <div class="brand">
+      <img src="https://f.fcdn.app/assets/commerce/www.kroser.com.uy/e76c_966a/public/web/img/logo.svg" alt="Kroser">
+      <span class="brand-text">Panel Admin</span>
+    </div>
     <ul class="nav-list">
-      <li><button class="nav-btn active" onclick="switchTab('dashboard')">📊 Dashboard</button></li>
-      <li><button class="nav-btn" onclick="switchTab('prompt')">📝 Prompt & Mensajes</button></li>
-      <li><button class="nav-btn" onclick="switchTab('llm')">🤖 Conector Agente IA</button></li>
-      <li><button class="nav-btn" onclick="switchTab('pedidos')">🛒 Pedidos</button></li>
-      <li><button class="nav-btn" onclick="switchTab('catalogo')">📦 Catálogo Scrapeado</button></li>
-      <li><button class="nav-btn" onclick="switchTab('locales')">🏪 Locales</button></li>
-      <li><button class="nav-btn" onclick="switchTab('scraper')">🕷️ Control Scraper</button></li>
+      <li><button class="nav-btn active" onclick="switchTab('dashboard', event)">📊 Dashboard</button></li>
+      <li><button class="nav-btn" onclick="switchTab('prompt', event)">📝 Prompt & Mensajes</button></li>
+      <li><button class="nav-btn" onclick="switchTab('chatwoot', event)">🔌 Uruchat Integración</button></li>
+      <li><button class="nav-btn" onclick="switchTab('datasource', event)">🗄️ Fuente de Datos</button></li>
+      <li><button class="nav-btn" onclick="switchTab('llm', event)">🤖 Conector Agente IA</button></li>
+      <li><button class="nav-btn" onclick="switchTab('pedidos', event)">🛒 Pedidos & Depósito</button></li>
+      <li><button class="nav-btn" onclick="switchTab('catalogo', event)">📦 Catálogo Scrapeado</button></li>
+      <li><button class="nav-btn" onclick="switchTab('locales', event)">🏪 Sucursales (50+)</button></li>
+      <li><button class="nav-btn" onclick="switchTab('contactos', event)">📬 Avisos de Pedido</button></li>
+      <li><button class="nav-btn" onclick="switchTab('zonas', event)">🚚 Zonas de Envío</button></li>
+      <li><button class="nav-btn" onclick="switchTab('pagos', event)">💳 Formas de Pago</button></li>
+      <li><button class="nav-btn" onclick="switchTab('scraper', event)">🕷️ Control Scraper</button></li>
     </ul>
   </div>
 
@@ -220,11 +381,11 @@
 
     <!-- TAB 2: PROMPT & MESSAGES -->
     <div id="tab-prompt" class="tab-section">
-      <h3>System Prompt (Editable)</h3>
+      <h3>System Prompt (IA Asistente)</h3>
       <textarea id="system-prompt-input" rows="6"></textarea>
-      <button class="btn-action" style="margin-top:0.75rem;" onclick="saveConfig('system_prompt', 'system-prompt-input')">Guardar Prompt</button>
+      <button class="btn-action" style="margin-top:0.75rem;" onclick="saveConfig('system_prompt', 'system-prompt-input')">💾 Guardar Prompt</button>
 
-      <h3 style="margin-top:2rem;">Mensajes Fijos</h3>
+      <h3 style="margin-top:2rem;">Mensajes Predeterminados del Bot</h3>
       <div style="display:grid; grid-template-columns: 1fr 1fr; gap:1rem; margin-top:0.5rem;">
         <div>
           <label>Pedido Pendiente</label>
@@ -232,108 +393,366 @@
           <button class="btn-action" style="margin-top:0.5rem;" onclick="saveConfig('msg_pedido_pendiente', 'msg-pendiente')">Guardar</button>
         </div>
         <div>
-          <label>Pedido Listo/Confirmado</label>
+          <label>Pedido Confirmado / Listo</label>
           <textarea id="msg-listo" rows="3"></textarea>
           <button class="btn-action" style="margin-top:0.5rem;" onclick="saveConfig('msg_pedido_listo', 'msg-listo')">Guardar</button>
+        </div>
+        <div>
+          <label>Pedido Rechazado</label>
+          <textarea id="msg-rechazado" rows="3"></textarea>
+          <button class="btn-action" style="margin-top:0.5rem;" onclick="saveConfig('msg_pedido_rechazado', 'msg-rechazado')">Guardar</button>
+        </div>
+        <div>
+          <label>Mensaje Derivación Humano</label>
+          <textarea id="msg-derivacion" rows="3"></textarea>
+          <button class="btn-action" style="margin-top:0.5rem;" onclick="saveConfig('msg_derivacion', 'msg-derivacion')">Guardar</button>
         </div>
       </div>
     </div>
 
-    <!-- TAB 3: LLM CONNECTOR -->
-    <div id="tab-llm" class="tab-section">
-      <h3>Conector Dinámico de Agente IA (Multi-Proveedor / Multi-Modelo)</h3>
-      <p style="color:var(--text-muted); font-size:0.9rem; margin-top:0.25rem;">
-        Permite seleccionar dinámicamente cualquier modelo disponible llamando al API del proveedor (Google Gemini, OpenAI, Groq, Together, DeepSeek, Ollama).
+    <!-- TAB 3: URUCHAT -->
+    <div id="tab-chatwoot" class="tab-section">
+      <h3>Configuración de Integración Uruchat</h3>
+      <p style="color:var(--text-muted); font-size:0.85rem; margin-top:0.25rem;">
+        Permite configurar el servidor y token de Uruchat. Si un campo queda en blanco, se utilizará el valor predeterminado del archivo <code>.env</code>.
       </p>
 
       <div class="card-box">
+        <label>URL Base de Uruchat</label>
+        <input type="text" id="chatwoot-url-input" placeholder="https://app.uruchat.com (o servidor propio)">
+
+        <label>API Access Token de Uruchat</label>
+        <input type="password" id="chatwoot-token-input" placeholder="API Access Token de la cuenta / usuario">
+
+        <div style="margin-top:1.25rem;">
+          <button class="btn-action btn-success" onclick="saveChatwootConfig()">💾 Guardar Configuración Uruchat</button>
+        </div>
+      </div>
+
+      <!-- Control de Bot por Canal / Inbox (Atención 100% Humana) -->
+      <div class="card-box" style="margin-top:1.5rem;">
+        <h3>🎛️ Control de Bot por Canal / Inbox (Atención 100% Humana)</h3>
+        <p style="color:var(--text-muted); font-size:0.85rem; margin-top:0.25rem;">
+          Selecciona los canales o bandejas (inboxes) donde deseas <strong>apagar el bot</strong> para que las conversaciones sean atendidas exclusivamente por operadores humanos.
+        </p>
+
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:1rem; margin-top:1rem;">
+          <div style="background:#f9fafb; padding:1rem; border-radius:0.5rem; border:1px solid var(--border);">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <span style="font-weight:700; font-size:0.95rem;">📸 Instagram</span>
+              <span id="badge-chan-instagram" class="badge confirmado">Bot Activo</span>
+            </div>
+            <p style="color:var(--text-muted); font-size:0.8rem; margin:0.4rem 0 0.6rem;">Direct Messages & Comentarios</p>
+            <label style="display:flex; align-items:center; gap:0.5rem; cursor:pointer; font-weight:normal; text-transform:none;">
+              <input type="checkbox" id="chan-instagram" style="width:auto; margin:0;" onchange="updateChannelBadge('instagram')">
+              <span><strong>Apagar Bot</strong> (Solo Humanos)</span>
+            </label>
+          </div>
+
+          <div style="background:#f9fafb; padding:1rem; border-radius:0.5rem; border:1px solid var(--border);">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <span style="font-weight:700; font-size:0.95rem;">💬 WhatsApp</span>
+              <span id="badge-chan-whatsapp" class="badge confirmado">Bot Activo</span>
+            </div>
+            <p style="color:var(--text-muted); font-size:0.8rem; margin:0.4rem 0 0.6rem;">Líneas WhatsApp Business</p>
+            <label style="display:flex; align-items:center; gap:0.5rem; cursor:pointer; font-weight:normal; text-transform:none;">
+              <input type="checkbox" id="chan-whatsapp" style="width:auto; margin:0;" onchange="updateChannelBadge('whatsapp')">
+              <span><strong>Apagar Bot</strong> (Solo Humanos)</span>
+            </label>
+          </div>
+
+          <div style="background:#f9fafb; padding:1rem; border-radius:0.5rem; border:1px solid var(--border);">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <span style="font-weight:700; font-size:0.95rem;">🌐 Web Widget</span>
+              <span id="badge-chan-webwidget" class="badge confirmado">Bot Activo</span>
+            </div>
+            <p style="color:var(--text-muted); font-size:0.8rem; margin:0.4rem 0 0.6rem;">Chat en vivo del sitio web</p>
+            <label style="display:flex; align-items:center; gap:0.5rem; cursor:pointer; font-weight:normal; text-transform:none;">
+              <input type="checkbox" id="chan-webwidget" style="width:auto; margin:0;" onchange="updateChannelBadge('webwidget')">
+              <span><strong>Apagar Bot</strong> (Solo Humanos)</span>
+            </label>
+          </div>
+
+          <div style="background:#f9fafb; padding:1rem; border-radius:0.5rem; border:1px solid var(--border);">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <span style="font-weight:700; font-size:0.95rem;">✉️ Email</span>
+              <span id="badge-chan-email" class="badge confirmado">Bot Activo</span>
+            </div>
+            <p style="color:var(--text-muted); font-size:0.8rem; margin:0.4rem 0 0.6rem;">Casillas de correo conectadas</p>
+            <label style="display:flex; align-items:center; gap:0.5rem; cursor:pointer; font-weight:normal; text-transform:none;">
+              <input type="checkbox" id="chan-email" style="width:auto; margin:0;" onchange="updateChannelBadge('email')">
+              <span><strong>Apagar Bot</strong> (Solo Humanos)</span>
+            </label>
+          </div>
+
+          <div style="background:#f9fafb; padding:1rem; border-radius:0.5rem; border:1px solid var(--border);">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <span style="font-weight:700; font-size:0.95rem;">👥 Facebook Messenger</span>
+              <span id="badge-chan-facebook" class="badge confirmado">Bot Activo</span>
+            </div>
+            <p style="color:var(--text-muted); font-size:0.8rem; margin:0.4rem 0 0.6rem;">Páginas de Facebook</p>
+            <label style="display:flex; align-items:center; gap:0.5rem; cursor:pointer; font-weight:normal; text-transform:none;">
+              <input type="checkbox" id="chan-facebook" style="width:auto; margin:0;" onchange="updateChannelBadge('facebook')">
+              <span><strong>Apagar Bot</strong> (Solo Humanos)</span>
+            </label>
+          </div>
+
+          <div style="background:#f9fafb; padding:1rem; border-radius:0.5rem; border:1px solid var(--border);">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <span style="font-weight:700; font-size:0.95rem;">✈️ Telegram</span>
+              <span id="badge-chan-telegram" class="badge confirmado">Bot Activo</span>
+            </div>
+            <p style="color:var(--text-muted); font-size:0.8rem; margin:0.4rem 0 0.6rem;">Canales de Telegram</p>
+            <label style="display:flex; align-items:center; gap:0.5rem; cursor:pointer; font-weight:normal; text-transform:none;">
+              <input type="checkbox" id="chan-telegram" style="width:auto; margin:0;" onchange="updateChannelBadge('telegram')">
+              <span><strong>Apagar Bot</strong> (Solo Humanos)</span>
+            </label>
+          </div>
+        </div>
+
+        <div style="margin-top:1.25rem;">
+          <label>Inboxes o Nombres Personalizados a Bloquear (opcional, separados por coma)</label>
+          <input type="text" id="custom-disabled-inboxes" placeholder="Ej: 5, Instagram Kroser Oficial, Soporte VIP">
+          <p style="color:var(--text-muted); font-size:0.8rem; margin-top:0.25rem;">
+            Puedes ingresar los IDs numéricos de inbox o nombres específicos tal como aparecen en Uruchat/Chatwoot.
+          </p>
+        </div>
+
+        <div style="margin-top:1.25rem;">
+          <button class="btn-action btn-success" onclick="saveChannelConfig()">💾 Guardar Control de Canales</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 4: DATASOURCE -->
+    <div id="tab-datasource" class="tab-section">
+      <h3>Estrategia de Fuente de Datos del Catálogo</h3>
+      <p style="color:var(--text-muted); font-size:0.85rem; margin-top:0.25rem;">
+        Define cómo obtiene el bot el catálogo de productos: mediante Web Scraping automático, Conector SQL Directo o API REST externa.
+      </p>
+
+      <div class="card-box">
+        <label>Estrategia Principal</label>
+        <select id="datasource-select" onchange="toggleDataSourceFields()">
+          <option value="scraping">Web Scraping (sitemap.xml kroser.com.uy)</option>
+          <option value="sql_directo">Conector SQL Directo (Base PostgreSQL / MySQL externa)</option>
+          <option value="api">API REST Externa (Endpoint JSON)</option>
+        </select>
+
+        <div id="ds-sql-fields" style="display:none; margin-top:1rem;">
+          <label>Connection String SQL Directo</label>
+          <input type="text" id="ds-sql-url" placeholder="postgresql://usuario:pass@host:5432/kroser_erp">
+        </div>
+
+        <div id="ds-api-fields" style="display:none; margin-top:1rem;">
+          <label>URL del Endpoint API</label>
+          <input type="text" id="ds-api-url" placeholder="https://api.kroser.com.uy/v1/products">
+          <label>API Key (Bearer / Header Token)</label>
+          <input type="password" id="ds-api-key" placeholder="Token secreto de la API">
+        </div>
+
+        <div style="margin-top:1.25rem;">
+          <button class="btn-action btn-success" onclick="saveDataSourceConfig()">💾 Guardar Estrategia de Ingestión</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 5: LLM CONNECTOR -->
+    <div id="tab-llm" class="tab-section">
+      <h3>Conector Dinámico de Agente IA (Multi-Proveedor / Multi-Modelo)</h3>
+      <div class="card-box">
         <label>Proveedor de IA</label>
         <select id="llm-provider-select" onchange="fetchAvailableModels()">
-          <option value="gemini">Google Gemini (Gemini 1.5 Flash, Gemini 1.5 Pro, Gemini 2.0)</option>
-          <option value="openai">OpenAI (GPT-4o, GPT-4o-mini, GPT-3.5-turbo)</option>
+          <option value="gemini">Google Gemini (Gemini 1.5 Flash, 2.0 Flash, Gemini Pro)</option>
+          <option value="openai">OpenAI (GPT-4o, GPT-4o-mini)</option>
           <option value="compatible">OpenAI-Compatible (Groq, Together, DeepSeek, Ollama, LocalAI)</option>
         </select>
 
-        <label style="margin-top:1rem; display:block;">API Key del Proveedor</label>
-        <input type="password" id="llm-apikey-input" placeholder="Clave API (ej. AIza... / sk-...)">
+        <label>API Key del Proveedor</label>
+        <input type="password" id="llm-apikey-input" placeholder="Clave API (AIza... / sk-...)">
 
-        <label style="margin-top:1rem; display:block;">Base URL Personalizado (opcional, para Groq / Ollama / LocalAI)</label>
+        <label>Base URL Personalizado (opcional)</label>
         <input type="text" id="llm-baseurl-input" placeholder="https://api.openai.com/v1 (o https://api.groq.com/openai/v1)">
 
         <div style="margin-top:1rem;">
-          <button class="btn-action" onclick="fetchAvailableModels()">🔍 Cargar Lista de Modelos Disponibles</button>
+          <button class="btn-action" onclick="fetchAvailableModels()">🔍 Cargar Catálogo de Modelos Disponibles</button>
         </div>
 
-        <label style="margin-top:1.5rem; display:block; font-weight:600;">Modelo Seleccionado (Sin Hardcoding)</label>
+        <label style="margin-top:1.25rem;">Modelo Seleccionado</label>
         <select id="llm-model-select">
           <option value="">Cargando modelos...</option>
         </select>
 
-        <div style="margin-top:1.5rem;">
-          <button class="btn-action btn-success" onclick="saveLLMConfig()">💾 Guardar Configuración del Agente IA</button>
+        <div style="margin-top:1.25rem;">
+          <button class="btn-action btn-success" onclick="saveLLMConfig()">💾 Guardar Agente IA</button>
         </div>
       </div>
     </div>
 
-    <!-- TAB 4: PEDIDOS -->
+    <!-- TAB 6: PEDIDOS & DEPOSITO -->
     <div id="tab-pedidos" class="tab-section">
-      <h3>Gestión de Pedidos</h3>
+      <div class="filter-bar">
+        <button class="filter-btn active" onclick="filterPedidos('todos', event)">Todos</button>
+        <button class="filter-btn" onclick="filterPedidos('pendiente', event)">⏳ Pendientes</button>
+        <button class="filter-btn" onclick="filterPedidos('deposito', event)">🏭 Vista Depósito (Confirmados)</button>
+        <button class="filter-btn" onclick="filterPedidos('entregado', event)">✅ Entregados</button>
+        <button class="filter-btn" onclick="filterPedidos('rechazado', event)">❌ Rechazados</button>
+      </div>
+
       <table>
         <thead>
           <tr>
             <th>ID</th>
+            <th>Origen</th>
+            <th>Orden Ext.</th>
             <th>Conv #</th>
             <th>Cliente</th>
+            <th>Teléfono / WhatsApp</th>
+            <th>Pago</th>
             <th>Estado</th>
             <th>Acciones</th>
           </tr>
         </thead>
-        <tbody id="pedidos-table-body">
-          <!-- Rendered via JS -->
-        </tbody>
+        <tbody id="pedidos-table-body"></tbody>
       </table>
     </div>
 
-    <!-- TAB 5: CATALOGO -->
+    <!-- TAB 7: CATALOGO -->
     <div id="tab-catalogo" class="tab-section">
       <h3>Catálogo de Productos Scrapeados</h3>
       <input type="text" id="product-search" placeholder="Buscar por SKU, nombre o marca..." onkeyup="loadProducts()" style="margin-bottom:1rem;">
       <table>
         <thead>
           <tr>
+            <th>Imagen</th>
             <th>SKU</th>
             <th>Nombre</th>
             <th>Precio</th>
             <th>Marca</th>
-            <th>Estado Stock</th>
+            <th>Stock</th>
+            <th>Enlace Web</th>
           </tr>
         </thead>
-        <tbody id="products-table-body">
-          <!-- Rendered via JS -->
-        </tbody>
+        <tbody id="products-table-body"></tbody>
       </table>
     </div>
 
-    <!-- TAB 6: LOCALES -->
+    <!-- TAB 8: LOCALES -->
     <div id="tab-locales" class="tab-section">
-      <h3>Locales Kroser</h3>
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h3>Sucursales y Locales Kroser (50+)</h3>
+        <button class="btn-action btn-success" onclick="openLocalModal()">➕ Agregar Sucursal</button>
+      </div>
       <table>
         <thead>
           <tr>
+            <th>ID</th>
             <th>Nombre</th>
-            <th>Zona</th>
+            <th>Departamento / Zona</th>
             <th>Dirección</th>
             <th>Teléfono</th>
             <th>Horario</th>
+            <th>Acciones</th>
           </tr>
         </thead>
-        <tbody id="locales-table-body">
-          <!-- Rendered via JS -->
-        </tbody>
+        <tbody id="locales-table-body"></tbody>
       </table>
     </div>
 
-    <!-- TAB 7: SCRAPER CONTROL -->
+    <!-- TAB 9: CONTACTOS & AVISOS -->
+    <div id="tab-contactos" class="tab-section">
+      <h3>Notificaciones y Alertas de Pedidos</h3>
+      <div class="card-box">
+        <label>Correos de Notificación para Nuevos Pedidos (separados por coma)</label>
+        <input type="text" id="aviso-email-input" placeholder="pedidos@kroser.com.uy, deposito@kroser.com.uy">
+
+        <label>Teléfonos / WhatsApp de Alerta Interna</label>
+        <input type="text" id="aviso-telefono-input" placeholder="+59899123456, +59899654321">
+
+        <div style="margin-top:1.25rem;">
+          <button class="btn-action btn-success" onclick="saveContactosConfig()">💾 Guardar Contactos de Alertas</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 10: ZONAS DE ENVIO -->
+    <div id="tab-zonas" class="tab-section">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h3>Zonas de Envío y Costos</h3>
+        <button class="btn-action btn-success" onclick="openZonaModal()">➕ Agregar Zona</button>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Departamento / Ciudad</th>
+            <th>Barrio / Zona</th>
+            <th>Costo de Envío ($)</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="zonas-table-body"></tbody>
+      </table>
+    </div>
+
+    <!-- TAB 11: FORMAS DE PAGO -->
+    <div id="tab-pagos" class="tab-section">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h3>Métodos y Formas de Pago</h3>
+        <button class="btn-action btn-success" onclick="openFormaPagoModal()">➕ Agregar Método</button>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Nombre</th>
+            <th>Descripción</th>
+            <th>Instrucciones para el Cliente</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="pagos-table-body"></tbody>
+      </table>
+
+      <h3 style="margin-top:2.5rem;">🔌 Integración Pasarela MercadoPago</h3>
+      <p style="color:var(--text-muted); font-size:0.85rem; margin-top:0.25rem;">
+        Permite activar o desactivar la recepción de notificaciones y generación de cobros vía MercadoPago, además de configurar auto-confirmación de pedidos.
+      </p>
+      <div class="card-box">
+        <div style="display:flex; align-items:center; gap:1rem; margin-bottom:1rem;">
+          <label style="margin:0; font-weight:700;">Estado Integración MercadoPago:</label>
+          <select id="mp-enabled-select" style="width:auto; margin:0;" onchange="saveMPToggle()">
+            <option value="false">🔴 Desactivado (Inactivo)</option>
+            <option value="true">🟢 Activado</option>
+          </select>
+        </div>
+
+        <label>Access Token (MercadoPago)</label>
+        <input type="password" id="mp-access-token" placeholder="APP_USR-xxxxxxxx">
+
+        <label>Public Key (MercadoPago)</label>
+        <input type="text" id="mp-public-key" placeholder="APP_USR-xxxxxxxx">
+
+        <label>Webhook Secret (Firma HMAC de seguridad)</label>
+        <input type="password" id="mp-webhook-secret" placeholder="Secret Token para validación x-signature">
+
+        <div style="margin-top:1rem; border-top:1px solid var(--border); padding-top:1rem;">
+          <label style="font-weight:700;">⚙️ Configuración Pedidos E-commerce</label>
+          <div style="display:flex; align-items:center; gap:0.5rem; margin-top:0.5rem;">
+            <input type="checkbox" id="ecommerce-autoconfirm-check" style="width:auto; margin:0;">
+            <label for="ecommerce-autoconfirm-check" style="margin:0;">Confirmar y mandar a preparar automáticamente los pedidos con pago verificado (Tiendanube / Email)</label>
+          </div>
+        </div>
+
+        <div style="margin-top:1.25rem;">
+          <button class="btn-action btn-success" onclick="saveMercadoPagoConfig()">💾 Guardar Configuración MercadoPago</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 12: SCRAPER CONTROL -->
     <div id="tab-scraper" class="tab-section">
       <h3>Control del Scraper de Catálogo</h3>
       <div class="card-box">
@@ -346,29 +765,216 @@
     </div>
   </div>
 
+  <!-- MODAL PEDIDO / DEPOSITO -->
+  <div class="modal-overlay" id="pedido-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2 id="modal-pedido-title">Detalle de Pedido</h2>
+        <div>
+          <button class="btn-action btn-secondary" onclick="window.print()">🖨️ Imprimir</button>
+          <button class="btn-action btn-danger" onclick="closeModal('pedido-modal')">✖ Cerrar</button>
+        </div>
+      </div>
+      <div id="modal-pedido-content"></div>
+    </div>
+  </div>
+
+  <!-- MODAL SUCURSAL / LOCAL -->
+  <div class="modal-overlay" id="local-modal">
+    <div class="modal-card" style="max-width:550px;">
+      <div class="modal-header">
+        <h3 id="local-modal-title">Agregar Sucursal</h3>
+        <button class="btn-action btn-danger" onclick="closeModal('local-modal')">✖</button>
+      </div>
+      <input type="hidden" id="local-id">
+      <label>Nombre de Sucursal</label>
+      <input type="text" id="local-nombre" placeholder="Kroser Carrasco">
+      <label>Departamento / Zona</label>
+      <input type="text" id="local-zona" placeholder="Montevideo - Carrasco">
+      <label>Dirección</label>
+      <input type="text" id="local-direccion" placeholder="Av. Arocena 1580">
+      <label>Teléfono</label>
+      <input type="text" id="local-telefono" placeholder="2600 5566">
+      <label>Horario de Atención</label>
+      <input type="text" id="local-horario" placeholder="Lunes a Sábados 10:00 a 20:00">
+      <div style="margin-top:1.25rem;">
+        <button class="btn-action btn-success" onclick="saveLocal()">💾 Guardar Sucursal</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL ZONA ENVIO -->
+  <div class="modal-overlay" id="zona-modal">
+    <div class="modal-card" style="max-width:500px;">
+      <div class="modal-header">
+        <h3 id="zona-modal-title">Agregar Zona de Envío</h3>
+        <button class="btn-action btn-danger" onclick="closeModal('zona-modal')">✖</button>
+      </div>
+      <input type="hidden" id="zona-id">
+      <label>Departamento / Ciudad</label>
+      <input type="text" id="zona-depto" placeholder="Montevideo">
+      <label>Barrio / Zona</label>
+      <input type="text" id="zona-barrio" placeholder="Pocitos / Punta Carretas">
+      <label>Costo de Envío ($)</label>
+      <input type="number" step="0.01" id="zona-costo" placeholder="180.00">
+      <div style="margin-top:1.25rem;">
+        <button class="btn-action btn-success" onclick="saveZona()">💾 Guardar Zona</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL FORMA PAGO -->
+  <div class="modal-overlay" id="forma-pago-modal">
+    <div class="modal-card" style="max-width:550px;">
+      <div class="modal-header">
+        <h3 id="forma-modal-title">Agregar Método de Pago</h3>
+        <button class="btn-action btn-danger" onclick="closeModal('forma-pago-modal')">✖</button>
+      </div>
+      <input type="hidden" id="forma-id">
+      <label>Nombre del Método</label>
+      <input type="text" id="forma-nombre" placeholder="Transferencia Bancaria">
+      <label>Descripción Breve</label>
+      <input type="text" id="forma-desc" placeholder="Transferencia a BROU / Itaú">
+      <label>Instrucciones para el Cliente</label>
+      <textarea id="forma-instrucciones" rows="3" placeholder="Enviar comprobante al WhatsApp de avisos..."></textarea>
+      <div style="margin-top:1.25rem;">
+        <button class="btn-action btn-success" onclick="saveFormaPago()">💾 Guardar Método</button>
+      </div>
+    </div>
+  <!-- Modal Login Admin -->
+  <div class="modal-overlay" id="login-modal" style="background: rgba(15,23,42,0.85); backdrop-filter: blur(4px); z-index: 9999;">
+    <div class="modal-card" style="max-width: 420px; padding: 2rem; border-radius: 1rem; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.3);">
+      <div style="text-align: center; margin-bottom: 1.5rem;">
+        <img src="https://f.fcdn.app/assets/commerce/www.kroser.com.uy/94f6_e862/public/web/favicon.ico" style="height: 48px; margin-bottom: 0.75rem;">
+        <h2 style="font-size: 1.35rem; color: var(--text); font-weight: 700;">Panel de Administración</h2>
+        <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0.25rem;">Ingrese credenciales de administrador para continuar</p>
+      </div>
+      
+      <form id="admin-login-form" onsubmit="handleAdminLoginSubmit(event)">
+        <div style="margin-bottom: 1rem;">
+          <label style="display:block; font-size: 0.85rem; font-weight: 700; margin-bottom: 0.35rem;">Usuario</label>
+          <input type="text" id="admin-login-username" value="admin" style="width:100%; padding:0.65rem 0.85rem; border-radius:0.4rem; border:1px solid var(--border); font-weight:bold; color:#334155;">
+        </div>
+        <div style="margin-bottom: 1.25rem;">
+          <label style="display:block; font-size: 0.85rem; font-weight: 700; margin-bottom: 0.35rem;">Contraseña</label>
+          <input type="password" id="admin-login-password" placeholder="Ingrese contraseña" required style="width:100%; padding:0.65rem 0.85rem; border-radius:0.4rem; border:1px solid var(--border); font-size:0.95rem;">
+        </div>
+        <div id="admin-login-error" style="display:none; color: var(--danger); font-size: 0.85rem; font-weight:700; margin-bottom: 1rem; text-align:center; padding:0.5rem; background:var(--danger-light); border-radius:0.4rem;"></div>
+        <button type="submit" class="btn-action btn-success" style="width: 100%; padding: 0.75rem; font-size: 1rem; font-weight:700; justify-content:center;">🔑 Iniciar Sesión</button>
+      </form>
+    </div>
+  </div>
+
   <script>
     const API_BASE = '/api';
+    let currentPedidosList = [];
+    let currentFilter = 'todos';
+    let pendingAuthResolver = null;
 
-    function switchTab(tabName) {
+    function showLoginModal() {
+      document.getElementById('login-modal').classList.add('active');
+      document.getElementById('admin-login-password').focus();
+    }
+
+    function hideLoginModal() {
+      document.getElementById('login-modal').classList.remove('active');
+    }
+
+    async function handleAdminLoginSubmit(event) {
+      event.preventDefault();
+      const username = document.getElementById('admin-login-username').value.trim();
+      const password = document.getElementById('admin-login-password').value;
+      const errorDiv = document.getElementById('admin-login-error');
+      errorDiv.style.display = 'none';
+
+      try {
+        const loginRes = await fetch(`${API_BASE}/auth/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ username, password })
+        });
+        const data = await loginRes.json();
+        if (!loginRes.ok || !data.success) {
+          throw new Error(data.error || 'Credenciales incorrectas');
+        }
+        localStorage.setItem('kroser_admin_token', data.token);
+        hideLoginModal();
+        if (pendingAuthResolver) {
+          pendingAuthResolver(data.token);
+          pendingAuthResolver = null;
+        } else {
+          loadDashboard();
+        }
+      } catch (err) {
+        errorDiv.textContent = err.message || 'Contraseña o usuario incorrecto';
+        errorDiv.style.display = 'block';
+      }
+    }
+
+    async function apiFetch(url, options = {}) {
+      let token = localStorage.getItem('kroser_admin_token');
+      if (!token && !url.includes('/auth/login')) {
+        showLoginModal();
+        token = await new Promise(resolve => { pendingAuthResolver = resolve; });
+      }
+      options.credentials = 'include';
+      if (token) {
+        options.headers = { ...options.headers, 'Authorization': `Bearer ${token}` };
+      }
+      const response = await fetch(url, options);
+      if (response.status === 401) {
+        localStorage.removeItem('kroser_admin_token');
+        showLoginModal();
+        throw new Error('401 Unauthorized');
+      }
+      return response;
+    }
+
+    const TAB_TITLES = {
+      dashboard: 'Dashboard',
+      prompt: 'Prompt & Mensajes Predeterminados',
+      chatwoot: 'Integración Uruchat',
+      datasource: 'Fuente de Datos',
+      llm: 'Conector Agente IA',
+      pedidos: 'Pedidos & Depósito',
+      catalogo: 'Catálogo Scrapeado',
+      locales: 'Sucursales Kroser',
+      contactos: 'Avisos de Pedido',
+      zonas: 'Zonas de Envío',
+      pagos: 'Formas de Pago',
+      scraper: 'Control del Scraper',
+    };
+
+    function switchTab(tabName, event) {
       document.querySelectorAll('.tab-section').forEach(el => el.classList.remove('active'));
       document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
 
       document.getElementById(`tab-${tabName}`).classList.add('active');
-      event.target.classList.add('active');
-      document.getElementById('page-title').innerText = tabName.toUpperCase();
+      if (event && event.target) event.target.classList.add('active');
+      document.getElementById('page-title').innerText = TAB_TITLES[tabName] || tabName.toUpperCase();
 
       if (tabName === 'dashboard') loadDashboard();
       if (tabName === 'prompt') loadConfig();
+      if (tabName === 'chatwoot') loadChatwootConfig();
+      if (tabName === 'datasource') loadDataSourceConfig();
       if (tabName === 'llm') fetchAvailableModels();
       if (tabName === 'pedidos') loadPedidos();
       if (tabName === 'catalogo') loadProducts();
       if (tabName === 'locales') loadLocales();
+      if (tabName === 'contactos') loadContactos();
+      if (tabName === 'zonas') loadZonas();
+      if (tabName === 'pagos') loadFormasPago();
       if (tabName === 'scraper') loadScraperStatus();
     }
 
+    function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+    function openModal(id) { document.getElementById(id).classList.add('active'); }
+
+    // --- DASHBOARD ---
     async function loadDashboard() {
       try {
-        const res = await fetch(`${API_BASE}/analytics/dashboard`);
+        const res = await apiFetch(`${API_BASE}/analytics/dashboard`);
         const data = await res.json();
         document.getElementById('metric-orders').innerText = data.metrics.totalOrders;
         document.getElementById('metric-products').innerText = data.metrics.totalProducts;
@@ -376,39 +982,194 @@
       } catch (err) { console.error(err); }
     }
 
+    // --- PROMPT & CONFIG ---
     async function loadConfig() {
       try {
-        const res = await fetch(`${API_BASE}/configuracion`);
-        const data = await res.json();
-        const cfg = data.config || {};
+        const res = await apiFetch(`${API_BASE}/configuracion`);
+        const cfg = await res.json();
         document.getElementById('system-prompt-input').value = cfg.system_prompt || '';
         document.getElementById('msg-pendiente').value = cfg.msg_pedido_pendiente || '';
         document.getElementById('msg-listo').value = cfg.msg_pedido_listo || '';
+        document.getElementById('msg-rechazado').value = cfg.msg_pedido_rechazado || '';
+        document.getElementById('msg-derivacion').value = cfg.msg_derivacion || '';
       } catch (err) { console.error(err); }
     }
 
+    async function saveConfig(key, elementId) {
+      const val = document.getElementById(elementId).value;
+      await apiFetch(`${API_BASE}/configuracion`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key, value: val })
+      });
+      alert(`Configuración '${key}' guardada exitosamente.`);
+    }
+
+    // --- CHATWOOT & CANALES ---
+    function updateChannelBadge(chan) {
+      const el = document.getElementById(`chan-${chan}`);
+      const badge = document.getElementById(`badge-chan-${chan}`);
+      if (el && badge) {
+        if (el.checked) {
+          badge.className = 'badge rechazado';
+          badge.innerText = '🔴 Bot Apagado (Solo Humanos)';
+        } else {
+          badge.className = 'badge confirmado';
+          badge.innerText = '🟢 Bot Activo';
+        }
+      }
+    }
+
+    async function loadChatwootConfig() {
+      try {
+        const res = await apiFetch(`${API_BASE}/configuracion`);
+        const cfg = await res.json();
+        document.getElementById('chatwoot-url-input').value = cfg.chatwoot_base_url || '';
+        document.getElementById('chatwoot-token-input').value = cfg.chatwoot_api_token || '';
+
+        // Parse disabled channels
+        let disabledList = [];
+        if (cfg.canales_desactivados) {
+          try {
+            if (cfg.canales_desactivados.trim().startsWith('[')) {
+              disabledList = JSON.parse(cfg.canales_desactivados);
+            } else {
+              disabledList = cfg.canales_desactivados.split(',').map(s => s.trim()).filter(Boolean);
+            }
+          } catch (_e) {
+            disabledList = cfg.canales_desactivados.split(',').map(s => s.trim()).filter(Boolean);
+          }
+        }
+
+        const standardChannels = ['instagram', 'whatsapp', 'webwidget', 'email', 'facebook', 'telegram'];
+        const customItems = [];
+
+        standardChannels.forEach(chan => {
+          const el = document.getElementById(`chan-${chan}`);
+          if (el) {
+            el.checked = disabledList.some(item => String(item).toLowerCase() === chan);
+            updateChannelBadge(chan);
+          }
+        });
+
+        disabledList.forEach(item => {
+          const lower = String(item).toLowerCase();
+          if (!standardChannels.includes(lower)) {
+            customItems.push(item);
+          }
+        });
+
+        document.getElementById('custom-disabled-inboxes').value = customItems.join(', ');
+      } catch (err) {
+        console.error('Error cargando configuración de Uruchat / Canales:', err);
+      }
+    }
+
+    async function saveChatwootConfig() {
+      const url = document.getElementById('chatwoot-url-input').value;
+      const token = document.getElementById('chatwoot-token-input').value;
+      await apiFetch(`${API_BASE}/configuracion`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: 'chatwoot_base_url', value: url })
+      });
+      await apiFetch(`${API_BASE}/configuracion`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: 'chatwoot_api_token', value: token })
+      });
+      alert('Configuración de Uruchat guardada.');
+    }
+
+    async function saveChannelConfig() {
+      const standardChannels = ['instagram', 'whatsapp', 'webwidget', 'email', 'facebook', 'telegram'];
+      const disabledList = [];
+
+      standardChannels.forEach(chan => {
+        const el = document.getElementById(`chan-${chan}`);
+        if (el && el.checked) {
+          disabledList.push(chan);
+        }
+      });
+
+      const customVal = document.getElementById('custom-disabled-inboxes').value.trim();
+      if (customVal) {
+        const customItems = customVal.split(',').map(s => s.trim()).filter(Boolean);
+        disabledList.push(...customItems);
+      }
+
+      await apiFetch(`${API_BASE}/configuracion`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          key: 'canales_desactivados',
+          value: JSON.stringify(disabledList)
+        })
+      });
+
+      alert(`Control de canales guardado exitosamente.\nCanales con bot apagado: ${disabledList.length > 0 ? disabledList.join(', ') : 'Ninguno (Bot activo en todos)'}`);
+    }
+
+    // --- DATASOURCE ---
+    async function loadDataSourceConfig() {
+      const res = await apiFetch(`${API_BASE}/configuracion`);
+      const cfg = await res.json();
+      document.getElementById('datasource-select').value = cfg.fuente_datos || 'scraping';
+      document.getElementById('ds-sql-url').value = cfg.sql_directo_url || '';
+      document.getElementById('ds-api-url').value = cfg.api_productos_url || '';
+      document.getElementById('ds-api-key').value = cfg.api_productos_key || '';
+      toggleDataSourceFields();
+    }
+
+    function toggleDataSourceFields() {
+      const v = document.getElementById('datasource-select').value;
+      document.getElementById('ds-sql-fields').style.display = (v === 'sql_directo') ? 'block' : 'none';
+      document.getElementById('ds-api-fields').style.display = (v === 'api') ? 'block' : 'none';
+    }
+
+    async function saveDataSourceConfig() {
+      const fuente = document.getElementById('datasource-select').value;
+      const sqlUrl = document.getElementById('ds-sql-url').value;
+      const apiUrl = document.getElementById('ds-api-url').value;
+      const apiKey = document.getElementById('ds-api-key').value;
+
+      await apiFetch(`${API_BASE}/configuracion`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: 'fuente_datos', value: fuente })
+      });
+      await apiFetch(`${API_BASE}/configuracion`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: 'sql_directo_url', value: sqlUrl })
+      });
+      await apiFetch(`${API_BASE}/configuracion`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: 'api_productos_url', value: apiUrl })
+      });
+      await apiFetch(`${API_BASE}/configuracion`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: 'api_productos_key', value: apiKey })
+      });
+      alert('Estrategia de Ingestión guardada.');
+    }
+
+    // --- LLM ---
     async function fetchAvailableModels() {
       const provider = document.getElementById('llm-provider-select').value;
       const apiKey = document.getElementById('llm-apikey-input').value;
       const baseUrl = document.getElementById('llm-baseurl-input').value;
-
       const modelSelect = document.getElementById('llm-model-select');
-      modelSelect.innerHTML = '<option value="">Consultando catálogo de modelos del proveedor...</option>';
-
+      modelSelect.innerHTML = '<option value="">Consultando modelos...</option>';
       try {
-        const query = new URLSearchParams({ provider, apiKey, baseUrl }).toString();
-        const res = await fetch(`${API_BASE}/llm/models?${query}`);
+        const res = await apiFetch(`${API_BASE}/llm/models`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ provider, apiKey, baseUrl })
+        });
         const data = await res.json();
-
         if (data.models && data.models.length > 0) {
-          modelSelect.innerHTML = data.models.map(m => `
-            <option value="${m.id}">${m.name} (${m.id})</option>
-          `).join('');
+          modelSelect.innerHTML = data.models.map(m => `<option value="${m.id}">${m.name} (${m.id})</option>`).join('');
         } else {
-          modelSelect.innerHTML = '<option value="gemini-1.5-flash">Gemini 1.5 Flash (Predeterminado)</option>';
+          modelSelect.innerHTML = '<option value="gemini-1.5-flash">Gemini 1.5 Flash</option>';
         }
       } catch (err) {
-        modelSelect.innerHTML = '<option value="gemini-1.5-flash">Gemini 1.5 Flash</option><option value="gpt-4o-mini">GPT-4o Mini</option>';
+        modelSelect.innerHTML = '<option value="gemini-1.5-flash">Gemini 1.5 Flash</option>';
       }
     }
 
@@ -417,103 +1178,446 @@
       const apiKey = document.getElementById('llm-apikey-input').value;
       const baseUrl = document.getElementById('llm-baseurl-input').value;
       const model = document.getElementById('llm-model-select').value;
-
-      await fetch(`${API_BASE}/llm/config`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      await apiFetch(`${API_BASE}/llm/config`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ provider, model, apiKey, baseUrl })
       });
-      alert(`Configuración del Agente IA guardada exitosamente.\nProveedor: ${provider}\nModelo: ${model}`);
+      alert(`Agente IA guardado: ${provider} - ${model}`);
     }
 
-    async function saveConfig(key, elementId) {
-      const val = document.getElementById(elementId).value;
-      await fetch(`${API_BASE}/configuracion`, {
+    // --- PEDIDOS & DEPOSITO ---
+    async function loadPedidos() {
+      const res = await apiFetch(`${API_BASE}/pedidos`);
+      currentPedidosList = await res.json();
+      renderPedidos();
+    }
+
+    function filterPedidos(filter, event) {
+      currentFilter = filter;
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      if (event && event.target) event.target.classList.add('active');
+      renderPedidos();
+    }
+
+    function renderPedidos() {
+      let filtered = currentPedidosList;
+      if (currentFilter === 'deposito') {
+        filtered = currentPedidosList.filter(p => p.estado === 'confirmado' || p.estado === 'pendiente' || p.estado === 'en_preparacion');
+      } else if (currentFilter === 'ecommerce') {
+        filtered = currentPedidosList.filter(p => p.origen === 'ecommerce');
+      } else if (currentFilter === 'bot') {
+        filtered = currentPedidosList.filter(p => p.origen === 'bot' || !p.origen);
+      } else if (currentFilter !== 'todos') {
+        filtered = currentPedidosList.filter(p => p.estado === currentFilter);
+      }
+
+      const tbody = document.getElementById('pedidos-table-body');
+      tbody.innerHTML = filtered.map(p => {
+        const cliente = typeof p.cliente === 'string' ? JSON.parse(p.cliente) : (p.cliente || {});
+        
+        let origenBadge = '<span class="badge" style="background:#f3e8ff; color:#6b21a8;">🤖 Bot</span>';
+        if (p.origen === 'ecommerce') {
+          origenBadge = '<span class="badge" style="background:#e0f2fe; color:#0369a1;">🛒 Ecommerce</span>';
+        } else if (p.origen === 'admin') {
+          origenBadge = '<span class="badge" style="background:#f3f4f6; color:#374151;">👤 Admin</span>';
+        }
+
+        let pagoBadge = '<span class="badge" style="background:#f3f4f6; color:#6b7280;">—</span>';
+        if (p.pago_estado === 'pagado') {
+          pagoBadge = '<span class="badge" style="background:#dcfce7; color:#15803d;">💳 Pagado</span>';
+        } else if (p.pago_estado === 'pendiente_pago') {
+          pagoBadge = '<span class="badge" style="background:#fef3c7; color:#b45309;">⏳ Pendiente</span>';
+        }
+
+        return `
+          <tr>
+            <td>#${p.id}</td>
+            <td>${origenBadge}</td>
+            <td><strong>${p.ecommerce_order_number || '-'}</strong></td>
+            <td>${p.conversation_id || '-'}</td>
+            <td><strong>${cliente.nombre || 'Cliente'}</strong></td>
+            <td>${cliente.telefono || cliente.whatsapp || '-'}</td>
+            <td>${pagoBadge}</td>
+            <td><span class="badge ${p.estado}">${p.estado}</span></td>
+            <td>
+              <button class="btn-action" onclick="viewPedidoDetails(${p.id})">👁️ Ver / Editar</button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    async function viewPedidoDetails(id) {
+      const p = currentPedidosList.find(item => item.id === id);
+      if (!p) return;
+      const cliente = typeof p.cliente === 'string' ? JSON.parse(p.cliente) : (p.cliente || {});
+      const items = typeof p.items === 'string' ? JSON.parse(p.items) : (p.items || []);
+
+      let html = `
+        <div style="margin-bottom:1rem; background:#f9fafb; padding:1rem; border-radius:0.5rem; border:1px solid var(--border);">
+          <p style="margin-bottom:0.3rem;"><strong>Pedido ID:</strong> #${p.id} ${p.ecommerce_order_number ? `(${p.ecommerce_order_number})` : ''} | <strong>Origen:</strong> ${p.origen || 'bot'} | <strong>Estado:</strong> <span class="badge ${p.estado}">${p.estado}</span></p>
+          <p style="margin-bottom:0.3rem;"><strong>Estado de Pago:</strong> ${p.pago_estado || 'sin_pago'} ${p.pago_referencia ? `(Ref: ${p.pago_referencia})` : ''}</p>
+          <p style="margin-bottom:0.3rem;"><strong>Cliente:</strong> ${cliente.nombre || 'No especificado'} | <strong>Tel/WA:</strong> ${cliente.telefono || cliente.whatsapp || 'No especificado'}</p>
+          <p style="margin-bottom:0.3rem;"><strong>Email:</strong> ${cliente.email || 'No especificado'}</p>
+          <p><strong>Dirección:</strong> ${cliente.direccion || 'Retiro en sucursal'}</p>
+        </div>
+
+        <h4>📦 Productos Solicitados (Edición de Stock)</h4>
+        <table id="pedido-items-table" style="margin-bottom:1rem;">
+          <thead>
+            <tr>
+              <th>SKU</th>
+              <th>Producto</th>
+              <th>Cant</th>
+              <th>Precio Unit.</th>
+              <th>Acción</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${items.map((item, idx) => `
+              <tr id="item-row-${idx}">
+                <td>${item.sku || '-'}</td>
+                <td>${item.nombre || item.producto || 'Producto'}</td>
+                <td><input type="number" id="item-cant-${idx}" value="${item.cantidad || 1}" style="width:60px;" min="0"></td>
+                <td>$${item.precio || 0}</td>
+                <td><button class="btn-action btn-danger" onclick="removeItemRow(${idx})">🗑️ Quitar</button></td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+
+        <label>Motivo de Modificación / Nota para la IA y el Cliente (ej. Sin stock del ítem X)</label>
+        <textarea id="pedido-motivo-input" rows="2" placeholder="Indicar brevemente si falta stock o se modifica el pedido...">${p.motivo_modificacion || ''}</textarea>
+
+        <label>Notas Internas del Depósito</label>
+        <textarea id="pedido-notas-input" rows="2" placeholder="Notas de empaque o preparación...">${p.notas || ''}</textarea>
+
+        <div style="margin-top:1rem; display:flex; gap:0.5rem; flex-wrap:wrap;">
+          <button class="btn-action btn-success" onclick="savePedidoChanges(${p.id}, 'confirmado')">✅ Confirmar / Pedido Listo</button>
+          <button class="btn-action btn-primary" onclick="savePedidoChanges(${p.id}, 'entregado')">🚚 Marcar Entregado</button>
+          <button class="btn-action btn-danger" onclick="savePedidoChanges(${p.id}, 'rechazado')">❌ Rechazar Pedido</button>
+          <button class="btn-action btn-secondary" onclick="savePedidoChanges(${p.id}, '${p.estado}')">💾 Guardar Cambios</button>
+        </div>
+      `;
+
+      document.getElementById('modal-pedido-title').innerText = `Pedido #${p.id} — Gestión Depósito`;
+      document.getElementById('modal-pedido-content').innerHTML = html;
+      openModal('pedido-modal');
+    }
+
+    function removeItemRow(idx) {
+      const row = document.getElementById(`item-row-${idx}`);
+      if (row) row.remove();
+    }
+
+    async function savePedidoChanges(id, nuevoEstado) {
+      const p = currentPedidosList.find(item => item.id === id);
+      const originalItems = typeof p.items === 'string' ? JSON.parse(p.items) : (p.items || []);
+
+      const newItems = [];
+      originalItems.forEach((item, idx) => {
+        const cantInput = document.getElementById(`item-cant-${idx}`);
+        if (cantInput) {
+          const cant = parseInt(cantInput.value, 10);
+          if (cant > 0) {
+            newItems.push({ ...item, cantidad: cant });
+          }
+        }
+      });
+
+      const motivo = document.getElementById('pedido-motivo-input').value;
+      const notas = document.getElementById('pedido-notas-input').value;
+
+      await apiFetch(`${API_BASE}/pedidos/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ key, value: val })
+        body: JSON.stringify({
+          estado: nuevoEstado,
+          items: newItems,
+          motivo_modificacion: motivo,
+          notas: notas
+        })
       });
-      alert(`Configuración '${key}' guardada exitosamente.`);
+
+      alert(`Pedido #${id} actualizado correctamente.`);
+      closeModal('pedido-modal');
+      loadPedidos();
     }
 
-    async function loadPedidos() {
-      const res = await fetch(`${API_BASE}/pedidos`);
+    // --- CATALOGO ---
+    async function loadProducts() {
+      const q = document.getElementById('product-search').value;
+      const res = await apiFetch(`${API_BASE}/productos?search=${encodeURIComponent(q)}`);
       const data = await res.json();
-      const tbody = document.getElementById('pedidos-table-body');
+      const tbody = document.getElementById('products-table-body');
       tbody.innerHTML = data.map(p => `
         <tr>
-          <td>#${p.id}</td>
-          <td>${p.conversation_id}</td>
-          <td>${p.cliente?.nombre || 'Cliente'}</td>
-          <td><span class="badge ${p.estado}">${p.estado}</span></td>
+          <td><img src="${p.imagen_url || 'https://via.placeholder.com/45'}" class="img-thumb" alt="img" onerror="this.src='https://via.placeholder.com/45'"></td>
+          <td>${p.sku}</td>
+          <td><strong>${p.nombre}</strong></td>
+          <td>$${p.precio}</td>
+          <td>${p.marca || '-'}</td>
+          <td><span class="badge ${p.stock_status === 'in_stock' ? 'confirmado' : 'rechazado'}">${p.stock_status}</span></td>
           <td>
-            ${p.estado === 'pendiente' ? `
-              <button class="btn-action btn-success" onclick="changeOrderStatus(${p.id}, 'confirmado')">Confirmar</button>
-              <button class="btn-action btn-danger" onclick="changeOrderStatus(${p.id}, 'rechazado')">Rechazar</button>
-            ` : '-'}
+            ${p.producto_url ? `<a href="${p.producto_url}" target="_blank" style="color:var(--primary); font-size:0.85rem;">🔗 Ver en Web</a>` : '-'}
           </td>
         </tr>
       `).join('');
     }
 
-    async function changeOrderStatus(id, nuevoEstado) {
-      if (!confirm(`¿Estás seguro de cambiar el estado del pedido #${id} a '${nuevoEstado}'?`)) return;
-      await fetch(`${API_BASE}/pedidos/${id}/estado`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ estado: nuevoEstado })
-      });
-      loadPedidos();
-    }
-
-    async function loadProducts() {
-      const q = document.getElementById('product-search').value;
-      const res = await fetch(`${API_BASE}/productos?search=${encodeURIComponent(q)}`);
-      const data = await res.json();
-      const tbody = document.getElementById('products-table-body');
-      tbody.innerHTML = data.map(p => `
-        <tr>
-          <td>${p.sku}</td>
-          <td>${p.nombre}</td>
-          <td>$${p.precio}</td>
-          <td>${p.marca || '-'}</td>
-          <td>${p.stock_status}</td>
-        </tr>
-      `).join('');
-    }
-
+    // --- LOCALES ---
     async function loadLocales() {
-      const res = await fetch(`${API_BASE}/locales`);
+      const res = await apiFetch(`${API_BASE}/locales`);
       const data = await res.json();
       const tbody = document.getElementById('locales-table-body');
       tbody.innerHTML = data.map(l => `
         <tr>
-          <td>${l.nombre}</td>
+          <td>#${l.id}</td>
+          <td><strong>${l.nombre}</strong></td>
           <td>${l.zona}</td>
           <td>${l.direccion}</td>
           <td>${l.telefono}</td>
           <td>${l.horario}</td>
+          <td>
+            <button class="btn-action" onclick='editLocal(${JSON.stringify(l)})'>✏️ Editar</button>
+            <button class="btn-action btn-danger" onclick="deleteLocal(${l.id})">🗑️</button>
+          </td>
         </tr>
       `).join('');
     }
 
+    function openLocalModal(l = null) {
+      document.getElementById('local-id').value = l ? l.id : '';
+      document.getElementById('local-nombre').value = l ? l.nombre : '';
+      document.getElementById('local-zona').value = l ? l.zona : '';
+      document.getElementById('local-direccion').value = l ? l.direccion : '';
+      document.getElementById('local-telefono').value = l ? l.telefono : '';
+      document.getElementById('local-horario').value = l ? l.horario : '';
+      document.getElementById('local-modal-title').innerText = l ? `Editar Sucursal #${l.id}` : 'Agregar Sucursal';
+      openModal('local-modal');
+    }
+
+    function editLocal(l) { openLocalModal(l); }
+
+    async function saveLocal() {
+      const id = document.getElementById('local-id').value;
+      const body = {
+        nombre: document.getElementById('local-nombre').value,
+        zona: document.getElementById('local-zona').value,
+        direccion: document.getElementById('local-direccion').value,
+        telefono: document.getElementById('local-telefono').value,
+        horario: document.getElementById('local-horario').value,
+      };
+      if (id) {
+        await apiFetch(`${API_BASE}/locales/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      } else {
+        await apiFetch(`${API_BASE}/locales`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      }
+      closeModal('local-modal');
+      loadLocales();
+    }
+
+    async function deleteLocal(id) {
+      if (!confirm(`¿Eliminar sucursal #${id}?`)) return;
+      await apiFetch(`${API_BASE}/locales/${id}`, { method: 'DELETE' });
+      loadLocales();
+    }
+
+    // --- CONTACTOS & AVISOS ---
+    async function loadContactos() {
+      const res = await apiFetch(`${API_BASE}/configuracion`);
+      const cfg = await res.json();
+      document.getElementById('aviso-email-input').value = cfg.aviso_email_pedido || '';
+      document.getElementById('aviso-telefono-input').value = cfg.aviso_telefono_pedido || '';
+    }
+
+    async function saveContactosConfig() {
+      const email = document.getElementById('aviso-email-input').value;
+      const tel = document.getElementById('aviso-telefono-input').value;
+      await apiFetch(`${API_BASE}/configuracion`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: 'aviso_email_pedido', value: email }) });
+      await apiFetch(`${API_BASE}/configuracion`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: 'aviso_telefono_pedido', value: tel }) });
+      alert('Contactos de alertas guardados.');
+    }
+
+    // --- ZONAS DE ENVIO ---
+    async function loadZonas() {
+      const res = await apiFetch(`${API_BASE}/zonas-envio`);
+      const data = await res.json();
+      const tbody = document.getElementById('zonas-table-body');
+      tbody.innerHTML = data.map(z => `
+        <tr>
+          <td>#${z.id}</td>
+          <td><strong>${z.departamento_ciudad}</strong></td>
+          <td>${z.barrio_zona}</td>
+          <td>$${z.costo_envio}</td>
+          <td><span class="badge ${z.activo ? 'confirmado' : 'rechazado'}">${z.activo ? 'Activa' : 'Inactiva'}</span></td>
+          <td>
+            <button class="btn-action" onclick='editZona(${JSON.stringify(z)})'>✏️ Editar</button>
+            <button class="btn-action btn-danger" onclick="deleteZona(${z.id})">🗑️</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function openZonaModal(z = null) {
+      document.getElementById('zona-id').value = z ? z.id : '';
+      document.getElementById('zona-depto').value = z ? z.departamento_ciudad : '';
+      document.getElementById('zona-barrio').value = z ? z.barrio_zona : '';
+      document.getElementById('zona-costo').value = z ? z.costo_envio : '';
+      document.getElementById('zona-modal-title').innerText = z ? `Editar Zona #${z.id}` : 'Agregar Zona de Envío';
+      openModal('zona-modal');
+    }
+
+    function editZona(z) { openZonaModal(z); }
+
+    async function saveZona() {
+      const id = document.getElementById('zona-id').value;
+      const body = {
+        departamento_ciudad: document.getElementById('zona-depto').value,
+        barrio_zona: document.getElementById('zona-barrio').value,
+        costo_envio: parseFloat(document.getElementById('zona-costo').value || 0),
+      };
+      if (id) {
+        await apiFetch(`${API_BASE}/zonas-envio/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      } else {
+        await apiFetch(`${API_BASE}/zonas-envio`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      }
+      closeModal('zona-modal');
+      loadZonas();
+    }
+
+    async function deleteZona(id) {
+      if (!confirm(`¿Eliminar zona #${id}?`)) return;
+      await apiFetch(`${API_BASE}/zonas-envio/${id}`, { method: 'DELETE' });
+      loadZonas();
+    }
+
+    // --- FORMAS DE PAGO & MERCADOPAGO ---
+    async function loadFormasPago() {
+      const res = await apiFetch(`${API_BASE}/formas-pago`);
+      const data = await res.json();
+      const tbody = document.getElementById('pagos-table-body');
+      tbody.innerHTML = data.map(f => `
+        <tr>
+          <td>#${f.id}</td>
+          <td><strong>${f.nombre}</strong></td>
+          <td>${f.descripcion || '-'}</td>
+          <td>${f.instrucciones || '-'}</td>
+          <td><span class="badge ${f.activo ? 'confirmado' : 'rechazado'}">${f.activo ? 'Activo' : 'Inactivo'}</span></td>
+          <td>
+            <button class="btn-action" onclick='editFormaPago(${JSON.stringify(f)})'>✏️ Editar</button>
+            <button class="btn-action btn-danger" onclick="deleteFormaPago(${f.id})">🗑️</button>
+          </td>
+        </tr>
+      `).join('');
+
+      await loadMercadoPagoConfig();
+    }
+
+    async function loadMercadoPagoConfig() {
+      try {
+        const res = await apiFetch(`${API_BASE}/configuracion`);
+        const cfg = await res.json();
+        document.getElementById('mp-enabled-select').value = cfg.mercadopago_enabled === 'true' ? 'true' : 'false';
+        document.getElementById('mp-access-token').value = cfg.mercadopago_access_token || '';
+        document.getElementById('mp-public-key').value = cfg.mercadopago_public_key || '';
+        document.getElementById('mp-webhook-secret').value = cfg.mercadopago_webhook_secret || '';
+        document.getElementById('ecommerce-autoconfirm-check').checked = cfg.ecommerce_auto_confirm_paid !== 'false';
+      } catch (err) { console.error('Error cargando config MP:', err); }
+    }
+
+    async function saveMPToggle() {
+      const enabled = document.getElementById('mp-enabled-select').value === 'true';
+      await apiFetch(`${API_BASE}/mercadopago/toggle`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enabled })
+      });
+      alert(`MercadoPago ${enabled ? 'ACTIVADO 🟢' : 'DESACTIVADO 🔴'}`);
+    }
+
+    async function saveMercadoPagoConfig() {
+      const enabled = document.getElementById('mp-enabled-select').value === 'true';
+      const token = document.getElementById('mp-access-token').value;
+      const pubKey = document.getElementById('mp-public-key').value;
+      const secret = document.getElementById('mp-webhook-secret').value;
+      const autoConfirm = document.getElementById('ecommerce-autoconfirm-check').checked;
+
+      await apiFetch(`${API_BASE}/mercadopago/toggle`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enabled })
+      });
+      await apiFetch(`${API_BASE}/configuracion`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: 'mercadopago_access_token', value: token })
+      });
+      await apiFetch(`${API_BASE}/configuracion`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: 'mercadopago_public_key', value: pubKey })
+      });
+      await apiFetch(`${API_BASE}/configuracion`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: 'mercadopago_webhook_secret', value: secret })
+      });
+      await apiFetch(`${API_BASE}/configuracion`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: 'ecommerce_auto_confirm_paid', value: autoConfirm ? 'true' : 'false' })
+      });
+
+      alert('Configuración de MercadoPago y E-commerce guardada exitosamente.');
+    }
+
+    function openFormaPagoModal(f = null) {
+      document.getElementById('forma-id').value = f ? f.id : '';
+      document.getElementById('forma-nombre').value = f ? f.nombre : '';
+      document.getElementById('forma-desc').value = f ? f.descripcion : '';
+      document.getElementById('forma-instrucciones').value = f ? f.instrucciones : '';
+      document.getElementById('forma-modal-title').innerText = f ? `Editar Método #${f.id}` : 'Agregar Método de Pago';
+      openModal('forma-pago-modal');
+    }
+
+    function editFormaPago(f) { openFormaPagoModal(f); }
+
+    async function saveFormaPago() {
+      const id = document.getElementById('forma-id').value;
+      const body = {
+        nombre: document.getElementById('forma-nombre').value,
+        descripcion: document.getElementById('forma-desc').value,
+        instrucciones: document.getElementById('forma-instrucciones').value,
+      };
+      if (id) {
+        await apiFetch(`${API_BASE}/formas-pago/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      } else {
+        await apiFetch(`${API_BASE}/formas-pago`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      }
+      closeModal('forma-pago-modal');
+      loadFormasPago();
+    }
+
+    async function deleteFormaPago(id) {
+      if (!confirm(`¿Eliminar método #${id}?`)) return;
+      await apiFetch(`${API_BASE}/formas-pago/${id}`, { method: 'DELETE' });
+      loadFormasPago();
+    }
+
+    // --- SCRAPER ---
     async function loadScraperStatus() {
-      const res = await fetch(`${API_BASE}/scraper/status`);
+      const res = await apiFetch(`${API_BASE}/scraper/status`);
       const data = await res.json();
       document.getElementById('scraper-status').innerText = data.currentRun ? data.currentRun.status.toUpperCase() : 'Inactivo';
     }
 
     async function startScraper() {
-      await fetch(`${API_BASE}/scraper/start`, { method: 'POST' });
+      await apiFetch(`${API_BASE}/scraper/start`, { method: 'POST' });
       loadScraperStatus();
     }
 
     async function stopScraper() {
-      await fetch(`${API_BASE}/scraper/stop`, { method: 'POST' });
+      await apiFetch(`${API_BASE}/scraper/stop`, { method: 'POST' });
       loadScraperStatus();
     }
 
-    // Load initial tab
+    // Init
     loadDashboard();
   </script>
 </body>

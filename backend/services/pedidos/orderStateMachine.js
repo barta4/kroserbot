@@ -1,6 +1,7 @@
 const ALLOWED_TRANSITIONS = {
   pendiente: ['confirmado', 'rechazado', 'cancelado'],
-  confirmado: ['entregado', 'cancelado'],
+  confirmado: ['en_preparacion', 'entregado', 'cancelado'],
+  en_preparacion: ['entregado', 'cancelado'],
   rechazado: [],
   cancelado: [],
   entregado: [],

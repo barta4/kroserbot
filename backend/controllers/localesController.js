@@ -1,5 +1,7 @@
 const db = require('../config/db');
 const localesRepo = require('../repositories/localesRepository');
+const { localSchema } = require('../schemas');
+const { validate } = require('../schemas/validate');
 
 module.exports = {
   async listLocales(req, res, next) {
@@ -21,8 +23,11 @@ module.exports = {
 
   async createLocal(req, res, next) {
     try {
-      const { nombre, zona, direccion, telefono, horario } = req.body;
-      if (!nombre) return res.status(400).json({ error: 'El nombre del local es requerido' });
+      const result = validate(localSchema, req.body);
+      if (!result.valid) {
+        return res.status(400).json({ error: 'Payload inválido', details: result.errors });
+      }
+      const { nombre, zona, direccion, telefono, horario } = result.data;
 
       try {
         const insertRes = await db.query(
@@ -41,12 +46,16 @@ module.exports = {
 
   async updateLocal(req, res, next) {
     try {
+      const result = validate(localSchema, req.body);
+      if (!result.valid) {
+        return res.status(400).json({ error: 'Payload inválido', details: result.errors });
+      }
       const { id } = req.params;
-      const { nombre, zona, direccion, telefono, horario } = req.body;
+      const { nombre, zona, direccion, telefono, horario } = result.data;
 
       try {
         const updateRes = await db.query(
-          `UPDATE locales 
+          `UPDATE locales
            SET nombre = $1, zona = $2, direccion = $3, telefono = $4, horario = $5
            WHERE id = $6 RETURNING *`,
           [nombre, zona, direccion, telefono, horario, id]

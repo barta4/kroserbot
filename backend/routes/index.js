@@ -11,6 +11,9 @@ const pedidosRoutes = require('./pedidosRoutes');
 const configuracionRoutes = require('./configuracionRoutes');
 const llmRoutes = require('./llmRoutes');
 const scraperRoutes = require('./scraperRoutes');
+const zonasEnvioRoutes = require('./zonasEnvioRoutes');
+const formasPagoRoutes = require('./formasPagoRoutes');
+const mercadopagoRoutes = require('./mercadopagoRoutes');
 
 router.use('/', healthRoutes);
 router.use('/auth', authRoutes);
@@ -22,5 +25,9 @@ router.use('/pedidos', pedidosRoutes);
 router.use('/configuracion', configuracionRoutes);
 router.use('/llm', llmRoutes);
 router.use('/scraper', scraperRoutes);
+router.use('/zonas-envio', zonasEnvioRoutes);
+router.use('/formas-pago', formasPagoRoutes);
+router.use('/mercadopago', mercadopagoRoutes);
 
 module.exports = router;
+

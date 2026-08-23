@@ -105,6 +105,68 @@ class ScraperRuntime:
         log_event("run", {"run_id": run_id, "total": len(urls), "desde": start})
         start_ts = time.time()
 
+        # Check configured data source strategy
+        fuente = self.db.get_config("fuente_datos", "scraping")
+        fallback_enabled = self.db.get_config("fallback_scraping", "true").lower() in ("true", "1", "yes")
+
+        log_event("run_start", {"fuente": fuente, "fallback": fallback_enabled})
+
+        if fuente != "scraping":
+            try:
+                products = []
+                if fuente == "sql_directo":
+                    from .importers import SqlImporter
+                    importer = SqlImporter()
+                    products = importer.fetch_products()
+                elif fuente == "api":
+                    from .importers import ApiImporter
+                    importer = ApiImporter()
+                    products = importer.fetch_products()
+                else:
+                    print(f"[scraper] Fuente no soportada: {fuente}. Usando scraping.")
+                    fuente = "scraping"
+
+                if fuente != "scraping":
+                    run_id = self.db.create_run()
+                    contadores = {"nuevos": 0, "actu": 0, "discont": 0, "errores": 0}
+                    
+                    import hashlib
+                    seen_skus = set()
+                    for p in products:
+                        sku = p["sku"]
+                        seen_skus.add(sku)
+                        
+                        # Generate hash if missing
+                        if "contenido_hash" not in p:
+                            raw_str = f"{p.get('nombre')}{p.get('precio')}{p.get('descripcion')}{p.get('stock_status')}"
+                            p["contenido_hash"] = hashlib.sha256(raw_str.encode('utf-8')).hexdigest()
+
+                        cached = self.db.fetch_hash(sku)
+                        if cached == p["contenido_hash"]:
+                            continue
+
+                        resultado = self.db.upsert_product(sku, p)
+                        key = "nuevos" if resultado == "nuevo" else "actu"
+                        contadores[key] += 1
+
+                    # Mark discontinued
+                    current_skus = self.db.active_skus()
+                    for sku in current_skus - seen_skus:
+                        self.db.mark_discontinued(sku)
+                        contadores["discont"] += 1
+
+                    self.db.finish_run(run_id, "completed", contadores)
+                    print(f"[scraper] Ingestión de {fuente} completada: {contadores}")
+                    return 0
+
+            except Exception as exc:
+                log_event("importer_error", {"fuente": fuente, "exc": str(exc)})
+                print(f"[scraper] Error en conector {fuente}: {exc}")
+                if not fallback_enabled:
+                    return 3
+                print("[scraper] Caída a fallback (scraping web)...")
+
+        # Standard Scraping Flow
         try:
             for i in range(start, len(urls)):
                 if self.db.need_stop(run_id):
@@ -138,7 +200,7 @@ class ScraperRuntime:
                     continue
 
                 resultado = self.db.upsert_product(product.sku, product.to_dict())
-                key = "nuevo" if resultado == "nuevo" else "actu"
+                key = "nuevos" if resultado == "nuevo" else "actu"
                 contadores[key] += 1
                 log_event(resultado, {"sku": product.sku, "nombre": product.nombre})
 

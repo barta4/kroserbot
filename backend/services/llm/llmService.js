@@ -17,10 +17,9 @@ async function listAvailableModels(provider, apiKey, baseUrl) {
   // 1. Google Gemini Provider
   if (provider === 'gemini' || (!provider && apiKey?.startsWith('AIza'))) {
     const key = apiKey || process.env.GEMINI_API_KEY;
-    if (!key) throw new Error('API Key de Gemini requerida');
 
-    try {
-      if (axios) {
+    if (key && axios) {
+      try {
         const res = await axios.get(
           `https://generativelanguage.googleapis.com/v1beta/models?key=${key}`,
           { timeout: 10000 }
@@ -34,12 +33,12 @@ async function listAvailableModels(provider, apiKey, baseUrl) {
               provider: 'gemini',
             }));
         }
+      } catch (err) {
+        console.warn(`[LLM List Models Error - Gemini] ${err.message}`);
       }
-    } catch (err) {
-      console.warn(`[LLM List Models Error - Gemini] ${err.message}`);
     }
 
-    // Fallback model list if offline/restricted key
+    // Fallback model list if offline/restricted key/missing key
     return [
       { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash (Rápido)', provider: 'gemini' },
       { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro (Avanzado)', provider: 'gemini' },

@@ -75,11 +75,12 @@ CREATE TABLE IF NOT EXISTS conversaciones (
 CREATE TABLE IF NOT EXISTS scraper_runs (
   id                     SERIAL PRIMARY KEY,
   status                 VARCHAR(50) DEFAULT 'running'
-                           CHECK (status IN ('running','stopped','completed','failed')),
+                           CHECK (status IN ('running','stopped','completed','failed','error')),
   started_at             TIMESTAMPTZ DEFAULT NOW(),
   finished_at            TIMESTAMPTZ,
   pagina_actual          INTEGER DEFAULT 0,
   productos_nuevos       INTEGER DEFAULT 0,
   productos_actualizados INTEGER DEFAULT 0,
-  stop_requested         BOOLEAN DEFAULT FALSE
+  stop_requested         BOOLEAN DEFAULT FALSE,
+  url_error              TEXT
 );

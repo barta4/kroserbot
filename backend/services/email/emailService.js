@@ -7,6 +7,8 @@ try {
   nodemailer = null;
 }
 
+const logger = require('../../config/logger');
+
 const AREA_MAILS = {
   ecommerce: process.env.MAIL_ECOMMERCE || 'ecommerce@kroser.com.uy',
   rrhh: process.env.MAIL_RRHH || 'rrhh@kroser.com.uy',
@@ -17,7 +19,7 @@ const AREA_MAILS = {
 
 async function sendEmailWithRetry(mailOptions, retries = 3) {
   if (!nodemailer || !process.env.SMTP_HOST) {
-    console.log(`[Email Mock] Sent to ${mailOptions.to} - Subject: "${mailOptions.subject}"`);
+    logger.info('Email mock sent', { to: mailOptions.to, subject: mailOptions.subject });
     return { success: true, mock: true };
   }
 
@@ -34,10 +36,10 @@ async function sendEmailWithRetry(mailOptions, retries = 3) {
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
       const info = await transporter.sendMail(mailOptions);
-      console.log(`[Email Sent] MessageId: ${info.messageId}`);
+      logger.info('Email sent', { messageId: info.messageId });
       return info;
     } catch (err) {
-      console.warn(`[Email Attempt ${attempt}/${retries} failed] ${err.message}`);
+      logger.warn('Email send attempt failed', { attempt, retries, error: err.message });
       if (attempt === retries) return { success: false, error: err.message };
       await new Promise((res) => setTimeout(res, 1000 * attempt));
     }
@@ -79,11 +81,57 @@ Un nuevo pedido ha sido generado vía WhatsApp / Chatwoot y requiere revisión h
 Detalles del Pedido:
 - ID Pedido: #${pedido.id}
 - ID Conversación Chatwoot: #${pedido.conversation_id}
+- Origen: ${pedido.origen || 'bot'}
 - Cliente: ${JSON.stringify(pedido.cliente, null, 2)}
 - Items: ${JSON.stringify(pedido.items, null, 2)}
-- Estado: PENDIENTE
+- Estado: ${(pedido.estado || 'PENDIENTE').toUpperCase()}
+- Estado de Pago: ${pedido.pago_estado || 'sin_pago'}
+${pedido.ecommerce_order_number ? `- Nro. Pedido E-commerce: ${pedido.ecommerce_order_number}` : ''}
 
 Accede al Panel de Administración de Kroser para Confirmar o Rechazar este pedido.
+    `;
+
+    return await sendEmailWithRetry({
+      from: process.env.MAIL_FROM || 'bot@kroser.com.uy',
+      to: targetMail,
+      subject,
+      text: body,
+    });
+  },
+
+  async sendPreparationAlert(pedido) {
+    const targetMail = AREA_MAILS.ecommerce;
+    const cliente = typeof pedido.cliente === 'string' ? JSON.parse(pedido.cliente) : (pedido.cliente || {});
+    const items = typeof pedido.items === 'string' ? JSON.parse(pedido.items) : (pedido.items || []);
+
+    const itemsList = items
+      .map((item) => `  • ${item.name || item.nombre || 'Producto'} x${item.quantity || item.cantidad || 1} — $${item.price || item.precio || 0}`)
+      .join('\n');
+
+    const subject = `[Bot Kroser] 📦 PREPARAR PEDIDO #${pedido.id}${pedido.ecommerce_order_number ? ` (${pedido.ecommerce_order_number})` : ''} — PAGO CONFIRMADO`;
+    const body = `
+¡PEDIDO LISTO PARA PREPARAR!
+
+El pago de este pedido fue confirmado. Proceder con la preparación.
+
+Detalles del Pedido:
+- ID Pedido: #${pedido.id}
+${pedido.ecommerce_order_number ? `- Nro. Pedido E-commerce: ${pedido.ecommerce_order_number}` : ''}
+- Origen: ${pedido.origen || 'ecommerce'}
+- Estado de Pago: ✅ PAGADO
+- Referencia de Pago: ${pedido.pago_referencia || 'N/A'}
+
+Datos del Cliente:
+- Nombre: ${cliente.nombre || 'No especificado'}
+- Teléfono: ${cliente.telefono || 'No especificado'}
+- Email: ${cliente.email || 'No especificado'}
+- Dirección de Envío: ${cliente.direccion || 'No especificada'}
+${cliente.metodo_envio ? `- Método de Envío: ${cliente.metodo_envio}` : ''}
+
+Productos:
+${itemsList || '  (ver detalle en Chatwoot)'}
+
+ID Conversación Chatwoot: #${pedido.conversation_id}
     `;
 
     return await sendEmailWithRetry({
