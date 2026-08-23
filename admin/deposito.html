@@ -299,6 +299,16 @@
   </div>
 
   <script>
+    function escHtml(str) {
+      if (str == null) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
     const API_BASE = '/api';
     let currentPedidosList = [];
     let currentFilter = 'deposito';
@@ -420,12 +430,12 @@
 
         return `
           <tr>
-            <td><strong>#${p.id} ${p.ecommerce_order_number ? `<br><small style="color:var(--text-muted);">${p.ecommerce_order_number}</small>` : ''}</strong></td>
+            <td><strong>#${p.id} ${p.ecommerce_order_number ? `<br><small style="color:var(--text-muted);">${escHtml(p.ecommerce_order_number)}</small>` : ''}</strong></td>
             <td>${origenBadge}</td>
-            <td><strong>${cliente.nombre || 'Cliente'}</strong></td>
-            <td>${cliente.telefono || cliente.whatsapp || '-'}</td>
+            <td><strong>${escHtml(cliente.nombre || 'Cliente')}</strong></td>
+            <td>${escHtml(cliente.telefono || cliente.whatsapp || '-')}</td>
             <td>${pagoBadge}</td>
-            <td><span class="badge ${p.estado}">${p.estado}</span></td>
+            <td><span class="badge ${escHtml(p.estado)}">${escHtml(p.estado)}</span></td>
             <td>
               <button class="btn-action" onclick="viewPedidoDetails(${p.id})">📦 Preparar / Editar</button>
             </td>
@@ -442,11 +452,11 @@
 
       let html = `
         <div style="background:#f9fafb; padding:1rem; border-radius:0.5rem; margin-bottom:1.25rem; border:1px solid var(--border);">
-          <p style="margin-bottom:0.3rem;"><strong>Pedido ID:</strong> #${p.id} ${p.ecommerce_order_number ? `(${p.ecommerce_order_number})` : ''} | <strong>Origen:</strong> ${p.origen || 'bot'} | <strong>Estado:</strong> <span class="badge ${p.estado}">${p.estado}</span></p>
-          <p style="margin-bottom:0.3rem;"><strong>Estado de Pago:</strong> ${p.pago_estado || 'sin_pago'} ${p.pago_referencia ? `(Ref: ${p.pago_referencia})` : ''}</p>
-          <p style="margin-bottom:0.3rem;"><strong>Cliente:</strong> ${cliente.nombre || 'No especificado'} | <strong>Tel/WA:</strong> ${cliente.telefono || cliente.whatsapp || 'No especificado'}</p>
-          <p style="margin-bottom:0.3rem;"><strong>Email:</strong> ${cliente.email || 'No especificado'}</p>
-          <p><strong>Dirección de Entrega:</strong> ${cliente.direccion || 'Retiro en sucursal'}</p>
+          <p style="margin-bottom:0.3rem;"><strong>Pedido ID:</strong> #${p.id} ${p.ecommerce_order_number ? `(${escHtml(p.ecommerce_order_number)})` : ''} | <strong>Origen:</strong> ${escHtml(p.origen || 'bot')} | <strong>Estado:</strong> <span class="badge ${escHtml(p.estado)}">${escHtml(p.estado)}</span></p>
+          <p style="margin-bottom:0.3rem;"><strong>Estado de Pago:</strong> ${escHtml(p.pago_estado || 'sin_pago')} ${p.pago_referencia ? `(Ref: ${escHtml(p.pago_referencia)})` : ''}</p>
+          <p style="margin-bottom:0.3rem;"><strong>Cliente:</strong> ${escHtml(cliente.nombre || 'No especificado')} | <strong>Tel/WA:</strong> ${escHtml(cliente.telefono || cliente.whatsapp || 'No especificado')}</p>
+          <p style="margin-bottom:0.3rem;"><strong>Email:</strong> ${escHtml(cliente.email || 'No especificado')}</p>
+          <p><strong>Dirección de Entrega:</strong> ${escHtml(cliente.direccion || 'Retiro en sucursal')}</p>
         </div>
 
         <h4 style="margin-bottom:0.75rem; color:var(--primary);">📦 Lista de Productos para Armado (Control de Stock)</h4>
@@ -463,10 +473,10 @@
           <tbody>
             ${items.map((item, idx) => `
               <tr id="item-row-${idx}">
-                <td><strong>${item.sku || '-'}</strong></td>
-                <td>${item.nombre || item.producto || 'Producto'}</td>
-                <td><input type="number" id="item-cant-${idx}" value="${item.cantidad || 1}" style="width:70px; text-align:center;" min="0"></td>
-                <td>$${item.precio || 0}</td>
+                <td><strong>${escHtml(item.sku || '-')}</strong></td>
+                <td>${escHtml(item.nombre || item.producto || 'Producto')}</td>
+                <td><input type="number" id="item-cant-${idx}" value="${parseInt(item.cantidad, 10) || 1}" style="width:70px; text-align:center;" min="0"></td>
+                <td>U$S ${parseFloat(item.precio) || 0}</td>
                 <td class="no-print"><button class="btn-action btn-danger" onclick="removeItemRow(${idx})">🗑️ Quitar</button></td>
               </tr>
             `).join('')}
@@ -475,16 +485,16 @@
 
         <div class="no-print">
           <label>Motivo de Modificación / Nota para la IA y el Cliente (ej. Faltó stock del ítem X)</label>
-          <textarea id="pedido-motivo-input" rows="2" placeholder="Describir brevemente si falta stock o se modifica el pedido...">${p.motivo_modificacion || ''}</textarea>
+          <textarea id="pedido-motivo-input" rows="2" placeholder="Describir brevemente si falta stock o se modifica el pedido...">${escHtml(p.motivo_modificacion || '')}</textarea>
 
           <label>Notas Internas del Depósito</label>
-          <textarea id="pedido-notas-input" rows="2" placeholder="Notas de empaque, estantería o bultos...">${p.notas || ''}</textarea>
+          <textarea id="pedido-notas-input" rows="2" placeholder="Notas de empaque, estantería o bultos...">${escHtml(p.notas || '')}</textarea>
 
           <div style="margin-top:1.5rem; display:flex; gap:0.6rem; flex-wrap:wrap;">
             <button class="btn-action btn-success" onclick="savePedidoChanges(${p.id}, 'confirmado')">✅ Confirmar / Pedido Listo</button>
             <button class="btn-action btn-primary" onclick="savePedidoChanges(${p.id}, 'entregado')">🚚 Marcar Entregado</button>
             <button class="btn-action btn-danger" onclick="savePedidoChanges(${p.id}, 'rechazado')">❌ Rechazar Pedido</button>
-            <button class="btn-action btn-secondary" onclick="savePedidoChanges(${p.id}, '${p.estado}')">💾 Guardar Cambios</button>
+            <button class="btn-action btn-secondary" onclick="savePedidoChanges(${p.id}, '${escHtml(p.estado)}')">💾 Guardar Cambios</button>
           </div>
         </div>
       `;

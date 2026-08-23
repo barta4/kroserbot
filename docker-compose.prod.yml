@@ -1,0 +1,67 @@
+# ==========================================================
+# KroserBot - Production Docker Compose (Docker Hub Images)
+# Usage: docker compose -f docker-compose.prod.yml up -d
+# ==========================================================
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: kroserbot-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-kroser}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-kroser}
+      POSTGRES_DB: ${POSTGRES_DB:-kroserbot}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-kroser} -d ${POSTGRES_DB:-kroserbot}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: kroserbot-redis
+    restart: always
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    image: alfredobartaburu/kroserbot:${TAG:-latest}
+    container_name: kroserbot-backend
+    restart: always
+    env_file:
+      - .env.production
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    ports:
+      - "${PORT:-3000}:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  postgres_data:
+  redis_data:

@@ -19,16 +19,17 @@ INPUT_RE = re.compile(r'<input[^>]*class="json"[^>]*value="([^"]+)"', re.S)
 
 class Product:
     __slots__ = (
-        "sku", "nombre", "precio", "precio_oferta", "marca", "categoria",
+        "sku", "nombre", "precio", "precio_oferta", "moneda", "marca", "categoria",
         "descripcion", "imagen_url", "producto_url", "stock_status", "hash",
     )
 
     def __init__(self, sku, nombre, precio, precio_oferta, marca, categoria,
-                 descripcion, imagen_url, producto_url, stock_status):
+                 descripcion, imagen_url, producto_url, stock_status, moneda: str = "USD"):
         self.sku = str(sku)
         self.nombre = (nombre or "").strip()
         self.precio = _to_monto(precio)
         self.precio_oferta = _to_monto(precio_oferta)
+        self.moneda = "UYU" if str(moneda).upper() in ("UYU", "$", "PESOS") else "USD"
         self.marca = (marca or "").strip()
         self.categoria = (categoria or "").strip()
         self.descripcion = (descripcion or "").strip()
@@ -39,6 +40,7 @@ class Product:
             "n": self.nombre, "p": self.precio, "po": self.precio_oferta,
             "m": self.marca, "c": self.categoria, "d": self.descripcion,
             "i": self.imagen_url, "u": self.producto_url, "s": self.stock_status,
+            "curr": self.moneda,
         }, ensure_ascii=False).encode()).hexdigest()
 
     def to_dict(self) -> dict:
@@ -46,6 +48,7 @@ class Product:
             "nombre": self.nombre,
             "precio": self.precio,
             "precio_oferta": self.precio_oferta,
+            "moneda": self.moneda,
             "marca": self.marca,
             "categoria": self.categoria,
             "descripcion": self.descripcion,
@@ -56,14 +59,14 @@ class Product:
         }
 
     def __repr__(self):  # pragma: no cover
-        return f"<Product {self.sku} {self.nombre}>"
+        return f"<Product {self.sku} {self.nombre} ({self.moneda} {self.precio})>"
 
 
-def _to_monto(val) -> int | None:
+def _to_monto(val) -> float | None:
     if val is None:
         return None
     try:
-        return int(val)
+        return round(float(val), 2)
     except (TypeError, ValueError):
         return None
 
@@ -101,11 +104,23 @@ def _product_from_json(data: dict, url: str) -> Product | None:
     nombre = producto.get("nombre") or data.get("nombre")
     if not nombre or not sku:
         return None
+
+    # Detect currency (Fenicio moneda object: {"cod":"USD"|"UYU", "sim":"USD"|"$"})
+    moneda_obj = data.get("moneda") or variante.get("moneda") or {}
+    moneda_cod = str(moneda_obj.get("cod") or moneda_obj.get("sim") or "").upper().strip()
+    if moneda_cod in ("UYU", "$", "PESOS"):
+        moneda = "UYU"
+    elif moneda_cod in ("USD", "US$", "U$S", "DOLARES"):
+        moneda = "USD"
+    else:
+        moneda = "UYU" if (precio or 0) >= 300 else "USD"
+
     return Product(
         sku=sku,
         nombre=nombre,
         precio=precio,
         precio_oferta=precio_oferta,
+        moneda=moneda,
         marca=producto.get("marca"),
         categoria=producto.get("categoria"),
         descripcion=None,  # la ficha no trae descripción en este mecanismo

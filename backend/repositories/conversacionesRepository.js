@@ -14,13 +14,32 @@ module.exports = {
     }
   },
 
-  async getHistory(conversation_id, limit = 10) {
-    const res = await db.query(
-      `SELECT * FROM conversaciones 
-       WHERE conversation_id = $1 
-       ORDER BY created_at DESC LIMIT $2`,
-      [String(conversation_id), limit]
-    );
-    return res.rows.reverse();
+  async getHistory(conversation_id, limit = 20) {
+    try {
+      const res = await db.query(
+        `SELECT * FROM conversaciones 
+         WHERE conversation_id = $1 
+         ORDER BY created_at DESC LIMIT $2`,
+        [String(conversation_id), limit]
+      );
+      return res.rows.reverse();
+    } catch (err) {
+      console.warn(`[ConversacionesGetHistory Error] ${err.message}`);
+      return [];
+    }
+  },
+
+  async getRecentTopics(conversation_id, limit = 5) {
+    try {
+      const res = await db.query(
+        `SELECT mensaje FROM conversaciones 
+         WHERE conversation_id = $1 AND rol = 'user'
+         ORDER BY created_at DESC LIMIT $2`,
+        [String(conversation_id), limit]
+      );
+      return res.rows.map((r) => r.mensaje);
+    } catch (_err) {
+      return [];
+    }
   },
 };

@@ -20,10 +20,16 @@ module.exports = {
       clearTimeout(buffer.timer);
     }
 
-    logger.info('Message buffered for debounce', { conversationId, waitMs: DEBOUNCE_WAIT_MS });
+    // Adaptive debounce: if current fragment is very short (< 15 chars), give shorter timeout
+    let waitMs = DEBOUNCE_WAIT_MS;
+    if (messageText.trim().length < 15 && buffer.messages.length === 1) {
+      waitMs = Math.max(3000, Math.floor(DEBOUNCE_WAIT_MS * 0.6));
+    }
+
+    logger.info('Message buffered for debounce', { conversationId, waitMs });
 
     buffer.timer = setTimeout(async () => {
-      const fullText = buffer.messages.join(' ');
+      const fullText = buffer.messages.join('\n');
       pendingBuffers.delete(conversationId);
 
       logger.info('Debounced messages executing', { conversationId, messageCount: buffer.messages.length });
@@ -32,7 +38,7 @@ module.exports = {
       } catch (err) {
         logger.error('Debounce process error', { conversationId, error: err.message });
       }
-    }, DEBOUNCE_WAIT_MS);
+    }, waitMs);
   },
 
   cancel(conversationId) {

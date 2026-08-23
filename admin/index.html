@@ -2,295 +2,994 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Panel de Administración — Bot Kroser</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>KroserBot AI — Panel de Control & Simulador Chatwoot</title>
   <link rel="shortcut icon" href="https://f.fcdn.app/assets/commerce/www.kroser.com.uy/94f6_e862/public/web/favicon.ico">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=PT+Sans:wght@400;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
   <style>
+    /* ========================================================
+       CHATWOOT & SAAS 2026 DESIGN SYSTEM TOKENS
+       ======================================================== */
     :root {
-      --bg: #f4f5f7;
-      --sidebar-bg: #1a1a2e;
-      --sidebar-hover: #16213e;
-      --card-bg: #ffffff;
-      --border: #e0e0e0;
+      --bg-app: #f8fafc;
+      --bg-surface: #ffffff;
+      --bg-surface-subtle: #f1f5f9;
+      --border-subtle: #e2e8f0;
+      --border-focus: #cbd5e1;
+      
       --primary: #CC0000;
-      --primary-hover: #a80000;
-      --primary-light: #fce4e4;
-      --text: #1e1e2f;
-      --text-muted: #6b7280;
-      --text-sidebar: #cbd5e1;
-      --success: #16a34a;
-      --success-light: #dcfce7;
-      --warning: #d97706;
-      --warning-light: #fef3c7;
-      --danger: #dc2626;
-      --danger-light: #fee2e2;
-      --accent: #CC0000;
+      --primary-hover: #b30000;
+      --primary-50: #fef2f2;
+      --primary-100: #fee2e2;
+      --primary-glow: rgba(204, 0, 0, 0.25);
+
+      --chatwoot-blue: #1f69ff;
+      --chatwoot-indigo: #4f46e5;
+      
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --text-light: #94a3b8;
+      
+      --success: #10b981;
+      --success-bg: #ecfdf5;
+      --success-text: #047857;
+      
+      --warning: #f59e0b;
+      --warning-bg: #fffbeb;
+      --warning-text: #b45309;
+      
+      --danger: #ef4444;
+      --danger-bg: #fef2f2;
+      --danger-text: #b91c1c;
+
+      --header-bg: #0f172a;
+      --header-surface: #1e293b;
+      --header-border: rgba(255, 255, 255, 0.08);
+
+      --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+      --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.07), 0 1px 2px -1px rgba(0, 0, 0, 0.07);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.07);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.08);
+      --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
+
     body {
-      font-family: 'PT Sans', sans-serif;
-      background-color: var(--bg);
-      color: var(--text);
-      display: flex;
-      height: 100vh;
-      overflow: hidden;
-    }
-
-    /* Sidebar */
-    .sidebar {
-      width: 260px;
-      background: linear-gradient(180deg, #1a1a2e 0%, #0f0f1e 100%);
-      padding: 0;
+      font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--bg-app);
+      color: var(--text-main);
       display: flex;
       flex-direction: column;
-      overflow-y: auto;
-      box-shadow: 2px 0 12px rgba(0,0,0,0.15);
-    }
-    .brand {
-      padding: 1.25rem 1.25rem 1rem;
-      border-bottom: 1px solid rgba(255,255,255,0.08);
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-    }
-    .brand img {
-      height: 32px;
-    }
-    .brand-text {
-      color: #fff;
-      font-size: 0.8rem;
-      font-weight: 700;
-      opacity: 0.7;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-    .nav-list {
-      list-style: none;
-      display: flex;
-      flex-direction: column;
-      padding: 0.75rem 0.65rem;
-      gap: 2px;
-    }
-    .nav-btn {
-      width: 100%;
-      padding: 0.6rem 0.85rem;
-      border-radius: 0.4rem;
-      border: none;
-      background: transparent;
-      color: var(--text-sidebar);
-      font-family: 'PT Sans', sans-serif;
-      font-size: 0.88rem;
-      font-weight: 400;
-      text-align: left;
-      cursor: pointer;
-      transition: all 0.15s ease;
-      display: flex;
-      align-items: center;
-      gap: 0.6rem;
-    }
-    .nav-btn:hover {
-      background-color: var(--sidebar-hover);
-      color: #fff;
-    }
-    .nav-btn.active {
-      background-color: var(--primary);
-      color: #fff;
-      font-weight: 700;
-      box-shadow: 0 2px 8px rgba(204,0,0,0.35);
+      min-height: 100vh;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+      -webkit-tap-highlight-color: transparent;
     }
 
-    /* Main */
-    .main-content {
-      flex: 1;
-      padding: 1.75rem 2rem;
-      overflow-y: auto;
+    /* ========================================================
+       SINGLE UNIFIED TOP NAVIGATION BAR (ONE ROW ONLY)
+       ======================================================== */
+    .app-header {
+      background: var(--header-bg);
+      border-bottom: 1px solid var(--header-border);
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
     }
 
-    .topbar {
+    .header-unified-bar {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 1.5rem;
-      padding-bottom: 0.75rem;
-      border-bottom: 2px solid var(--primary);
-    }
-    .page-title {
-      font-size: 1.35rem;
-      font-weight: 700;
-      color: var(--text);
-    }
-    #user-info {
-      color: var(--text-muted);
-      font-size: 0.85rem;
+      padding: 0.55rem 1.25rem;
+      gap: 1rem;
     }
 
-    /* Cards */
-    .grid-metrics {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 1.25rem;
-      margin-bottom: 1.5rem;
-    }
-    .metric-card {
-      background-color: var(--card-bg);
-      padding: 1.25rem;
-      border-radius: 0.65rem;
-      border: 1px solid var(--border);
-      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
-      transition: box-shadow 0.2s;
-    }
-    .metric-card:hover {
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    }
-    .metric-val {
-      font-size: 2rem;
-      font-weight: 700;
-      color: var(--primary);
-      margin-top: 0.5rem;
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
     }
 
-    .tab-section { display: none; }
-    .tab-section.active { display: block; }
+    .brand-text-link {
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+    }
 
-    /* Forms */
-    label {
-      display: block;
-      font-size: 0.85rem;
+    .brand-app-name {
+      color: #ffffff;
+      font-size: 1.05rem;
+      font-weight: 800;
+      letter-spacing: -0.3px;
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+    }
+
+    .brand-version-badge {
+      background: var(--primary);
+      color: #ffffff;
+      font-size: 0.62rem;
+      padding: 0.15rem 0.45rem;
+      border-radius: 9999px;
       font-weight: 700;
-      color: var(--text-muted);
-      margin-top: 0.85rem;
-      text-transform: uppercase;
-      letter-spacing: 0.3px;
+      letter-spacing: 0.4px;
+      box-shadow: 0 0 10px var(--primary-glow);
     }
-    textarea, input, select {
-      width: 100%;
-      padding: 0.65rem 0.75rem;
-      border-radius: 0.4rem;
-      border: 1px solid var(--border);
-      background-color: #fff;
-      color: var(--text);
-      font-family: 'PT Sans', sans-serif;
-      font-size: 0.9rem;
-      margin-top: 0.3rem;
-      transition: border-color 0.2s;
+
+    .nav-pipe-divider {
+      width: 1px;
+      height: 22px;
+      background: rgba(255, 255, 255, 0.14);
+      margin: 0 0.25rem;
     }
-    textarea:focus, input:focus, select:focus {
-      outline: none;
-      border-color: var(--primary);
-      box-shadow: 0 0 0 3px rgba(204,0,0,0.1);
+
+    /* Inline Nav Menu (One Single Row) */
+    .header-nav-inline {
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
     }
-    button.btn-action {
-      padding: 0.5rem 1rem;
-      border-radius: 0.4rem;
-      border: none;
-      background-color: var(--primary);
-      color: white;
-      font-family: 'PT Sans', sans-serif;
-      font-weight: 700;
-      font-size: 0.85rem;
+
+    .nav-btn-direct {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      padding: 0.45rem 0.85rem;
+      border-radius: 4px;
+      border: 1px solid transparent;
+      background: transparent;
+      color: #cbd5e1;
+      font-family: inherit;
+      font-size: 0.86rem;
+      font-weight: 600;
       cursor: pointer;
-      transition: all 0.15s;
+      transition: all 0.15s ease;
+      user-select: none;
+    }
+    .nav-btn-direct:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: #ffffff;
+    }
+    .nav-btn-direct.active {
+      background: var(--primary);
+      color: #ffffff;
+      font-weight: 700;
+      box-shadow: 0 2px 8px var(--primary-glow);
+    }
+
+    /* Dropdown Group Container */
+    .dropdown-group {
+      position: relative;
+      display: inline-block;
+    }
+
+    .dropdown-trigger-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      padding: 0.45rem 0.85rem;
+      border-radius: 4px;
+      border: 1px solid transparent;
+      background: transparent;
+      color: #cbd5e1;
+      font-family: inherit;
+      font-size: 0.86rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      user-select: none;
+    }
+    .dropdown-trigger-btn:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: #ffffff;
+    }
+    .dropdown-trigger-btn.active-parent {
+      background: var(--primary) !important;
+      color: #ffffff !important;
+      font-weight: 700 !important;
+      border-color: transparent !important;
+      box-shadow: 0 2px 8px var(--primary-glow);
+    }
+
+    /* Dropdown Floating Menu Box */
+    .dropdown-menu-box {
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0;
+      min-width: 240px;
+      background: #1e293b;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 4px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.45);
+      padding: 0.35rem;
+      display: none;
+      flex-direction: column;
+      gap: 0.2rem;
+      z-index: 1200;
+      backdrop-filter: blur(12px);
+      animation: dropdownFadeIn 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    @keyframes dropdownFadeIn {
+      from { opacity: 0; transform: translateY(-3px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (min-width: 861px) {
+      .dropdown-group:hover .dropdown-menu-box,
+      .dropdown-group.open .dropdown-menu-box {
+        display: flex;
+      }
+    }
+
+    .dropdown-item-btn {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      padding: 0.55rem 0.85rem;
+      border-radius: 4px;
+      border: none;
+      background: transparent;
+      color: #cbd5e1;
+      font-family: inherit;
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+      text-align: left;
+      transition: all 0.15s ease;
+      width: 100%;
+    }
+    .dropdown-item-btn:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: #ffffff;
+      transform: translateX(2px);
+    }
+    .dropdown-item-btn.active {
+      background: var(--primary);
+      color: #ffffff;
+      font-weight: 700;
+      box-shadow: 0 2px 6px var(--primary-glow);
+    }
+
+    /* Right Zone: Badges and User Actions */
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+    }
+
+    .header-badges {
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+    }
+
+    .header-pill-badge {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 0.22rem 0.6rem;
+      border-radius: 9999px;
+      font-size: 0.74rem;
+      font-weight: 600;
+      color: #cbd5e1;
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      white-space: nowrap;
+    }
+
+    .pulse-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--success);
+      box-shadow: 0 0 8px var(--success);
+      display: inline-block;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.55rem;
+    }
+
+    .btn-header-link {
+      background: rgba(255, 255, 255, 0.08);
+      color: #f1f5f9;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      padding: 0.35rem 0.75rem;
+      border-radius: 0.5rem;
+      font-size: 0.78rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.15s ease;
       display: inline-flex;
       align-items: center;
       gap: 0.35rem;
     }
-    button.btn-action:hover { background-color: var(--primary-hover); transform: translateY(-1px); }
-    button.btn-danger { background-color: var(--danger); }
-    button.btn-danger:hover { background-color: #b91c1c; }
-    button.btn-success { background-color: var(--success); }
-    button.btn-success:hover { background-color: #15803d; }
-    button.btn-secondary { background-color: #6b7280; }
-    button.btn-secondary:hover { background-color: #4b5563; }
+    .btn-header-link:hover {
+      background: rgba(255, 255, 255, 0.16);
+      color: #ffffff;
+    }
 
-    /* Tables */
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 1rem;
-      background-color: var(--card-bg);
+    .user-tag {
+      background: rgba(0, 0, 0, 0.3);
+      padding: 0.3rem 0.65rem;
       border-radius: 0.5rem;
-      overflow: hidden;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
-    }
-    th, td {
-      padding: 0.7rem 1rem;
-      text-align: left;
-      border-bottom: 1px solid var(--border);
-      font-size: 0.88rem;
-    }
-    th {
-      background-color: #f9fafb;
-      color: var(--text-muted);
+      color: #cbd5e1;
       font-size: 0.78rem;
-      text-transform: uppercase;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .btn-header-logout {
+      background: rgba(239, 68, 68, 0.18);
+      color: #fca5a5;
+      border: 1px solid rgba(239, 68, 68, 0.35);
+      padding: 0.35rem 0.75rem;
+      border-radius: 0.5rem;
+      font-size: 0.78rem;
       font-weight: 700;
-      letter-spacing: 0.4px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
     }
-    tr:hover { background-color: #fafafa; }
-
-    .badge {
-      padding: 0.2rem 0.6rem;
-      border-radius: 1rem;
-      font-size: 0.75rem;
-      font-weight: 700;
-      text-transform: capitalize;
-    }
-    .badge.pendiente { background-color: var(--warning-light); color: var(--warning); }
-    .badge.confirmado { background-color: var(--success-light); color: var(--success); }
-    .badge.rechazado { background-color: var(--danger-light); color: var(--danger); }
-    .badge.entregado { background-color: var(--primary-light); color: var(--primary); }
-
-    .card-box {
-      background-color: var(--card-bg);
-      padding: 1.25rem;
-      border-radius: 0.65rem;
-      border: 1px solid var(--border);
-      margin-top: 1rem;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    .btn-header-logout:hover {
+      background: var(--danger);
+      color: #ffffff;
     }
 
-    .img-thumb {
-      width: 45px;
-      height: 45px;
-      object-fit: cover;
-      border-radius: 0.35rem;
-      border: 1px solid var(--border);
-      background-color: #f9fafb;
-    }
-
-    /* Modal */
-    .modal-overlay {
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background-color: rgba(0,0,0,0.45);
+    /* Mobile Hamburger */
+    .mobile-hamburger-btn {
       display: none;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      color: #ffffff;
+      width: 36px;
+      height: 36px;
+      border-radius: 0.5rem;
       align-items: center;
       justify-content: center;
-      z-index: 1000;
+      font-size: 1.25rem;
+      cursor: pointer;
+      transition: all 0.15s ease;
     }
-    .modal-overlay.active { display: flex; }
-    .modal-card {
-      background-color: var(--card-bg);
-      border: 1px solid var(--border);
-      border-radius: 0.65rem;
-      width: 90%;
-      max-width: 750px;
-      max-height: 90vh;
-      overflow-y: auto;
-      padding: 1.5rem;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+    .mobile-hamburger-btn:hover {
+      background: rgba(255, 255, 255, 0.18);
     }
-    .modal-header {
+
+    @media (max-width: 1100px) {
+      .header-badges {
+        display: none;
+      }
+    }
+
+    @media (max-width: 860px) {
+      .header-nav-inline, .nav-pipe-divider {
+        display: none;
+      }
+      .mobile-hamburger-btn {
+        display: inline-flex;
+      }
+    }
+
+    /* ========================================================
+       MOBILE DRAWER SLIDE-IN (STRICTLY HIDDEN ON DESKTOP)
+       ======================================================== */
+    .mobile-drawer {
+      display: none;
+    }
+    .mobile-backdrop {
+      display: none;
+    }
+
+    @media (max-width: 860px) {
+      .mobile-backdrop.open {
+        display: block;
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.7);
+        backdrop-filter: blur(4px);
+        z-index: 2000;
+      }
+
+      .mobile-drawer {
+        display: flex;
+        position: fixed;
+        top: 0;
+        left: -300px;
+        width: 285px;
+        height: 100vh;
+        background: #0f172a;
+        border-right: 1px solid rgba(255, 255, 255, 0.1);
+        z-index: 2050;
+        flex-direction: column;
+        overflow-y: auto;
+        box-shadow: 10px 0 30px rgba(0, 0, 0, 0.5);
+        transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      .mobile-drawer.open {
+        transform: translateX(300px);
+      }
+
+      .mobile-drawer-header {
+        padding: 1.25rem 1rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .mobile-drawer-close {
+        background: transparent;
+        border: none;
+        color: #94a3b8;
+        font-size: 1.4rem;
+        cursor: pointer;
+        padding: 0.25rem;
+      }
+
+      .mobile-drawer-body {
+        padding: 1rem 0.75rem 2rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.4rem;
+      }
+
+      .mobile-section-header {
+        font-size: 0.72rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        color: #64748b;
+        letter-spacing: 0.6px;
+        margin: 0.8rem 0.5rem 0.25rem;
+      }
+
+      .mobile-nav-link {
+        display: flex;
+        align-items: center;
+        gap: 0.65rem;
+        padding: 0.65rem 0.85rem;
+        border-radius: 0.5rem;
+        border: none;
+        background: transparent;
+        color: #cbd5e1;
+        font-family: inherit;
+        font-size: 0.9rem;
+        font-weight: 500;
+        cursor: pointer;
+        text-align: left;
+        width: 100%;
+        transition: all 0.15s ease;
+      }
+      .mobile-nav-link:hover, .mobile-nav-link:active {
+        background: rgba(255, 255, 255, 0.08);
+        color: #ffffff;
+      }
+      .mobile-nav-link.active {
+        background: var(--primary);
+        color: #ffffff;
+        font-weight: 700;
+      }
+    }
+
+    /* ========================================================
+       MAIN APP WORKSPACE
+       ======================================================== */
+    .main-workspace {
+      flex: 1;
+      width: 100%;
+      max-width: 1600px;
+      margin: 0 auto;
+      padding: 1.35rem 1.5rem 3rem;
+    }
+
+    @media (max-width: 768px) {
+      .main-workspace {
+        padding: 0.85rem 0.85rem 3rem;
+      }
+    }
+
+    .page-header-bar {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding-bottom: 0.75rem;
-      border-bottom: 2px solid var(--primary);
+      margin-bottom: 1.25rem;
+      padding-bottom: 0.65rem;
+      border-bottom: 1.5px solid var(--border-subtle);
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .page-title {
+      font-size: 1.35rem;
+      font-weight: 800;
+      color: var(--text-main);
+      letter-spacing: -0.3px;
+    }
+
+    /* Tab Sections */
+    .tab-view-section { display: none; }
+    .tab-view-section.active { display: block; }
+
+    /* ========================================================
+       DASHBOARD & STATS CARDS
+       ======================================================== */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.25rem;
+    }
+
+    @media (max-width: 600px) {
+      .stats-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 0.65rem;
+      }
+    }
+
+    .stat-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+      padding: 1.15rem;
+      box-shadow: var(--shadow-sm);
+      transition: all 0.2s ease;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .stat-card:hover {
+      box-shadow: var(--shadow-md);
+      border-color: #cbd5e1;
+      transform: translateY(-2px);
+    }
+    .stat-label {
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .stat-value {
+      font-size: 1.85rem;
+      font-weight: 800;
+      color: var(--primary);
+      margin-top: 0.35rem;
+      letter-spacing: -0.5px;
+    }
+
+    @media (max-width: 600px) {
+      .stat-card {
+        padding: 0.85rem;
+      }
+      .stat-value {
+        font-size: 1.45rem;
+      }
+    }
+
+    /* ========================================================
+       CHATWOOT CONVERSATION VIEW & RAG TELEMETRY SUITE
+       ======================================================== */
+    .chatwoot-suite-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+      padding: 1.25rem;
+      box-shadow: var(--shadow-sm);
+    }
+
+    /* Mobile Segmented Switch (Chat vs Telemetry) */
+    .mobile-segmented-switch {
+      display: none;
+      background: var(--bg-surface-subtle);
+      padding: 0.25rem;
+      border-radius: 4px;
+      border: 1px solid var(--border-subtle);
       margin-bottom: 1rem;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.25rem;
+    }
+
+    @media (max-width: 1024px) {
+      .mobile-segmented-switch {
+        display: grid;
+      }
+    }
+
+    .segmented-btn {
+      padding: 0.5rem;
+      border-radius: 4px;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      font-family: inherit;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .segmented-btn.active {
+      background: var(--bg-surface);
+      color: var(--text-main);
+      box-shadow: var(--shadow-xs);
+      font-weight: 700;
+    }
+
+    .chatwoot-grid-layout {
+      display: grid;
+      grid-template-columns: 1.25fr 1fr;
+      gap: 1.25rem;
+      height: calc(100vh - 340px);
+      min-height: 540px;
+      margin-top: 1rem;
+    }
+
+    @media (max-width: 1024px) {
+      .chatwoot-grid-layout {
+        grid-template-columns: 1fr;
+        height: auto;
+        min-height: 0;
+      }
+      .panel-telemetry {
+        display: none;
+      }
+      .panel-telemetry.mobile-active {
+        display: flex !important;
+      }
+      .panel-conversation.mobile-hidden {
+        display: none !important;
+      }
+    }
+
+    /* Left Pane: Conversation */
+    .panel-conversation {
+      background: #ffffff;
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow: var(--shadow-xs);
+      height: 100%;
+      min-height: 480px;
+    }
+
+    .conversation-header {
+      background: #0f172a;
+      color: #ffffff;
+      padding: 0.75rem 1.15rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .conversation-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1.15rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+      background: #f8fafc;
+    }
+
+    /* Chatwoot Speech Bubbles */
+    .chat-bubble-user {
+      align-self: flex-end;
+      max-width: 85%;
+      background: #0f172a;
+      color: #ffffff;
+      border-radius: 0.85rem 0.85rem 0.2rem 0.85rem;
+      padding: 0.75rem 1rem;
+      font-size: 0.9rem;
+      line-height: 1.45;
+      box-shadow: var(--shadow-sm);
+      word-break: break-word;
+    }
+
+    .chat-bubble-bot {
+      align-self: flex-start;
+      max-width: 88%;
+      background: #ffffff;
+      color: var(--text-main);
+      border: 1px solid var(--border-subtle);
+      border-radius: 0.85rem 0.85rem 0.85rem 0.2rem;
+      padding: 0.85rem 1.1rem;
+      font-size: 0.9rem;
+      line-height: 1.5;
+      box-shadow: var(--shadow-xs);
+      word-break: break-word;
+    }
+
+    /* Typing wave indicator */
+    .chatwoot-typing {
+      display: none;
+      align-self: flex-start;
+      background: #ffffff;
+      border: 1px solid var(--border-subtle);
+      border-radius: 1rem;
+      padding: 0.5rem 0.85rem;
+      box-shadow: var(--shadow-xs);
+    }
+    .typing-dots {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .typing-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--text-muted);
+      animation: typingWave 1.4s infinite ease-in-out both;
+    }
+    .typing-dot:nth-child(1) { animation-delay: -0.32s; }
+    .typing-dot:nth-child(2) { animation-delay: -0.16s; }
+
+    @keyframes typingWave {
+      0%, 80%, 100% { transform: scale(0.6); opacity: 0.5; }
+      40% { transform: scale(1); opacity: 1; }
+    }
+
+    /* Chat Composer */
+    .conversation-composer {
+      display: flex;
+      gap: 0.5rem;
+      padding: 0.75rem 1rem;
+      background: #ffffff;
+      border-top: 1px solid var(--border-subtle);
+      align-items: center;
+    }
+
+    .composer-input {
+      flex: 1;
+      margin: 0;
+      padding: 0.65rem 0.9rem;
+      font-size: 0.92rem;
+      border-radius: 4px;
+      border: 1px solid var(--border-subtle);
+      background: #f8fafc;
+      transition: all 0.15s ease;
+    }
+    .composer-input:focus {
+      background: #ffffff;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px var(--primary-glow);
+    }
+
+    /* Right Pane: Telemetry */
+    .panel-telemetry {
+      background: #ffffff;
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow: var(--shadow-xs);
+      height: 100%;
+      min-height: 480px;
+    }
+
+    .telemetry-header-bar {
+      background: #f8fafc;
+      padding: 0.75rem 1.15rem;
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .telemetry-body-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1.15rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.9rem;
+      font-size: 0.85rem;
+    }
+
+    /* Telemetry Card Containers */
+    .prop-card {
+      background: #f8fafc;
+      border: 1px solid var(--border-subtle);
+      border-radius: 4px;
+      padding: 0.75rem 0.9rem;
+    }
+
+    .prop-title {
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-muted);
+      margin-bottom: 0.4rem;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    /* Quick Prompts Bar */
+    .quick-chips-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      align-items: center;
+      margin-top: 0.75rem;
+    }
+
+    .chip-btn {
+      background: #f1f5f9;
+      border: 1px solid var(--border-subtle);
+      color: var(--text-main);
+      padding: 0.35rem 0.75rem;
+      border-radius: 4px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+    }
+    .chip-btn:hover {
+      background: var(--primary-50);
+      border-color: var(--primary);
+      color: var(--primary);
+      transform: translateY(-1px);
+    }
+
+    /* ========================================================
+       FORMS, TABLES & MODALS
+       ======================================================== */
+    .card-box {
+      background-color: var(--bg-surface);
+      padding: 1.5rem;
+      border-radius: 6px;
+      border: 1px solid var(--border-subtle);
+      margin-top: 1rem;
+      box-shadow: var(--shadow-sm);
+    }
+
+    label {
+      display: block;
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      margin-top: 0.9rem;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+
+    textarea, input, select {
+      width: 100%;
+      padding: 0.65rem 0.85rem;
+      border-radius: 4px;
+      border: 1px solid var(--border-subtle);
+      background-color: #fff;
+      color: var(--text-main);
+      font-family: inherit;
+      font-size: 0.92rem;
+      margin-top: 0.35rem;
+      transition: all 0.15s ease;
+    }
+
+    @media (max-width: 768px) {
+      textarea, input, select {
+        font-size: 16px; /* Avoid auto-zoom */
+      }
+    }
+
+    textarea:focus, input:focus, select:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px var(--primary-glow);
+    }
+
+    button.btn-action {
+      padding: 0.55rem 1.15rem;
+      border-radius: 4px;
+      border: none;
+      background-color: var(--primary);
+      color: white;
+      font-family: inherit;
+      font-weight: 700;
+      font-size: 0.86rem;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+      user-select: none;
+    }
+    button.btn-action:hover {
+      background-color: var(--primary-hover);
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-md);
+    }
+    button.btn-action:active { transform: translateY(0); }
+    button.btn-danger { background-color: var(--danger); }
+    button.btn-danger:hover { background-color: #dc2626; }
+    button.btn-success { background-color: var(--success); }
+    button.btn-success:hover { background-color: #059669; }
+    button.btn-secondary { background-color: #64748b; }
+    button.btn-secondary:hover { background-color: #475569; }
+
+    /* Tables */
+    .table-container {
+      width: 100%;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      margin-top: 1rem;
+      border-radius: 6px;
+      border: 1px solid var(--border-subtle);
+      box-shadow: var(--shadow-xs);
+      background-color: var(--bg-surface);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background-color: var(--bg-surface);
+      min-width: 650px;
+    }
+
+    th, td {
+      padding: 0.8rem 1rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border-subtle);
+      font-size: 0.88rem;
+    }
+
+    th {
+      background-color: #f8fafc;
+      color: var(--text-muted);
+      font-size: 0.74rem;
+      text-transform: uppercase;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+
+    tr:hover { background-color: #f8fafc; }
+
+    .badge {
+      padding: 0.25rem 0.6rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: capitalize;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+    .badge.pendiente { background-color: var(--warning-bg); color: var(--warning-text); }
+    .badge.confirmado { background-color: var(--success-bg); color: var(--success-text); }
+    .badge.rechazado { background-color: var(--danger-bg); color: var(--danger-text); }
+    .badge.entregado { background-color: var(--primary-50); color: var(--primary); }
+
+    .img-thumb {
+      width: 44px;
+      height: 44px;
+      object-fit: cover;
+      border-radius: 4px;
+      border: 1px solid var(--border-subtle);
+      background-color: #f8fafc;
     }
 
     /* Filters */
@@ -301,15 +1000,15 @@
       flex-wrap: wrap;
     }
     .filter-btn {
-      padding: 0.4rem 0.8rem;
-      border-radius: 0.4rem;
-      border: 1px solid var(--border);
-      background: var(--card-bg);
+      padding: 0.45rem 0.85rem;
+      border-radius: 4px;
+      border: 1px solid var(--border-subtle);
+      background: var(--bg-surface);
       color: var(--text-muted);
       cursor: pointer;
-      font-family: 'PT Sans', sans-serif;
+      font-family: inherit;
       font-size: 0.85rem;
-      font-weight: 700;
+      font-weight: 600;
       transition: all 0.15s;
     }
     .filter-btn:hover {
@@ -322,102 +1021,471 @@
       border-color: var(--primary);
     }
 
-    h3 { color: var(--text); font-size: 1.1rem; }
+    h3 { color: var(--text-main); font-size: 1.18rem; font-weight: 800; }
+
+    /* Modals */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: rgba(15, 23, 42, 0.7);
+      backdrop-filter: blur(5px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 3000;
+      padding: 1rem;
+    }
+    .modal-overlay.active { display: flex; }
+    .modal-card {
+      background-color: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+      width: 100%;
+      max-width: 750px;
+      max-height: 90vh;
+      overflow-y: auto;
+      padding: 1.5rem;
+      box-shadow: var(--shadow-xl);
+      animation: modalFadeIn 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    @keyframes modalFadeIn {
+      from { opacity: 0; transform: scale(0.96); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 0.75rem;
+      border-bottom: 2px solid var(--primary);
+      margin-bottom: 1rem;
+      gap: 0.5rem;
+    }
 
     @media print {
       body { background: white; color: black; }
-      .sidebar, .topbar, .filter-bar, .modal-header button, .no-print { display: none !important; }
-      .modal-card { border: none; width: 100%; max-width: 100%; box-shadow: none; }
-      table { background: white; color: black; border: 1px solid #ccc; }
+      .app-header, .page-header-bar, .filter-bar, .modal-header button, .no-print, .mobile-drawer, .mobile-backdrop { display: none !important; }
+      .modal-card { border: none; width: 100%; max-width: 100%; box-shadow: none; padding: 0; }
+      table { background: white; color: black; border: 1px solid #ccc; min-width: 100%; }
       th, td { border: 1px solid #ccc; color: black; }
     }
   </style>
 </head>
 <body>
-  <div class="sidebar">
-    <div class="brand">
-      <img src="https://f.fcdn.app/assets/commerce/www.kroser.com.uy/e76c_966a/public/web/img/logo.svg" alt="Kroser">
-      <span class="brand-text">Panel Admin</span>
-    </div>
-    <ul class="nav-list">
-      <li><button class="nav-btn active" onclick="switchTab('dashboard', event)">📊 Dashboard</button></li>
-      <li><button class="nav-btn" onclick="switchTab('prompt', event)">📝 Prompt & Mensajes</button></li>
-      <li><button class="nav-btn" onclick="switchTab('chatwoot', event)">🔌 Uruchat Integración</button></li>
-      <li><button class="nav-btn" onclick="switchTab('datasource', event)">🗄️ Fuente de Datos</button></li>
-      <li><button class="nav-btn" onclick="switchTab('llm', event)">🤖 Conector Agente IA</button></li>
-      <li><button class="nav-btn" onclick="switchTab('pedidos', event)">🛒 Pedidos & Depósito</button></li>
-      <li><button class="nav-btn" onclick="switchTab('catalogo', event)">📦 Catálogo Scrapeado</button></li>
-      <li><button class="nav-btn" onclick="switchTab('locales', event)">🏪 Sucursales (50+)</button></li>
-      <li><button class="nav-btn" onclick="switchTab('contactos', event)">📬 Avisos de Pedido</button></li>
-      <li><button class="nav-btn" onclick="switchTab('zonas', event)">🚚 Zonas de Envío</button></li>
-      <li><button class="nav-btn" onclick="switchTab('pagos', event)">💳 Formas de Pago</button></li>
-      <li><button class="nav-btn" onclick="switchTab('scraper', event)">🕷️ Control Scraper</button></li>
-    </ul>
-  </div>
 
-  <div class="main-content">
-    <div class="topbar">
-      <h1 class="page-title" id="page-title">Dashboard</h1>
-      <span id="user-info">Usuario: admin</span>
-    </div>
+  <!-- ========================================================
+       SINGLE UNIFIED TOP NAVIGATION BAR (ONE ROW ONLY)
+       ======================================================== -->
+  <header class="app-header">
+    <div class="header-unified-bar">
+      
+      <!-- Left: Brand & Single Row Nav Links -->
+      <div class="header-left">
+        <!-- Mobile hamburger toggle button -->
+        <button class="mobile-hamburger-btn" onclick="toggleMobileDrawer()" title="Abrir Menú">
+          ☰
+        </button>
 
-    <!-- TAB 1: DASHBOARD -->
-    <div id="tab-dashboard" class="tab-section active">
-      <div class="grid-metrics">
-        <div class="metric-card">
-          <div style="color:var(--text-muted);">Total Pedidos</div>
-          <div class="metric-val" id="metric-orders">--</div>
+        <!-- Clean Brand Text (No logo image) -->
+        <a href="javascript:void(0)" onclick="switchTab('dashboard', event)" class="brand-text-link">
+          <span class="brand-app-name">KROSERBOT <span class="brand-version-badge">AI 2.0</span></span>
+        </a>
+
+        <!-- Divider -->
+        <div class="nav-pipe-divider"></div>
+
+        <!-- 4 Groups in One Row: Dashboard -> Catálogo -> Pedidos -> Configuración -->
+        <nav class="header-nav-inline">
+          
+          <!-- 1. DASHBOARD & CHAT -->
+          <button class="nav-btn-direct active" id="nav-btn-dashboard" onclick="switchTab('dashboard', event)">
+            <span>📊</span>
+            <span>Dashboard & Chat</span>
+          </button>
+
+          <!-- 2. CATÁLOGO & LOGÍSTICA -->
+          <div class="dropdown-group" id="nav-group-catalogo">
+            <button class="dropdown-trigger-btn" id="trigger-catalogo" onclick="toggleDropdown('nav-group-catalogo', event)">
+              <span>📦</span>
+              <span>Catálogo & Logística</span>
+            </button>
+            <div class="dropdown-menu-box">
+              <button class="dropdown-item-btn" id="nav-btn-catalogo" onclick="switchTab('catalogo', event)">
+                <span>📦</span>
+                <span>Catálogo de Productos (3.4k)</span>
+              </button>
+              <button class="dropdown-item-btn" id="nav-btn-locales" onclick="switchTab('locales', event)">
+                <span>🏪</span>
+                <span>Sucursales Kroser (50+)</span>
+              </button>
+              <button class="dropdown-item-btn" id="nav-btn-zonas" onclick="switchTab('zonas', event)">
+                <span>🚚</span>
+                <span>Zonas y Tarifas de Envío</span>
+              </button>
+              <button class="dropdown-item-btn" id="nav-btn-pagos" onclick="switchTab('pagos', event)">
+                <span>💳</span>
+                <span>Formas y Métodos de Pago</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- 3. PEDIDOS -->
+          <div class="dropdown-group" id="nav-group-pedidos">
+            <button class="dropdown-trigger-btn" id="trigger-pedidos" onclick="toggleDropdown('nav-group-pedidos', event)">
+              <span>🛒</span>
+              <span>Pedidos</span>
+            </button>
+            <div class="dropdown-menu-box">
+              <button class="dropdown-item-btn" id="nav-btn-pedidos" onclick="switchTab('pedidos', event)">
+                <span>🛒</span>
+                <span>Gestión de Pedidos & Depósito</span>
+              </button>
+              <button class="dropdown-item-btn" id="nav-btn-contactos" onclick="switchTab('contactos', event)">
+                <span>📬</span>
+                <span>Avisos & Alertas de Pedido</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- 4. CONFIGURACIÓN (LUEGO DE PEDIDOS) -->
+          <div class="dropdown-group" id="nav-group-config">
+            <button class="dropdown-trigger-btn" id="trigger-config" onclick="toggleDropdown('nav-group-config', event)">
+              <span>⚙️</span>
+              <span>Configuración</span>
+            </button>
+            <div class="dropdown-menu-box">
+              <button class="dropdown-item-btn" id="nav-btn-prompt" onclick="switchTab('prompt', event)">
+                <span>📝</span>
+                <span>Prompt & Mensajes</span>
+              </button>
+              <button class="dropdown-item-btn" id="nav-btn-chatwoot" onclick="switchTab('chatwoot', event)">
+                <span>🔌</span>
+                <span>Uruchat Inboxes & Canales</span>
+              </button>
+              <button class="dropdown-item-btn" id="nav-btn-datasource" onclick="switchTab('datasource', event)">
+                <span>🗄️</span>
+                <span>Fuente de Datos Catálogo</span>
+              </button>
+              <button class="dropdown-item-btn" id="nav-btn-llm" onclick="switchTab('llm', event)">
+                <span>🤖</span>
+                <span>Conector Agente IA</span>
+              </button>
+              <button class="dropdown-item-btn" id="nav-btn-scraper" onclick="switchTab('scraper', event)">
+                <span>🕷️</span>
+                <span>Control del Scraper</span>
+              </button>
+            </div>
+          </div>
+
+        </nav>
+      </div>
+
+      <!-- Right: Badges & User Profile -->
+      <div class="header-right">
+        <div class="header-badges">
+          <div class="header-pill-badge" title="Agente IA conectado y listo para atención">
+            <span class="pulse-dot"></span>
+            <span>IA Activa</span>
+          </div>
+          <div class="header-pill-badge" title="Catálogo Vectorizado en Dólares (U$S)">
+            <span>📦 3,493 Prod. (USD)</span>
+          </div>
         </div>
-        <div class="metric-card">
-          <div style="color:var(--text-muted);">Productos en Catálogo</div>
-          <div class="metric-val" id="metric-products">--</div>
-        </div>
-        <div class="metric-card">
-          <div style="color:var(--text-muted);">Derivaciones a Humano</div>
-          <div class="metric-val" id="metric-derivations">--</div>
+
+        <div class="header-actions">
+          <a href="/deposito" target="_blank" class="btn-header-link" title="Abrir Panel de Depósito">
+            🏭 Depósito
+          </a>
+          <div class="user-tag">
+            <span>👤</span>
+            <span id="user-info">admin</span>
+          </div>
+          <button class="btn-header-logout" onclick="logoutAdmin()" title="Cerrar Sesión">
+            🚪 Salir
+          </button>
         </div>
       </div>
+
+    </div>
+  </header>
+
+  <!-- ========================================================
+       MOBILE DRAWER SLIDE-IN (STRICTLY HIDDEN ON DESKTOP)
+       ======================================================== -->
+  <div class="mobile-backdrop" id="mobile-backdrop" onclick="toggleMobileDrawer()"></div>
+  <aside class="mobile-drawer" id="mobile-drawer">
+    <div class="mobile-drawer-header">
+      <strong style="color:#ffffff; font-size:0.95rem;">KROSERBOT AI 2.0</strong>
+      <button class="mobile-drawer-close" onclick="toggleMobileDrawer()">✕</button>
     </div>
 
-    <!-- TAB 2: PROMPT & MESSAGES -->
-    <div id="tab-prompt" class="tab-section">
-      <h3>System Prompt (IA Asistente)</h3>
-      <textarea id="system-prompt-input" rows="6"></textarea>
-      <button class="btn-action" style="margin-top:0.75rem;" onclick="saveConfig('system_prompt', 'system-prompt-input')">💾 Guardar Prompt</button>
+    <div class="mobile-drawer-body">
+      <!-- 1. Direct Home -->
+      <button class="mobile-nav-link active" id="mob-btn-dashboard" onclick="switchTab('dashboard', event)">
+        <span>📊</span> <span>Dashboard & Chat</span>
+      </button>
 
-      <h3 style="margin-top:2rem;">Mensajes Predeterminados del Bot</h3>
-      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:1rem; margin-top:0.5rem;">
-        <div>
-          <label>Pedido Pendiente</label>
-          <textarea id="msg-pendiente" rows="3"></textarea>
-          <button class="btn-action" style="margin-top:0.5rem;" onclick="saveConfig('msg_pedido_pendiente', 'msg-pendiente')">Guardar</button>
+      <!-- 2. Catálogo & Logística -->
+      <div class="mobile-section-header">📦 Catálogo & Logística</div>
+      <button class="mobile-nav-link" id="mob-btn-catalogo" onclick="switchTab('catalogo', event)">
+        <span>📦</span> <span>Catálogo (3.4k USD)</span>
+      </button>
+      <button class="mobile-nav-link" id="mob-btn-locales" onclick="switchTab('locales', event)">
+        <span>🏪</span> <span>Sucursales (50+)</span>
+      </button>
+      <button class="mobile-nav-link" id="mob-btn-zonas" onclick="switchTab('zonas', event)">
+        <span>🚚</span> <span>Zonas de Envío</span>
+      </button>
+      <button class="mobile-nav-link" id="mob-btn-pagos" onclick="switchTab('pagos', event)">
+        <span>💳</span> <span>Formas de Pago</span>
+      </button>
+
+      <!-- 3. Pedidos -->
+      <div class="mobile-section-header">🛒 Pedidos</div>
+      <button class="mobile-nav-link" id="mob-btn-pedidos" onclick="switchTab('pedidos', event)">
+        <span>🛒</span> <span>Pedidos & Depósito</span>
+      </button>
+      <button class="mobile-nav-link" id="mob-btn-contactos" onclick="switchTab('contactos', event)">
+        <span>📬</span> <span>Avisos de Pedido</span>
+      </button>
+
+      <!-- 4. Configuración (Luego de Pedidos) -->
+      <div class="mobile-section-header">⚙️ Configuración</div>
+      <button class="mobile-nav-link" id="mob-btn-prompt" onclick="switchTab('prompt', event)">
+        <span>📝</span> <span>Prompt & Mensajes</span>
+      </button>
+      <button class="mobile-nav-link" id="mob-btn-chatwoot" onclick="switchTab('chatwoot', event)">
+        <span>🔌</span> <span>Uruchat Inboxes</span>
+      </button>
+      <button class="mobile-nav-link" id="mob-btn-datasource" onclick="switchTab('datasource', event)">
+        <span>🗄️</span> <span>Fuente de Datos</span>
+      </button>
+      <button class="mobile-nav-link" id="mob-btn-llm" onclick="switchTab('llm', event)">
+        <span>🤖</span> <span>Conector Agente IA</span>
+      </button>
+      <button class="mobile-nav-link" id="mob-btn-scraper" onclick="switchTab('scraper', event)">
+        <span>🕷️</span> <span>Control del Scraper</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- ========================================================
+       MAIN CONTENT CONTAINER
+       ======================================================== -->
+  <main class="main-workspace">
+    <div class="page-header-bar">
+      <h1 class="page-title" id="page-title">Dashboard de Operaciones & Chat IA</h1>
+    </div>
+
+    <!-- ========================================================
+         TAB 1: DASHBOARD + SIMULADOR CHAT EMBEBIDO (HOME)
+         ======================================================== -->
+    <section id="tab-dashboard" class="tab-view-section active">
+      <!-- 4 Stats Overview Cards -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">🛒 Total Pedidos</div>
+          <div class="stat-value" id="metric-orders">--</div>
         </div>
-        <div>
-          <label>Pedido Confirmado / Listo</label>
-          <textarea id="msg-listo" rows="3"></textarea>
-          <button class="btn-action" style="margin-top:0.5rem;" onclick="saveConfig('msg_pedido_listo', 'msg-listo')">Guardar</button>
+        <div class="stat-card">
+          <div class="stat-label">📦 Catálogo (USD)</div>
+          <div class="stat-value" id="metric-products">--</div>
         </div>
-        <div>
-          <label>Pedido Rechazado</label>
-          <textarea id="msg-rechazado" rows="3"></textarea>
-          <button class="btn-action" style="margin-top:0.5rem;" onclick="saveConfig('msg_pedido_rechazado', 'msg-rechazado')">Guardar</button>
+        <div class="stat-card">
+          <div class="stat-label">👥 Derivaciones Humano</div>
+          <div class="stat-value" id="metric-derivations">--</div>
         </div>
-        <div>
-          <label>Mensaje Derivación Humano</label>
-          <textarea id="msg-derivacion" rows="3"></textarea>
-          <button class="btn-action" style="margin-top:0.5rem;" onclick="saveConfig('msg_derivacion', 'msg-derivacion')">Guardar</button>
+        <div class="stat-card">
+          <div class="stat-label">🤖 Estado Agente IA</div>
+          <div class="stat-value" style="font-size:1.35rem; color:var(--success); display:flex; align-items:center; gap:0.4rem;">
+            <span class="pulse-dot"></span> Operativo
+          </div>
         </div>
       </div>
-    </div>
 
-    <!-- TAB 3: URUCHAT -->
-    <div id="tab-chatwoot" class="tab-section">
-      <h3>Configuración de Integración Uruchat</h3>
-      <p style="color:var(--text-muted); font-size:0.85rem; margin-top:0.25rem;">
-        Permite configurar el servidor y token de Uruchat. Si un campo queda en blanco, se utilizará el valor predeterminado del archivo <code>.env</code>.
-      </p>
+      <!-- Chatwoot Live Conversation & Telemetry Suite -->
+      <div class="chatwoot-suite-card">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem; margin-bottom:0.4rem;">
+          <div>
+            <h3>💬 Consola de Chat & Sandbox RAG (Estilo Chatwoot)</h3>
+            <p style="color:var(--text-muted); font-size:0.85rem; margin-top:0.15rem;">
+              Prueba en vivo las respuestas de la IA, el catálogo en <strong>USD (U$S)</strong>, asesoramiento técnico, sucursales y envíos <strong>sin conectar WhatsApp ni Chatwoot</strong>.
+            </p>
+          </div>
+          <div>
+            <button class="btn-action btn-secondary" onclick="clearSimulator()" style="padding:0.4rem 0.85rem; font-size:0.85rem;">
+              🗑️ Limpiar Chat
+            </button>
+          </div>
+        </div>
 
+        <!-- Quick Test Chips Bar -->
+        <div class="quick-chips-row">
+          <span style="font-size:0.8rem; font-weight:700; color:var(--text-muted);">Pruebas Rápidas:</span>
+          <button class="chip-btn" onclick="sendQuickPrompt('¿La placa de yeso estándar sirve para el baño?')">🛠️ Yeso para Baño</button>
+          <button class="chip-btn" onclick="sendQuickPrompt('¿Qué pintura me recomiendan para pared con humedad y qué rodillo llevo?')">🎨 Pintura Humedad + Rodillo</button>
+          <button class="chip-btn" onclick="sendQuickPrompt('¿Dónde queda la sucursal de Pocitos y qué horario tienen?')">🏪 Sucursal Pocitos</button>
+          <button class="chip-btn" onclick="sendQuickPrompt('¿Cuánto cuesta el envío a Ciudad de la Costa o al Interior?')">🚚 Costos de Envío</button>
+          <button class="chip-btn" onclick="sendQuickPrompt('¿Qué tarjetas y medios de pago aceptan?')">💳 Medios de Pago</button>
+          <button class="chip-btn" onclick="sendQuickPrompt('Quiero comprar 2 taladros 21v para entregar en Pocitos')">🛒 Tomar Pedido</button>
+        </div>
+
+        <!-- Mobile Segmented Switch (Chat vs Telemetry) -->
+        <div class="mobile-segmented-switch">
+          <button class="segmented-btn active" id="seg-btn-chat" onclick="switchMobileChatView('chat')">💬 Conversación en Vivo</button>
+          <button class="segmented-btn" id="seg-btn-telemetry" onclick="switchMobileChatView('telemetry')">🔍 Telemetría & RAG</button>
+        </div>
+
+        <!-- Dual Pane Layout: Conversation + Telemetry -->
+        <div class="chatwoot-grid-layout">
+          
+          <!-- Left Pane: Conversation -->
+          <div class="panel-conversation" id="pane-chat-conversation">
+            <div class="conversation-header">
+              <div style="display:flex; align-items:center; gap:0.6rem;">
+                <div class="pulse-dot"></div>
+                <div>
+                  <strong style="font-size:0.92rem;">Asesor Virtual Kroser (IA)</strong>
+                  <div style="font-size:0.72rem; color:#94a3b8;" id="chat-header-model">Modelo: Cargando...</div>
+                </div>
+              </div>
+              <span class="badge confirmado" style="font-size:0.72rem;">Online</span>
+            </div>
+
+            <div id="sim-messages-container" class="conversation-messages">
+              <div class="chat-bubble-bot">
+                👋 ¡Hola! Soy el asesor virtual de <strong>Kroser Uruguay</strong>. Puede consultarme por artículos, precios en dólares (U$S), asesoramiento técnico, sucursales o costos de envío. ¿En qué le podemos ayudar hoy?
+              </div>
+            </div>
+
+            <!-- Typing Indicator (3 Dots) -->
+            <div id="sim-typing-indicator" class="chatwoot-typing">
+              <div class="typing-dots">
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+              </div>
+            </div>
+
+            <!-- Composer -->
+            <form onsubmit="handleSimulatorSubmit(event)" class="conversation-composer">
+              <input type="text" id="sim-input-text" class="composer-input" placeholder="Escribe un mensaje de prueba (ej: ¿Tienen taladro inalámbrico de 21v?)..." autocomplete="off">
+              <button type="submit" class="btn-action btn-primary" id="sim-send-btn" style="padding:0.6rem 1.25rem;">
+                Enviar ➔
+              </button>
+            </form>
+          </div>
+
+          <!-- Right Pane: Telemetry / Context -->
+          <div class="panel-telemetry" id="pane-chat-telemetry">
+            <div class="telemetry-header-bar">
+              <strong style="font-size:0.92rem; color:var(--text-main);">🔍 Telemetría RAG & Contexto IA</strong>
+              <span id="inspector-latency-badge" class="badge" style="background:#e0e7ff; color:#3730a3; font-size:0.75rem;">Latencia: -- ms</span>
+            </div>
+
+            <div id="sim-inspector-content" class="telemetry-body-content">
+              <!-- Intent & Emotion -->
+              <div style="display:grid; grid-template-columns: 1fr 1fr; gap:0.5rem;">
+                <div class="prop-card">
+                  <div class="prop-title">Intención Detectada</div>
+                  <strong id="insp-intent" style="color:var(--text-main); font-size:0.88rem;">--</strong>
+                </div>
+                <div class="prop-card">
+                  <div class="prop-title">Emoción del Cliente</div>
+                  <strong id="insp-emotion" style="color:var(--text-main); font-size:0.88rem;">--</strong>
+                </div>
+              </div>
+
+              <!-- pgvector Products Retrieved -->
+              <div class="prop-card">
+                <div class="prop-title">
+                  <span>📦 Productos Vectorizados (pgvector)</span>
+                  <span id="insp-prod-count" style="font-weight:normal;">0 encontrados</span>
+                </div>
+                <div id="insp-products-list" style="display:flex; flex-direction:column; gap:0.4rem; max-height:160px; overflow-y:auto; margin-top:0.4rem;">
+                  <div style="color:var(--text-muted); font-style:italic; font-size:0.8rem;">Envíe un mensaje para ver los productos recuperados.</div>
+                </div>
+              </div>
+
+              <!-- Cross-selling -->
+              <div class="prop-card">
+                <div class="prop-title">🎯 Venta Cruzada (Cross-Selling)</div>
+                <div id="insp-cross-list" style="color:var(--text-muted); font-size:0.8rem; margin-top:0.2rem;">
+                  <span style="font-style:italic;">Sin sugerencias activas.</span>
+                </div>
+              </div>
+
+              <!-- Stores & Shipping -->
+              <div class="prop-card">
+                <div class="prop-title">🏪 Sucursales & Envíos Inyectados</div>
+                <div id="insp-extra-info" style="color:var(--text-muted); font-size:0.8rem; margin-top:0.2rem;">
+                  Sin información complementaria inyectada.
+                </div>
+              </div>
+
+              <!-- Full Prompt Preview -->
+              <details style="margin-top:auto;" class="prop-card">
+                <summary style="cursor:pointer; font-weight:700; color:var(--primary); font-size:0.8rem;">📜 Ver Prompt Completo Inyectado a la IA</summary>
+                <pre id="insp-raw-prompt" style="white-space:pre-wrap; font-size:0.75rem; color:#334155; margin-top:0.5rem; max-height:180px; overflow-y:auto; background:#ffffff; padding:0.5rem; border-radius:0.3rem; border:1px solid var(--border-subtle); font-family:monospace;"></pre>
+              </details>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================================
+         TAB 2: PROMPT & MENSAJES (CONFIGURACIÓN)
+         ======================================================== -->
+    <section id="tab-prompt" class="tab-view-section">
       <div class="card-box">
+        <h3>System Prompt (IA Asistente)</h3>
+        <p style="color:var(--text-muted); font-size:0.85rem; margin-top:0.25rem;">
+          Instrucciones maestras para la personalidad, tono formal (Usted), reglas de precios en USD (U$S) y proceso de asesoramiento técnico y toma de pedidos.
+        </p>
+        <textarea id="system-prompt-input" rows="7"></textarea>
+        <button class="btn-action" style="margin-top:0.75rem;" onclick="saveConfig('system_prompt', 'system-prompt-input')">💾 Guardar Prompt Maestro</button>
+      </div>
+
+      <div class="card-box" style="margin-top:1.5rem;">
+        <h3>Mensajes Predeterminados del Bot</h3>
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:1rem; margin-top:0.5rem;">
+          <div>
+            <label>Pedido Pendiente</label>
+            <textarea id="msg-pendiente" rows="3"></textarea>
+            <button class="btn-action" style="margin-top:0.5rem;" onclick="saveConfig('msg_pedido_pendiente', 'msg-pendiente')">Guardar</button>
+          </div>
+          <div>
+            <label>Pedido Confirmado / Listo</label>
+            <textarea id="msg-listo" rows="3"></textarea>
+            <button class="btn-action" style="margin-top:0.5rem;" onclick="saveConfig('msg_pedido_listo', 'msg-listo')">Guardar</button>
+          </div>
+          <div>
+            <label>Pedido Rechazado</label>
+            <textarea id="msg-rechazado" rows="3"></textarea>
+            <button class="btn-action" style="margin-top:0.5rem;" onclick="saveConfig('msg_pedido_rechazado', 'msg-rechazado')">Guardar</button>
+          </div>
+          <div>
+            <label>Mensaje Derivación Humano</label>
+            <textarea id="msg-derivacion" rows="3"></textarea>
+            <button class="btn-action" style="margin-top:0.5rem;" onclick="saveConfig('msg_derivacion', 'msg-derivacion')">Guardar</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================================
+         TAB 3: URUCHAT & CANALES (CONFIGURACIÓN)
+         ======================================================== -->
+    <section id="tab-chatwoot" class="tab-view-section">
+      <div class="card-box">
+        <h3>Configuración de Servidor Uruchat / Chatwoot</h3>
+        <p style="color:var(--text-muted); font-size:0.85rem; margin-top:0.25rem;">
+          Permite configurar el servidor y token de Uruchat. Si un campo queda en blanco, se utilizará el valor predeterminado de <code>.env</code>.
+        </p>
         <label>URL Base de Uruchat</label>
         <input type="text" id="chatwoot-url-input" placeholder="https://app.uruchat.com (o servidor propio)">
 
@@ -429,109 +1497,44 @@
         </div>
       </div>
 
-      <!-- Control de Bot por Canal / Inbox (Atención 100% Humana) -->
+      <!-- Dynamic Inboxes -->
       <div class="card-box" style="margin-top:1.5rem;">
-        <h3>🎛️ Control de Bot por Canal / Inbox (Atención 100% Humana)</h3>
-        <p style="color:var(--text-muted); font-size:0.85rem; margin-top:0.25rem;">
-          Selecciona los canales o bandejas (inboxes) donde deseas <strong>apagar el bot</strong> para que las conversaciones sean atendidas exclusivamente por operadores humanos.
-        </p>
-
-        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:1rem; margin-top:1rem;">
-          <div style="background:#f9fafb; padding:1rem; border-radius:0.5rem; border:1px solid var(--border);">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-              <span style="font-weight:700; font-size:0.95rem;">📸 Instagram</span>
-              <span id="badge-chan-instagram" class="badge confirmado">Bot Activo</span>
-            </div>
-            <p style="color:var(--text-muted); font-size:0.8rem; margin:0.4rem 0 0.6rem;">Direct Messages & Comentarios</p>
-            <label style="display:flex; align-items:center; gap:0.5rem; cursor:pointer; font-weight:normal; text-transform:none;">
-              <input type="checkbox" id="chan-instagram" style="width:auto; margin:0;" onchange="updateChannelBadge('instagram')">
-              <span><strong>Apagar Bot</strong> (Solo Humanos)</span>
-            </label>
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;">
+          <div>
+            <h3>🎛️ Control Dinámico de Inboxes y Canales</h3>
+            <p style="color:var(--text-muted); font-size:0.85rem; margin-top:0.25rem;">
+              Lista sincronizada en tiempo real con Uruchat. Puedes <strong>apagar el bot en bandejas o canales específicos</strong> para atención 100% humana.
+            </p>
           </div>
-
-          <div style="background:#f9fafb; padding:1rem; border-radius:0.5rem; border:1px solid var(--border);">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-              <span style="font-weight:700; font-size:0.95rem;">💬 WhatsApp</span>
-              <span id="badge-chan-whatsapp" class="badge confirmado">Bot Activo</span>
-            </div>
-            <p style="color:var(--text-muted); font-size:0.8rem; margin:0.4rem 0 0.6rem;">Líneas WhatsApp Business</p>
-            <label style="display:flex; align-items:center; gap:0.5rem; cursor:pointer; font-weight:normal; text-transform:none;">
-              <input type="checkbox" id="chan-whatsapp" style="width:auto; margin:0;" onchange="updateChannelBadge('whatsapp')">
-              <span><strong>Apagar Bot</strong> (Solo Humanos)</span>
-            </label>
-          </div>
-
-          <div style="background:#f9fafb; padding:1rem; border-radius:0.5rem; border:1px solid var(--border);">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-              <span style="font-weight:700; font-size:0.95rem;">🌐 Web Widget</span>
-              <span id="badge-chan-webwidget" class="badge confirmado">Bot Activo</span>
-            </div>
-            <p style="color:var(--text-muted); font-size:0.8rem; margin:0.4rem 0 0.6rem;">Chat en vivo del sitio web</p>
-            <label style="display:flex; align-items:center; gap:0.5rem; cursor:pointer; font-weight:normal; text-transform:none;">
-              <input type="checkbox" id="chan-webwidget" style="width:auto; margin:0;" onchange="updateChannelBadge('webwidget')">
-              <span><strong>Apagar Bot</strong> (Solo Humanos)</span>
-            </label>
-          </div>
-
-          <div style="background:#f9fafb; padding:1rem; border-radius:0.5rem; border:1px solid var(--border);">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-              <span style="font-weight:700; font-size:0.95rem;">✉️ Email</span>
-              <span id="badge-chan-email" class="badge confirmado">Bot Activo</span>
-            </div>
-            <p style="color:var(--text-muted); font-size:0.8rem; margin:0.4rem 0 0.6rem;">Casillas de correo conectadas</p>
-            <label style="display:flex; align-items:center; gap:0.5rem; cursor:pointer; font-weight:normal; text-transform:none;">
-              <input type="checkbox" id="chan-email" style="width:auto; margin:0;" onchange="updateChannelBadge('email')">
-              <span><strong>Apagar Bot</strong> (Solo Humanos)</span>
-            </label>
-          </div>
-
-          <div style="background:#f9fafb; padding:1rem; border-radius:0.5rem; border:1px solid var(--border);">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-              <span style="font-weight:700; font-size:0.95rem;">👥 Facebook Messenger</span>
-              <span id="badge-chan-facebook" class="badge confirmado">Bot Activo</span>
-            </div>
-            <p style="color:var(--text-muted); font-size:0.8rem; margin:0.4rem 0 0.6rem;">Páginas de Facebook</p>
-            <label style="display:flex; align-items:center; gap:0.5rem; cursor:pointer; font-weight:normal; text-transform:none;">
-              <input type="checkbox" id="chan-facebook" style="width:auto; margin:0;" onchange="updateChannelBadge('facebook')">
-              <span><strong>Apagar Bot</strong> (Solo Humanos)</span>
-            </label>
-          </div>
-
-          <div style="background:#f9fafb; padding:1rem; border-radius:0.5rem; border:1px solid var(--border);">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-              <span style="font-weight:700; font-size:0.95rem;">✈️ Telegram</span>
-              <span id="badge-chan-telegram" class="badge confirmado">Bot Activo</span>
-            </div>
-            <p style="color:var(--text-muted); font-size:0.8rem; margin:0.4rem 0 0.6rem;">Canales de Telegram</p>
-            <label style="display:flex; align-items:center; gap:0.5rem; cursor:pointer; font-weight:normal; text-transform:none;">
-              <input type="checkbox" id="chan-telegram" style="width:auto; margin:0;" onchange="updateChannelBadge('telegram')">
-              <span><strong>Apagar Bot</strong> (Solo Humanos)</span>
-            </label>
-          </div>
+          <button class="btn-action" onclick="refreshChatwootInboxes()" style="padding:0.4rem 0.85rem; font-size:0.85rem;">
+            🔄 Sincronizar Inboxes con Uruchat
+          </button>
         </div>
 
-        <div style="margin-top:1.25rem;">
-          <label>Inboxes o Nombres Personalizados a Bloquear (opcional, separados por coma)</label>
-          <input type="text" id="custom-disabled-inboxes" placeholder="Ej: 5, Instagram Kroser Oficial, Soporte VIP">
-          <p style="color:var(--text-muted); font-size:0.8rem; margin-top:0.25rem;">
-            Puedes ingresar los IDs numéricos de inbox o nombres específicos tal como aparecen en Uruchat/Chatwoot.
-          </p>
+        <div id="inboxes-loading" style="display:none; padding:1.5rem; text-align:center; color:var(--text-muted);">
+          Cargando bandejas desde la API de Uruchat/Chatwoot...
         </div>
 
-        <div style="margin-top:1.25rem;">
-          <button class="btn-action btn-success" onclick="saveChannelConfig()">💾 Guardar Control de Canales</button>
+        <div id="inboxes-list-container" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:1rem; margin-top:1rem;">
+          <!-- Dynamically loaded -->
+        </div>
+
+        <div style="margin-top:1.5rem; border-top:1px solid var(--border-subtle); padding-top:1rem;">
+          <button class="btn-action btn-success" onclick="saveChannelConfig()">💾 Guardar Control de Canales e Inboxes</button>
         </div>
       </div>
-    </div>
+    </section>
 
-    <!-- TAB 4: DATASOURCE -->
-    <div id="tab-datasource" class="tab-section">
-      <h3>Estrategia de Fuente de Datos del Catálogo</h3>
-      <p style="color:var(--text-muted); font-size:0.85rem; margin-top:0.25rem;">
-        Define cómo obtiene el bot el catálogo de productos: mediante Web Scraping automático, Conector SQL Directo o API REST externa.
-      </p>
-
+    <!-- ========================================================
+         TAB 4: DATASOURCE (CONFIGURACIÓN)
+         ======================================================== -->
+    <section id="tab-datasource" class="tab-view-section">
       <div class="card-box">
+        <h3>Estrategia de Fuente de Datos del Catálogo</h3>
+        <p style="color:var(--text-muted); font-size:0.85rem; margin-top:0.25rem;">
+          Define cómo obtiene el bot el catálogo de productos: mediante Web Scraping automático, Conector SQL Directo o API REST externa.
+        </p>
+
         <label>Estrategia Principal</label>
         <select id="datasource-select" onchange="toggleDataSourceFields()">
           <option value="scraping">Web Scraping (sitemap.xml kroser.com.uy)</option>
@@ -555,12 +1558,14 @@
           <button class="btn-action btn-success" onclick="saveDataSourceConfig()">💾 Guardar Estrategia de Ingestión</button>
         </div>
       </div>
-    </div>
+    </section>
 
-    <!-- TAB 5: LLM CONNECTOR -->
-    <div id="tab-llm" class="tab-section">
-      <h3>Conector Dinámico de Agente IA (Multi-Proveedor / Multi-Modelo)</h3>
+    <!-- ========================================================
+         TAB 5: LLM (CONFIGURACIÓN)
+         ======================================================== -->
+    <section id="tab-llm" class="tab-view-section">
       <div class="card-box">
+        <h3>Conector Dinámico de Agente IA (Multi-Proveedor / Multi-Modelo)</h3>
         <label>Proveedor de IA</label>
         <select id="llm-provider-select" onchange="fetchAvailableModels()">
           <option value="gemini">Google Gemini (Gemini 1.5 Flash, 2.0 Flash, Gemini Pro)</option>
@@ -587,142 +1592,170 @@
           <button class="btn-action btn-success" onclick="saveLLMConfig()">💾 Guardar Agente IA</button>
         </div>
       </div>
-    </div>
+    </section>
 
-    <!-- TAB 6: PEDIDOS & DEPOSITO -->
-    <div id="tab-pedidos" class="tab-section">
-      <div class="filter-bar">
-        <button class="filter-btn active" onclick="filterPedidos('todos', event)">Todos</button>
-        <button class="filter-btn" onclick="filterPedidos('pendiente', event)">⏳ Pendientes</button>
-        <button class="filter-btn" onclick="filterPedidos('deposito', event)">🏭 Vista Depósito (Confirmados)</button>
-        <button class="filter-btn" onclick="filterPedidos('entregado', event)">✅ Entregados</button>
-        <button class="filter-btn" onclick="filterPedidos('rechazado', event)">❌ Rechazados</button>
-      </div>
-
-      <table>
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Origen</th>
-            <th>Orden Ext.</th>
-            <th>Conv #</th>
-            <th>Cliente</th>
-            <th>Teléfono / WhatsApp</th>
-            <th>Pago</th>
-            <th>Estado</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody id="pedidos-table-body"></tbody>
-      </table>
-    </div>
-
-    <!-- TAB 7: CATALOGO -->
-    <div id="tab-catalogo" class="tab-section">
-      <h3>Catálogo de Productos Scrapeados</h3>
-      <input type="text" id="product-search" placeholder="Buscar por SKU, nombre o marca..." onkeyup="loadProducts()" style="margin-bottom:1rem;">
-      <table>
-        <thead>
-          <tr>
-            <th>Imagen</th>
-            <th>SKU</th>
-            <th>Nombre</th>
-            <th>Precio</th>
-            <th>Marca</th>
-            <th>Stock</th>
-            <th>Enlace Web</th>
-          </tr>
-        </thead>
-        <tbody id="products-table-body"></tbody>
-      </table>
-    </div>
-
-    <!-- TAB 8: LOCALES -->
-    <div id="tab-locales" class="tab-section">
-      <div style="display:flex; justify-content:space-between; align-items:center;">
-        <h3>Sucursales y Locales Kroser (50+)</h3>
-        <button class="btn-action btn-success" onclick="openLocalModal()">➕ Agregar Sucursal</button>
-      </div>
-      <table>
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Nombre</th>
-            <th>Departamento / Zona</th>
-            <th>Dirección</th>
-            <th>Teléfono</th>
-            <th>Horario</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody id="locales-table-body"></tbody>
-      </table>
-    </div>
-
-    <!-- TAB 9: CONTACTOS & AVISOS -->
-    <div id="tab-contactos" class="tab-section">
-      <h3>Notificaciones y Alertas de Pedidos</h3>
+    <!-- ========================================================
+         TAB 6: SCRAPER (CONFIGURACIÓN)
+         ======================================================== -->
+    <section id="tab-scraper" class="tab-view-section">
       <div class="card-box">
-        <label>Correos de Notificación para Nuevos Pedidos (separados por coma)</label>
-        <input type="text" id="aviso-email-input" placeholder="pedidos@kroser.com.uy, deposito@kroser.com.uy">
-
-        <label>Teléfonos / WhatsApp de Alerta Interna</label>
-        <input type="text" id="aviso-telefono-input" placeholder="+59899123456, +59899654321">
-
-        <div style="margin-top:1.25rem;">
-          <button class="btn-action btn-success" onclick="saveContactosConfig()">💾 Guardar Contactos de Alertas</button>
+        <h3>Control del Scraper de Catálogo Kroser</h3>
+        <p style="color:var(--text-muted); font-size:0.85rem; margin-top:0.25rem;">
+          Ejecuta la extracción de productos desde kroser.com.uy e indexa automáticamente sus embeddings vectoriales en PostgreSQL.
+        </p>
+        <p style="margin-top:1rem; font-size:0.95rem;">Estado actual: <strong id="scraper-status" style="color:var(--primary);">Detenido</strong></p>
+        <div style="margin-top:1.25rem; display:flex; gap:1rem; flex-wrap:wrap;">
+          <button class="btn-action btn-success" onclick="startScraper()">▶️ Iniciar Scraping</button>
+          <button class="btn-action btn-danger" onclick="stopScraper()">⏹️ Detener</button>
         </div>
       </div>
-    </div>
+    </section>
 
-    <!-- TAB 10: ZONAS DE ENVIO -->
-    <div id="tab-zonas" class="tab-section">
-      <div style="display:flex; justify-content:space-between; align-items:center;">
-        <h3>Zonas de Envío y Costos</h3>
+    <!-- ========================================================
+         TAB 7: CATALOGO (CATALOGO & LOGISTICA)
+         ======================================================== -->
+    <section id="tab-catalogo" class="tab-view-section">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.75rem; margin-bottom:1rem;">
+        <div>
+          <h3>Catálogo de Productos Vectorizados (USD)</h3>
+          <p style="color:var(--text-muted); font-size:0.85rem;" id="catalog-summary-text">Cargando catálogo...</p>
+        </div>
+        <div style="display:flex; gap:0.5rem; align-items:center;">
+          <label style="font-size:0.85rem; margin:0; text-transform:none;">Ver:</label>
+          <select id="catalog-page-size" style="width:auto; padding:0.4rem 0.6rem; font-size:0.85rem; margin:0;" onchange="loadProducts(1)">
+            <option value="25">25 / pág</option>
+            <option value="50" selected>50 / pág</option>
+            <option value="100">100 / pág</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="display:grid; grid-template-columns: 2fr 1fr; gap:0.75rem; margin-bottom:1rem;">
+        <input type="text" id="product-search" placeholder="Buscar por SKU, nombre o marca..." onkeyup="debouncedLoadProducts()" style="margin:0;">
+        <input type="text" id="product-category" placeholder="Filtrar por categoría (ej: Pinturas)..." onkeyup="debouncedLoadProducts()" style="margin:0;">
+      </div>
+
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Imagen</th>
+              <th>SKU</th>
+              <th>Nombre</th>
+              <th>Precio (USD)</th>
+              <th>Marca</th>
+              <th>Categoría</th>
+              <th>Stock</th>
+              <th>Enlace Web</th>
+            </tr>
+          </thead>
+          <tbody id="products-table-body"></tbody>
+        </table>
+      </div>
+
+      <!-- Paginación -->
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-top:1rem; padding:0.5rem 0;">
+        <button class="btn-action" id="btn-prev-page" onclick="changeCatalogPage(-1)" style="padding:0.4rem 0.85rem;">◀ Anterior</button>
+        <span id="catalog-page-info" style="font-size:0.9rem; font-weight:700; color:var(--text-main);">Página 1 de 1</span>
+        <button class="btn-action" id="btn-next-page" onclick="changeCatalogPage(1)" style="padding:0.4rem 0.85rem;">Siguiente ▶</button>
+      </div>
+    </section>
+
+    <!-- ========================================================
+         TAB 8: SUCURSALES (CATALOGO & LOGISTICA)
+         ======================================================== -->
+    <section id="tab-locales" class="tab-view-section">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;">
+        <div>
+          <h3>Sucursales y Locales Kroser (50+)</h3>
+          <p style="color:var(--text-muted); font-size:0.85rem;">Locales inyectados en las respuestas del Agente IA para consultas de ubicación y horarios.</p>
+        </div>
+        <button class="btn-action btn-success" onclick="openLocalModal()">➕ Agregar Sucursal</button>
+      </div>
+
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Nombre</th>
+              <th>Departamento / Zona</th>
+              <th>Dirección</th>
+              <th>Teléfono</th>
+              <th>Horario</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="locales-table-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ========================================================
+         TAB 9: ZONAS DE ENVIO (CATALOGO & LOGISTICA)
+         ======================================================== -->
+    <section id="tab-zonas" class="tab-view-section">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;">
+        <div>
+          <h3>Zonas de Envío y Tarifas</h3>
+          <p style="color:var(--text-muted); font-size:0.85rem;">Costos y cobertura para cotización automática de fletes por parte de la IA.</p>
+        </div>
         <button class="btn-action btn-success" onclick="openZonaModal()">➕ Agregar Zona</button>
       </div>
-      <table>
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Departamento / Ciudad</th>
-            <th>Barrio / Zona</th>
-            <th>Costo de Envío ($)</th>
-            <th>Estado</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody id="zonas-table-body"></tbody>
-      </table>
-    </div>
 
-    <!-- TAB 11: FORMAS DE PAGO -->
-    <div id="tab-pagos" class="tab-section">
-      <div style="display:flex; justify-content:space-between; align-items:center;">
-        <h3>Métodos y Formas de Pago</h3>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Departamento / Ciudad</th>
+              <th>Barrio / Zona</th>
+              <th>Costo de Envío ($)</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="zonas-table-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ========================================================
+         TAB 10: FORMAS DE PAGO & MERCADOPAGO (CATALOGO & LOGISTICA)
+         ======================================================== -->
+    <section id="tab-pagos" class="tab-view-section">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;">
+        <div>
+          <h3>Métodos y Formas de Pago</h3>
+          <p style="color:var(--text-muted); font-size:0.85rem;">Medios de pago que la IA informa a los clientes durante el cierre de venta.</p>
+        </div>
         <button class="btn-action btn-success" onclick="openFormaPagoModal()">➕ Agregar Método</button>
       </div>
-      <table>
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Nombre</th>
-            <th>Descripción</th>
-            <th>Instrucciones para el Cliente</th>
-            <th>Estado</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody id="pagos-table-body"></tbody>
-      </table>
 
-      <h3 style="margin-top:2.5rem;">🔌 Integración Pasarela MercadoPago</h3>
-      <p style="color:var(--text-muted); font-size:0.85rem; margin-top:0.25rem;">
-        Permite activar o desactivar la recepción de notificaciones y generación de cobros vía MercadoPago, además de configurar auto-confirmación de pedidos.
-      </p>
-      <div class="card-box">
-        <div style="display:flex; align-items:center; gap:1rem; margin-bottom:1rem;">
-          <label style="margin:0; font-weight:700;">Estado Integración MercadoPago:</label>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Nombre</th>
+              <th>Descripción</th>
+              <th>Instrucciones para el Cliente</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="pagos-table-body"></tbody>
+        </table>
+      </div>
+
+      <div class="card-box" style="margin-top:2rem;">
+        <h3>🔌 Integración Pasarela MercadoPago</h3>
+        <p style="color:var(--text-muted); font-size:0.85rem; margin-top:0.25rem;">
+          Permite activar cobros automáticos vía MercadoPago y auto-confirmación de pedidos con pago verificado.
+        </p>
+
+        <div style="display:flex; align-items:center; gap:1rem; margin-top:1rem; margin-bottom:1rem; flex-wrap:wrap;">
+          <label style="margin:0; font-weight:700;">Estado Integración:</label>
           <select id="mp-enabled-select" style="width:auto; margin:0;" onchange="saveMPToggle()">
             <option value="false">🔴 Desactivado (Inactivo)</option>
             <option value="true">🟢 Activado</option>
@@ -735,14 +1768,14 @@
         <label>Public Key (MercadoPago)</label>
         <input type="text" id="mp-public-key" placeholder="APP_USR-xxxxxxxx">
 
-        <label>Webhook Secret (Firma HMAC de seguridad)</label>
+        <label>Webhook Secret (Firma HMAC)</label>
         <input type="password" id="mp-webhook-secret" placeholder="Secret Token para validación x-signature">
 
-        <div style="margin-top:1rem; border-top:1px solid var(--border); padding-top:1rem;">
+        <div style="margin-top:1rem; border-top:1px solid var(--border-subtle); padding-top:1rem;">
           <label style="font-weight:700;">⚙️ Configuración Pedidos E-commerce</label>
           <div style="display:flex; align-items:center; gap:0.5rem; margin-top:0.5rem;">
             <input type="checkbox" id="ecommerce-autoconfirm-check" style="width:auto; margin:0;">
-            <label for="ecommerce-autoconfirm-check" style="margin:0;">Confirmar y mandar a preparar automáticamente los pedidos con pago verificado (Tiendanube / Email)</label>
+            <label for="ecommerce-autoconfirm-check" style="margin:0; text-transform:none;">Confirmar y mandar a preparar automáticamente los pedidos con pago verificado</label>
           </div>
         </div>
 
@@ -750,36 +1783,83 @@
           <button class="btn-action btn-success" onclick="saveMercadoPagoConfig()">💾 Guardar Configuración MercadoPago</button>
         </div>
       </div>
-    </div>
+    </section>
 
-    <!-- TAB 12: SCRAPER CONTROL -->
-    <div id="tab-scraper" class="tab-section">
-      <h3>Control del Scraper de Catálogo</h3>
+    <!-- ========================================================
+         TAB 11: PEDIDOS & DEPOSITO (PEDIDOS)
+         ======================================================== -->
+    <section id="tab-pedidos" class="tab-view-section">
+      <div class="filter-bar">
+        <button class="filter-btn active" onclick="filterPedidos('todos', event)">Todos</button>
+        <button class="filter-btn" onclick="filterPedidos('pendiente', event)">⏳ Pendientes</button>
+        <button class="filter-btn" onclick="filterPedidos('deposito', event)">🏭 Vista Depósito (Confirmados)</button>
+        <button class="filter-btn" onclick="filterPedidos('entregado', event)">✅ Entregados</button>
+        <button class="filter-btn" onclick="filterPedidos('rechazado', event)">❌ Rechazados</button>
+      </div>
+
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Origen</th>
+              <th>Orden Ext.</th>
+              <th>Conv #</th>
+              <th>Cliente</th>
+              <th>Teléfono / WhatsApp</th>
+              <th>Pago</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="pedidos-table-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ========================================================
+         TAB 12: CONTACTOS & AVISOS (PEDIDOS)
+         ======================================================== -->
+    <section id="tab-contactos" class="tab-view-section">
       <div class="card-box">
-        <p>Estado actual: <strong id="scraper-status">Detenido</strong></p>
-        <div style="margin-top:1rem; display:flex; gap:1rem;">
-          <button class="btn-action btn-success" onclick="startScraper()">▶️ Iniciar Scraping</button>
-          <button class="btn-action btn-danger" onclick="stopScraper()">⏹️ Detener</button>
+        <h3>Notificaciones y Alertas de Nuevos Pedidos</h3>
+        <p style="color:var(--text-muted); font-size:0.85rem; margin-top:0.25rem;">
+          Destinatarios a quienes se enviará notificación automática cuando un cliente confirme una orden a través del bot o e-commerce.
+        </p>
+
+        <label>Correos de Notificación (separados por coma)</label>
+        <input type="text" id="aviso-email-input" placeholder="pedidos@kroser.com.uy, deposito@kroser.com.uy">
+
+        <label>Teléfonos / WhatsApp de Alerta Interna</label>
+        <input type="text" id="aviso-telefono-input" placeholder="+59899123456, +59899654321">
+
+        <div style="margin-top:1.25rem;">
+          <button class="btn-action btn-success" onclick="saveContactosConfig()">💾 Guardar Contactos de Alertas</button>
         </div>
       </div>
-    </div>
-  </div>
+    </section>
 
-  <!-- MODAL PEDIDO / DEPOSITO -->
+  </main>
+
+  <!-- ========================================================
+       MODALS: PEDIDOS, SUCURSALES, ZONAS, FORMAS DE PAGO & LOGIN
+       ======================================================== -->
+  
+  <!-- Modal Detalle Pedido / Depósito -->
   <div class="modal-overlay" id="pedido-modal">
     <div class="modal-card">
       <div class="modal-header">
-        <h2 id="modal-pedido-title">Detalle de Pedido</h2>
-        <div>
+        <h2 id="modal-pedido-title" style="font-size:1.25rem; font-weight:800;">Detalle de Pedido</h2>
+        <div style="display:flex; gap:0.4rem;">
           <button class="btn-action btn-secondary" onclick="window.print()">🖨️ Imprimir</button>
-          <button class="btn-action btn-danger" onclick="closeModal('pedido-modal')">✖ Cerrar</button>
+          <button class="btn-action btn-danger" onclick="closeModal('pedido-modal')">✖</button>
         </div>
       </div>
       <div id="modal-pedido-content"></div>
     </div>
   </div>
 
-  <!-- MODAL SUCURSAL / LOCAL -->
+  <!-- Modal Sucursal / Local -->
   <div class="modal-overlay" id="local-modal">
     <div class="modal-card" style="max-width:550px;">
       <div class="modal-header">
@@ -803,7 +1883,7 @@
     </div>
   </div>
 
-  <!-- MODAL ZONA ENVIO -->
+  <!-- Modal Zona de Envío -->
   <div class="modal-overlay" id="zona-modal">
     <div class="modal-card" style="max-width:500px;">
       <div class="modal-header">
@@ -823,7 +1903,7 @@
     </div>
   </div>
 
-  <!-- MODAL FORMA PAGO -->
+  <!-- Modal Método de Pago -->
   <div class="modal-overlay" id="forma-pago-modal">
     <div class="modal-card" style="max-width:550px;">
       <div class="modal-header">
@@ -841,36 +1921,52 @@
         <button class="btn-action btn-success" onclick="saveFormaPago()">💾 Guardar Método</button>
       </div>
     </div>
+  </div>
+
   <!-- Modal Login Admin -->
-  <div class="modal-overlay" id="login-modal" style="background: rgba(15,23,42,0.85); backdrop-filter: blur(4px); z-index: 9999;">
+  <div class="modal-overlay" id="login-modal" style="background: rgba(15,23,42,0.85); backdrop-filter: blur(6px); z-index: 9999;">
     <div class="modal-card" style="max-width: 420px; padding: 2rem; border-radius: 1rem; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.3);">
       <div style="text-align: center; margin-bottom: 1.5rem;">
         <img src="https://f.fcdn.app/assets/commerce/www.kroser.com.uy/94f6_e862/public/web/favicon.ico" style="height: 48px; margin-bottom: 0.75rem;">
-        <h2 style="font-size: 1.35rem; color: var(--text); font-weight: 700;">Panel de Administración</h2>
+        <h2 style="font-size: 1.35rem; color: var(--text-main); font-weight: 800;">Panel de Administración</h2>
         <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0.25rem;">Ingrese credenciales de administrador para continuar</p>
       </div>
       
       <form id="admin-login-form" onsubmit="handleAdminLoginSubmit(event)">
         <div style="margin-bottom: 1rem;">
           <label style="display:block; font-size: 0.85rem; font-weight: 700; margin-bottom: 0.35rem;">Usuario</label>
-          <input type="text" id="admin-login-username" value="admin" style="width:100%; padding:0.65rem 0.85rem; border-radius:0.4rem; border:1px solid var(--border); font-weight:bold; color:#334155;">
+          <input type="text" id="admin-login-username" value="admin" style="width:100%; padding:0.65rem 0.85rem; border-radius:0.5rem; border:1px solid var(--border-subtle); font-weight:bold; color:#334155;">
         </div>
         <div style="margin-bottom: 1.25rem;">
           <label style="display:block; font-size: 0.85rem; font-weight: 700; margin-bottom: 0.35rem;">Contraseña</label>
-          <input type="password" id="admin-login-password" placeholder="Ingrese contraseña" required style="width:100%; padding:0.65rem 0.85rem; border-radius:0.4rem; border:1px solid var(--border); font-size:0.95rem;">
+          <input type="password" id="admin-login-password" placeholder="Ingrese contraseña" required style="width:100%; padding:0.65rem 0.85rem; border-radius:0.5rem; border:1px solid var(--border-subtle); font-size:0.95rem;">
         </div>
-        <div id="admin-login-error" style="display:none; color: var(--danger); font-size: 0.85rem; font-weight:700; margin-bottom: 1rem; text-align:center; padding:0.5rem; background:var(--danger-light); border-radius:0.4rem;"></div>
+        <div id="admin-login-error" style="display:none; color: var(--danger); font-size: 0.85rem; font-weight:700; margin-bottom: 1rem; text-align:center; padding:0.5rem; background:var(--danger-bg); border-radius:0.4rem;"></div>
         <button type="submit" class="btn-action btn-success" style="width: 100%; padding: 0.75rem; font-size: 1rem; font-weight:700; justify-content:center;">🔑 Iniciar Sesión</button>
       </form>
     </div>
   </div>
 
+  <!-- ========================================================
+       APPLICATION JAVASCRIPT LOGIC
+       ======================================================== -->
   <script>
+    function escHtml(str) {
+      if (str == null) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
     const API_BASE = '/api';
     let currentPedidosList = [];
     let currentFilter = 'todos';
     let pendingAuthResolver = null;
 
+    // --- AUTHENTICATION ---
     function showLoginModal() {
       document.getElementById('login-modal').classList.add('active');
       document.getElementById('admin-login-password').focus();
@@ -905,6 +2001,7 @@
           pendingAuthResolver = null;
         } else {
           loadDashboard();
+          initSimulator();
         }
       } catch (err) {
         errorDiv.textContent = err.message || 'Contraseña o usuario incorrecto';
@@ -931,30 +2028,142 @@
       return response;
     }
 
+    function logoutAdmin() {
+      localStorage.removeItem('kroser_admin_token');
+      apiFetch(`${API_BASE}/auth/logout`, { method: 'POST' }).finally(() => {
+        showLoginModal();
+      });
+    }
+
+    // --- NAVIGATION LOGIC ---
     const TAB_TITLES = {
-      dashboard: 'Dashboard',
-      prompt: 'Prompt & Mensajes Predeterminados',
-      chatwoot: 'Integración Uruchat',
-      datasource: 'Fuente de Datos',
-      llm: 'Conector Agente IA',
-      pedidos: 'Pedidos & Depósito',
-      catalogo: 'Catálogo Scrapeado',
-      locales: 'Sucursales Kroser',
-      contactos: 'Avisos de Pedido',
-      zonas: 'Zonas de Envío',
-      pagos: 'Formas de Pago',
-      scraper: 'Control del Scraper',
+      dashboard: 'Dashboard de Operaciones & Chat IA',
+      catalogo: 'Catálogo de Productos Scrapeados (USD)',
+      locales: 'Sucursales Kroser en Uruguay (50+)',
+      zonas: 'Zonas y Tarifas de Envío',
+      pagos: 'Formas y Métodos de Pago',
+      pedidos: 'Gestión de Pedidos & Vista Depósito',
+      contactos: 'Destinatarios de Alertas y Notificaciones de Pedido',
+      prompt: 'Prompt del Sistema & Mensajes Predeterminados',
+      chatwoot: 'Integración Uruchat (Inboxes & Canales)',
+      datasource: 'Estrategia y Fuente de Datos del Catálogo',
+      llm: 'Conector Agente IA (Gemini / OpenAI / Modelos)',
+      scraper: 'Panel de Control del Scraper Oficial',
     };
 
+    const TAB_PARENT_GROUPS = {
+      dashboard: null,
+      catalogo: 'trigger-catalogo',
+      locales: 'trigger-catalogo',
+      zonas: 'trigger-catalogo',
+      pagos: 'trigger-catalogo',
+      pedidos: 'trigger-pedidos',
+      contactos: 'trigger-pedidos',
+      prompt: 'trigger-config',
+      chatwoot: 'trigger-config',
+      datasource: 'trigger-config',
+      llm: 'trigger-config',
+      scraper: 'trigger-config',
+    };
+
+    function toggleDropdown(groupId, event) {
+      if (event) event.stopPropagation();
+      const group = document.getElementById(groupId);
+      const isAlreadyOpen = group.classList.contains('open');
+      
+      // Close all
+      document.querySelectorAll('.dropdown-group').forEach(g => g.classList.remove('open'));
+      
+      if (!isAlreadyOpen) {
+        group.classList.add('open');
+      }
+    }
+
+    // Close dropdowns on outside click
+    document.addEventListener('click', () => {
+      document.querySelectorAll('.dropdown-group').forEach(g => g.classList.remove('open'));
+    });
+
+    function toggleMobileDrawer() {
+      const drawer = document.getElementById('mobile-drawer');
+      const backdrop = document.getElementById('mobile-backdrop');
+      if (drawer && backdrop) {
+        drawer.classList.toggle('open');
+        backdrop.classList.toggle('open');
+      }
+    }
+
+    function closeMobileDrawer() {
+      const drawer = document.getElementById('mobile-drawer');
+      const backdrop = document.getElementById('mobile-backdrop');
+      if (drawer && backdrop) {
+        drawer.classList.remove('open');
+        backdrop.classList.remove('open');
+      }
+    }
+
+    function switchMobileChatView(view) {
+      const chatPane = document.getElementById('pane-chat-conversation');
+      const telePane = document.getElementById('pane-chat-telemetry');
+      const btnChat = document.getElementById('seg-btn-chat');
+      const btnTele = document.getElementById('seg-btn-telemetry');
+
+      if (view === 'telemetry') {
+        chatPane.classList.add('mobile-hidden');
+        telePane.classList.add('mobile-active');
+        btnTele.classList.add('active');
+        btnChat.classList.remove('active');
+      } else {
+        chatPane.classList.remove('mobile-hidden');
+        telePane.classList.remove('mobile-active');
+        btnChat.classList.add('active');
+        btnTele.classList.remove('active');
+      }
+    }
+
     function switchTab(tabName, event) {
-      document.querySelectorAll('.tab-section').forEach(el => el.classList.remove('active'));
-      document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
+      // 1. Hide all sections
+      document.querySelectorAll('.tab-view-section').forEach(el => el.classList.remove('active'));
 
-      document.getElementById(`tab-${tabName}`).classList.add('active');
-      if (event && event.target) event.target.classList.add('active');
-      document.getElementById('page-title').innerText = TAB_TITLES[tabName] || tabName.toUpperCase();
+      // 2. Clear all desktop nav active classes
+      document.querySelectorAll('.nav-btn-direct, .dropdown-item-btn').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.dropdown-trigger-btn').forEach(el => el.classList.remove('active-parent'));
 
-      if (tabName === 'dashboard') loadDashboard();
+      // 3. Clear mobile nav active classes
+      document.querySelectorAll('.mobile-nav-link').forEach(el => el.classList.remove('active'));
+
+      // 4. Activate target tab section
+      const targetSection = document.getElementById(`tab-${tabName}`);
+      if (targetSection) targetSection.classList.add('active');
+
+      // 5. Activate desktop nav item
+      const targetDesktopBtn = document.getElementById(`nav-btn-${tabName}`);
+      if (targetDesktopBtn) targetDesktopBtn.classList.add('active');
+
+      // 6. Highlight parent dropdown group trigger
+      const parentTriggerId = TAB_PARENT_GROUPS[tabName];
+      if (parentTriggerId) {
+        const parentTrigger = document.getElementById(parentTriggerId);
+        if (parentTrigger) parentTrigger.classList.add('active-parent');
+      }
+
+      // 7. Highlight mobile nav item
+      const targetMobBtn = document.getElementById(`mob-btn-${tabName}`);
+      if (targetMobBtn) targetMobBtn.classList.add('active');
+
+      // 8. Update page title
+      const pageTitleEl = document.getElementById('page-title');
+      if (pageTitleEl) pageTitleEl.innerText = TAB_TITLES[tabName] || tabName.toUpperCase();
+
+      // 9. Close mobile drawer and dropdowns
+      closeMobileDrawer();
+      document.querySelectorAll('.dropdown-group').forEach(g => g.classList.remove('open'));
+
+      // 10. Load corresponding section data
+      if (tabName === 'dashboard') {
+        loadDashboard();
+        initSimulator();
+      }
       if (tabName === 'prompt') loadConfig();
       if (tabName === 'chatwoot') loadChatwootConfig();
       if (tabName === 'datasource') loadDataSourceConfig();
@@ -966,12 +2175,15 @@
       if (tabName === 'zonas') loadZonas();
       if (tabName === 'pagos') loadFormasPago();
       if (tabName === 'scraper') loadScraperStatus();
+
+      // Smooth scroll to top on mobile
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
     function closeModal(id) { document.getElementById(id).classList.remove('active'); }
     function openModal(id) { document.getElementById(id).classList.add('active'); }
 
-    // --- DASHBOARD ---
+    // --- DASHBOARD METRICS ---
     async function loadDashboard() {
       try {
         const res = await apiFetch(`${API_BASE}/analytics/dashboard`);
@@ -980,6 +2192,262 @@
         document.getElementById('metric-products').innerText = data.metrics.totalProducts;
         document.getElementById('metric-derivations').innerText = data.metrics.totalDerivations;
       } catch (err) { console.error(err); }
+    }
+
+    // --- SIMULADOR DE CHAT IA ---
+    let simulatorHistory = [];
+    let simulatorIsLoading = false;
+
+    async function initSimulator() {
+      try {
+        const res = await apiFetch(`${API_BASE}/configuracion`);
+        const cfg = await res.json();
+        const prov = cfg.llm_provider || 'Gemini';
+        const mod = cfg.llm_model || 'gemini-1.5-flash';
+        const headerModel = document.getElementById('chat-header-model');
+        if (headerModel) headerModel.innerText = `Proveedor: ${prov} | Modelo: ${mod}`;
+      } catch (_e) {}
+    }
+
+    function clearSimulator() {
+      simulatorHistory = [];
+      const container = document.getElementById('sim-messages-container');
+      if (container) {
+        container.innerHTML = `
+          <div class="chat-bubble-bot">
+            👋 ¡Hola! Soy el asesor virtual de <strong>Kroser Uruguay</strong>. Puede consultarme por artículos, precios en dólares (U$S), asesoramiento técnico, sucursales o costos de envío. ¿En qué le podemos ayudar hoy?
+          </div>
+        `;
+      }
+      resetInspector();
+    }
+
+    function resetInspector() {
+      const latBadge = document.getElementById('inspector-latency-badge');
+      if (latBadge) latBadge.innerText = 'Latencia: -- ms';
+      const intentEl = document.getElementById('insp-intent');
+      if (intentEl) intentEl.innerText = '--';
+      const emoEl = document.getElementById('insp-emotion');
+      if (emoEl) emoEl.innerText = '--';
+      const prodCount = document.getElementById('insp-prod-count');
+      if (prodCount) prodCount.innerText = '0 encontrados';
+      const prodList = document.getElementById('insp-products-list');
+      if (prodList) prodList.innerHTML = '<div style="color:var(--text-muted); font-style:italic; font-size:0.8rem;">Envíe un mensaje para ver los productos recuperados.</div>';
+      const crossList = document.getElementById('insp-cross-list');
+      if (crossList) crossList.innerHTML = '<span style="font-style:italic;">Sin sugerencias activas.</span>';
+      const extraInfo = document.getElementById('insp-extra-info');
+      if (extraInfo) extraInfo.innerHTML = 'Sin información complementaria inyectada.';
+      const rawPrompt = document.getElementById('insp-raw-prompt');
+      if (rawPrompt) rawPrompt.innerText = '';
+    }
+
+    function sendQuickPrompt(text) {
+      const input = document.getElementById('sim-input-text');
+      if (input) {
+        input.value = text;
+        handleSimulatorSubmit(new Event('submit'));
+      }
+    }
+
+    function formatMarkdownChat(rawText) {
+      if (!rawText) return '';
+      let text = escHtml(rawText);
+
+      // 1. Parse markdown links [Title](URL)
+      text = text.replace(/\[([^\]]+)\]\((https?:\/\/[^\s\)]+)\)/g, '<a href="$2" target="_blank" style="color:var(--primary); font-weight:700; text-decoration:underline;">🔗 $1</a>');
+
+      // 2. Parse naked URLs
+      text = text.replace(/(?<!href=")(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" style="color:var(--primary); font-weight:700; text-decoration:underline;">🔗 $1</a>');
+
+      // 3. Parse bold text **bold**
+      text = text.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+
+      // 4. Parse linebreaks
+      text = text.replace(/\n/g, '<br>');
+
+      return text;
+    }
+
+    async function handleSimulatorSubmit(event) {
+      if (event && event.preventDefault) event.preventDefault();
+      if (simulatorIsLoading) return;
+
+      const input = document.getElementById('sim-input-text');
+      const text = input ? input.value.trim() : '';
+      if (!text) return;
+
+      input.value = '';
+      simulatorIsLoading = true;
+
+      const container = document.getElementById('sim-messages-container');
+      const typing = document.getElementById('sim-typing-indicator');
+
+      // Append User Bubble
+      const userBubble = document.createElement('div');
+      userBubble.className = 'chat-bubble-user';
+      userBubble.innerText = text;
+      container.appendChild(userBubble);
+      container.scrollTop = container.scrollHeight;
+
+      if (typing) typing.style.display = 'block';
+
+      try {
+        const fetchStartTime = Date.now();
+        const res = await apiFetch(`${API_BASE}/simulator/chat`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            message: text,
+            history: simulatorHistory,
+            customerName: 'Cliente de Prueba',
+            channel: 'Web Simulator',
+          })
+        });
+
+        const data = await res.json();
+
+        // Natural human debounce pacing: keep typing wave for a brief realistic moment
+        const elapsed = Date.now() - fetchStartTime;
+        if (elapsed < 600) {
+          await new Promise((r) => setTimeout(r, 600 - elapsed));
+        }
+
+        if (typing) typing.style.display = 'none';
+
+        if (data.success && data.reply) {
+          const formattedReply = formatMarkdownChat(data.reply);
+
+          const botBubble = document.createElement('div');
+          botBubble.className = 'chat-bubble-bot';
+          botBubble.innerHTML = formattedReply;
+          container.appendChild(botBubble);
+          container.scrollTop = container.scrollHeight;
+
+          simulatorHistory.push({ role: 'user', content: text });
+          simulatorHistory.push({ role: 'assistant', content: data.reply });
+
+          // If an order was created in DB, render celebratory order card & refresh dashboard metrics
+          if (data.pedidoCreated) {
+            const orderCard = document.createElement('div');
+            orderCard.style.cssText = 'align-self:stretch; background:#ecfdf5; border:1px solid #10b981; border-radius:6px; padding:0.85rem 1rem; margin:0.4rem 0; box-shadow:var(--shadow-sm); animation:modalFadeIn 0.3s ease;';
+            
+            const cliente = typeof data.pedidoCreated.cliente === 'string' ? JSON.parse(data.pedidoCreated.cliente) : (data.pedidoCreated.cliente || {});
+            const items = typeof data.pedidoCreated.items === 'string' ? JSON.parse(data.pedidoCreated.items) : (data.pedidoCreated.items || []);
+            const total = items.reduce((acc, item) => acc + (parseFloat(item.subtotal) || (parseFloat(item.precio || 0) * parseInt(item.cantidad || 1))), 0);
+
+            orderCard.innerHTML = `
+              <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #a7f3d0; padding-bottom:0.4rem; margin-bottom:0.5rem;">
+                <span style="font-weight:800; color:#065f46; font-size:0.92rem; display:flex; align-items:center; gap:0.35rem;">
+                  🛒 ¡Pedido #${data.pedidoCreated.id} Creado en BD!
+                </span>
+                <span class="badge confirmado" style="font-size:0.75rem;">${(data.pedidoCreated.estado || 'PENDIENTE').toUpperCase()}</span>
+              </div>
+              <div style="font-size:0.82rem; color:#047857; line-height:1.4;">
+                <div><strong>Cliente:</strong> ${cliente.nombre || 'N/A'} ${cliente.telefono ? `(${cliente.telefono})` : ''}</div>
+                <div><strong>Entrega / Retiro:</strong> ${cliente.direccion || cliente.sucursal_retiro || 'A coordinar'}</div>
+                <div style="margin-top:0.35rem;"><strong>Artículos:</strong> ${items.map(i => `${i.cantidad || 1}x ${i.nombre} ($${i.precio || 0})`).join(', ')}</div>
+                <div style="margin-top:0.25rem; font-weight:700; color:#065f46;">Total estimado: U$S ${total.toFixed(2)}</div>
+              </div>
+              <button class="btn-action btn-success" style="margin-top:0.6rem; padding:0.35rem 0.75rem; font-size:0.78rem; width:100%;" onclick="switchTab('pedidos')">
+                📦 Ver Pedido en Depósito & Despacho →
+              </button>
+            `;
+            container.appendChild(orderCard);
+            loadDashboard();
+          }
+
+          updateSimulatorInspector(data);
+        } else {
+          const errBubble = document.createElement('div');
+          errBubble.style.cssText = 'align-self:flex-start; max-width:88%; background:#fee2e2; color:#dc2626; border:1px solid #f87171; border-radius:4px; padding:0.75rem 1rem; font-size:0.85rem;';
+          errBubble.innerText = `Error: ${data.error || 'No se pudo generar respuesta'}`;
+          container.appendChild(errBubble);
+        }
+      } catch (err) {
+        if (typing) typing.style.display = 'none';
+        const errBubble = document.createElement('div');
+        errBubble.style.cssText = 'align-self:flex-start; max-width:88%; background:#fee2e2; color:#dc2626; border:1px solid #f87171; border-radius:4px; padding:0.75rem 1rem; font-size:0.85rem;';
+        errBubble.innerText = `Error de conexión: ${err.message}`;
+        container.appendChild(errBubble);
+      } finally {
+        simulatorIsLoading = false;
+        container.scrollTop = container.scrollHeight;
+      }
+    }
+
+    function updateSimulatorInspector(data) {
+      if (!data) return;
+
+      const latBadge = document.getElementById('inspector-latency-badge');
+      if (latBadge) {
+        latBadge.innerText = `Latencia: ${data.latencyMs || 0} ms (${data.provider || 'IA'})`;
+      }
+
+      const intentEl = document.getElementById('insp-intent');
+      if (intentEl) intentEl.innerText = data.analysis?.intent || 'General';
+
+      const emoEl = document.getElementById('insp-emotion');
+      if (emoEl) emoEl.innerText = data.analysis?.emotion || 'Neutral';
+
+      const prodList = document.getElementById('insp-products-list');
+      const prodCount = document.getElementById('insp-prod-count');
+      const prods = data.rag?.productos || [];
+      if (prodCount) prodCount.innerText = `${prods.length} encontrados`;
+
+      if (prodList) {
+        if (prods.length === 0) {
+          prodList.innerHTML = '<div style="color:var(--text-muted); font-style:italic; font-size:0.8rem;">No se requirieron productos específicos del catálogo.</div>';
+        } else {
+          prodList.innerHTML = prods.map(p => {
+            const isUyu = (p.moneda || '').toUpperCase() === 'UYU' || (parseFloat(p.precio) >= 200 && (p.moneda || '').toUpperCase() !== 'USD');
+            const priceTag = isUyu ? `$ ${parseFloat(p.precio) || 0} UYU` : `U$S ${parseFloat(p.precio) || 0}`;
+            return `
+              <div style="background:#ffffff; padding:0.45rem 0.65rem; border-radius:4px; border:1px solid var(--border-subtle); font-size:0.8rem; display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                  <strong>${escHtml(p.nombre)}</strong>
+                  <div style="color:var(--text-muted); font-size:0.72rem;">SKU: ${escHtml(p.sku)} · Stock: ${escHtml(p.stock_status)}</div>
+                </div>
+                <strong style="color:var(--primary); font-size:0.86rem; white-space:nowrap; margin-left:0.5rem;">${priceTag}</strong>
+              </div>
+            `;
+          }).join('');
+        }
+      }
+
+      const crossList = document.getElementById('insp-cross-list');
+      const crossItems = data.rag?.complementarios || [];
+      if (crossList) {
+        if (crossItems.length === 0) {
+          crossList.innerHTML = '<span style="font-style:italic; font-size:0.8rem;">Sin sugerencias activadas para este término.</span>';
+        } else {
+          crossList.innerHTML = crossItems.map(c => {
+            const isUyu = (c.moneda || '').toUpperCase() === 'UYU' || (parseFloat(c.precio) >= 200 && (c.moneda || '').toUpperCase() !== 'USD');
+            const priceTag = isUyu ? `$ ${parseFloat(c.precio) || 0} UYU` : `U$S ${parseFloat(c.precio) || 0}`;
+            return `
+              <div style="font-size:0.78rem; color:var(--text-main); margin-top:2px;">
+                🔹 <strong>${escHtml(c.nombre)}</strong> (${priceTag})
+              </div>
+            `;
+          }).join('');
+        }
+      }
+
+      const extraInfo = document.getElementById('insp-extra-info');
+      if (extraInfo) {
+        const parts = [];
+        if (data.rag?.locales?.length > 0) parts.push(`🏪 <strong>${data.rag.locales.length} Sucursales</strong> inyectadas`);
+        if (data.rag?.zonasEnvio?.length > 0) parts.push(`🚚 <strong>${data.rag.zonasEnvio.length} Zonas de Envío</strong> inyectadas`);
+        if (data.rag?.formasPago?.length > 0) parts.push(`💳 <strong>${data.rag.formasPago.length} Formas de Pago</strong> inyectadas`);
+
+        if (parts.length === 0) {
+          extraInfo.innerHTML = 'Consulta no requirió datos de locales, envíos ni pagos.';
+        } else {
+          extraInfo.innerHTML = parts.join('<br>');
+        }
+      }
+
+      const rawPrompt = document.getElementById('insp-raw-prompt');
+      if (rawPrompt) rawPrompt.innerText = data.systemPrompt || '';
     }
 
     // --- PROMPT & CONFIG ---
@@ -1005,19 +2473,32 @@
       alert(`Configuración '${key}' guardada exitosamente.`);
     }
 
-    // --- CHATWOOT & CANALES ---
-    function updateChannelBadge(chan) {
-      const el = document.getElementById(`chan-${chan}`);
-      const badge = document.getElementById(`badge-chan-${chan}`);
-      if (el && badge) {
-        if (el.checked) {
-          badge.className = 'badge rechazado';
-          badge.innerText = '🔴 Bot Apagado (Solo Humanos)';
-        } else {
-          badge.className = 'badge confirmado';
-          badge.innerText = '🟢 Bot Activo';
-        }
-      }
+    // --- CHATWOOT & CANALES (DINÁMICO) ---
+    let currentInboxes = [];
+    let currentDisabledChannels = [];
+
+    function getChannelIcon(channelType) {
+      const type = (channelType || '').toLowerCase();
+      if (type.includes('whatsapp')) return '💬';
+      if (type.includes('instagram')) return '📸';
+      if (type.includes('webwidget') || type.includes('widget') || type.includes('web')) return '🌐';
+      if (type.includes('email')) return '✉️';
+      if (type.includes('facebook') || type.includes('page')) return '👥';
+      if (type.includes('telegram')) return '✈️';
+      if (type.includes('api')) return '🔌';
+      return '📥';
+    }
+
+    function getChannelPrettyName(channelType) {
+      const type = (channelType || '').toLowerCase();
+      if (type.includes('whatsapp')) return 'WhatsApp Business';
+      if (type.includes('instagram')) return 'Instagram Direct';
+      if (type.includes('webwidget')) return 'Web Widget Live Chat';
+      if (type.includes('email')) return 'Email / Correo';
+      if (type.includes('facebook')) return 'Facebook Messenger';
+      if (type.includes('telegram')) return 'Telegram';
+      if (type.includes('api')) return 'API Externa';
+      return channelType || 'Canal';
     }
 
     async function loadChatwootConfig() {
@@ -1027,7 +2508,6 @@
         document.getElementById('chatwoot-url-input').value = cfg.chatwoot_base_url || '';
         document.getElementById('chatwoot-token-input').value = cfg.chatwoot_api_token || '';
 
-        // Parse disabled channels
         let disabledList = [];
         if (cfg.canales_desactivados) {
           try {
@@ -1040,28 +2520,108 @@
             disabledList = cfg.canales_desactivados.split(',').map(s => s.trim()).filter(Boolean);
           }
         }
-
-        const standardChannels = ['instagram', 'whatsapp', 'webwidget', 'email', 'facebook', 'telegram'];
-        const customItems = [];
-
-        standardChannels.forEach(chan => {
-          const el = document.getElementById(`chan-${chan}`);
-          if (el) {
-            el.checked = disabledList.some(item => String(item).toLowerCase() === chan);
-            updateChannelBadge(chan);
-          }
-        });
-
-        disabledList.forEach(item => {
-          const lower = String(item).toLowerCase();
-          if (!standardChannels.includes(lower)) {
-            customItems.push(item);
-          }
-        });
-
-        document.getElementById('custom-disabled-inboxes').value = customItems.join(', ');
+        currentDisabledChannels = disabledList;
+        await refreshChatwootInboxes();
       } catch (err) {
         console.error('Error cargando configuración de Uruchat / Canales:', err);
+      }
+    }
+
+    async function refreshChatwootInboxes() {
+      const container = document.getElementById('inboxes-list-container');
+      const loader = document.getElementById('inboxes-loading');
+      if (loader) loader.style.display = 'block';
+
+      try {
+        const res = await apiFetch(`${API_BASE}/chatwoot/inboxes`);
+        const data = await res.json();
+        currentInboxes = data.inboxes || [];
+        renderInboxesList();
+      } catch (err) {
+        console.error('Error obteniendo inboxes de Chatwoot:', err);
+        if (container) {
+          container.innerHTML = `<div style="color:var(--danger); grid-column:1/-1;">Error al consultar la API de Uruchat: ${escHtml(err.message)}</div>`;
+        }
+      } finally {
+        if (loader) loader.style.display = 'none';
+      }
+    }
+
+    function renderInboxesList() {
+      const container = document.getElementById('inboxes-list-container');
+      if (!container) return;
+
+      if (!currentInboxes || currentInboxes.length === 0) {
+        container.innerHTML = '<div style="color:var(--text-muted); grid-column:1/-1;">No se encontraron bandejas configuradas en Uruchat.</div>';
+        return;
+      }
+
+      container.innerHTML = currentInboxes.map(inbox => {
+        const strId = String(inbox.id);
+        const isNumericIdDisabled = currentDisabledChannels.includes(strId) || currentDisabledChannels.includes(`inbox:${strId}`);
+        const isNameDisabled = currentDisabledChannels.some(d => String(d).toLowerCase() === String(inbox.name).toLowerCase());
+        const isTypeDisabled = currentDisabledChannels.some(d => {
+          const lower = String(d).toLowerCase();
+          return lower && (String(inbox.channel_type).toLowerCase().includes(lower) || lower.includes(String(inbox.channel_type).toLowerCase()));
+        });
+        const isOff = isNumericIdDisabled || isNameDisabled || isTypeDisabled;
+
+        const icon = getChannelIcon(inbox.channel_type);
+        const prettyChannel = getChannelPrettyName(inbox.channel_type);
+        const contactInfo = inbox.phone_number || inbox.email || (inbox.is_mock ? 'Modo Demostración / Offline' : 'Conectado');
+
+        return `
+          <div style="background:#f8fafc; padding:1.1rem; border-radius:0.6rem; border:1px solid ${isOff ? 'var(--danger)' : 'var(--border-subtle)'}; display:flex; flex-direction:column; justify-content:space-between;">
+            <div>
+              <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:0.5rem;">
+                <div>
+                  <span style="font-weight:700; font-size:1rem; color:var(--text-main);">${icon} ${escHtml(inbox.name)}</span>
+                  <div style="font-size:0.78rem; color:var(--text-muted); margin-top:2px;">
+                    <strong>ID #${inbox.id}</strong> · <span>${escHtml(prettyChannel)}</span>
+                  </div>
+                </div>
+                <span id="badge-inbox-${inbox.id}" class="badge ${isOff ? 'rechazado' : 'confirmado'}" style="font-size:0.75rem; white-space:nowrap;">
+                  ${isOff ? '🔴 Solo Humanos' : '🟢 Bot Activo'}
+                </span>
+              </div>
+              <p style="color:var(--text-muted); font-size:0.8rem; margin:0.6rem 0 0.8rem;">
+                ${escHtml(contactInfo)}
+              </p>
+            </div>
+            <div style="border-top:1px solid rgba(0,0,0,0.06); padding-top:0.6rem;">
+              <label style="display:flex; align-items:center; gap:0.6rem; cursor:pointer; font-weight:normal; text-transform:none; margin:0;">
+                <input type="checkbox" id="inbox-toggle-${inbox.id}" style="width:18px; height:18px; margin:0;" ${isOff ? 'checked' : ''} onchange="toggleInboxBot(${inbox.id})">
+                <span style="font-size:0.85rem;"><strong>Apagar Bot</strong> (Atención 100% Humana)</span>
+              </label>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function toggleInboxBot(inboxId) {
+      const checkbox = document.getElementById(`inbox-toggle-${inboxId}`);
+      const badge = document.getElementById(`badge-inbox-${inboxId}`);
+      if (!checkbox || !badge) return;
+
+      const strId = String(inboxId);
+      if (checkbox.checked) {
+        badge.className = 'badge rechazado';
+        badge.innerText = '🔴 Solo Humanos';
+        if (!currentDisabledChannels.includes(strId)) {
+          currentDisabledChannels.push(strId);
+        }
+      } else {
+        badge.className = 'badge confirmado';
+        badge.innerText = '🟢 Bot Activo';
+        currentDisabledChannels = currentDisabledChannels.filter(id => String(id) !== strId && String(id) !== `inbox:${strId}`);
+        const inbox = currentInboxes.find(i => i.id === inboxId);
+        if (inbox) {
+          currentDisabledChannels = currentDisabledChannels.filter(id => {
+            const lower = String(id).toLowerCase();
+            return lower !== String(inbox.name).toLowerCase() && !String(inbox.channel_type).toLowerCase().includes(lower);
+          });
+        }
       }
     }
 
@@ -1076,36 +2636,20 @@
         method: 'PUT', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ key: 'chatwoot_api_token', value: token })
       });
-      alert('Configuración de Uruchat guardada.');
+      alert('Configuración de Uruchat guardada exitosamente.');
+      await refreshChatwootInboxes();
     }
 
     async function saveChannelConfig() {
-      const standardChannels = ['instagram', 'whatsapp', 'webwidget', 'email', 'facebook', 'telegram'];
-      const disabledList = [];
-
-      standardChannels.forEach(chan => {
-        const el = document.getElementById(`chan-${chan}`);
-        if (el && el.checked) {
-          disabledList.push(chan);
-        }
-      });
-
-      const customVal = document.getElementById('custom-disabled-inboxes').value.trim();
-      if (customVal) {
-        const customItems = customVal.split(',').map(s => s.trim()).filter(Boolean);
-        disabledList.push(...customItems);
-      }
-
       await apiFetch(`${API_BASE}/configuracion`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           key: 'canales_desactivados',
-          value: JSON.stringify(disabledList)
+          value: JSON.stringify(currentDisabledChannels)
         })
       });
-
-      alert(`Control de canales guardado exitosamente.\nCanales con bot apagado: ${disabledList.length > 0 ? disabledList.join(', ') : 'Ninguno (Bot activo en todos)'}`);
+      alert(`Control de canales e inboxes guardado exitosamente.\nInboxes con bot apagado: ${currentDisabledChannels.length > 0 ? currentDisabledChannels.join(', ') : 'Ninguno (Bot activo en todos)'}`);
     }
 
     // --- DATASOURCE ---
@@ -1233,12 +2777,12 @@
           <tr>
             <td>#${p.id}</td>
             <td>${origenBadge}</td>
-            <td><strong>${p.ecommerce_order_number || '-'}</strong></td>
-            <td>${p.conversation_id || '-'}</td>
-            <td><strong>${cliente.nombre || 'Cliente'}</strong></td>
-            <td>${cliente.telefono || cliente.whatsapp || '-'}</td>
+            <td><strong>${escHtml(p.ecommerce_order_number || '-')}</strong></td>
+            <td>${escHtml(p.conversation_id || '-')}</td>
+            <td><strong>${escHtml(cliente.nombre || 'Cliente')}</strong></td>
+            <td>${escHtml(cliente.telefono || cliente.whatsapp || '-')}</td>
             <td>${pagoBadge}</td>
-            <td><span class="badge ${p.estado}">${p.estado}</span></td>
+            <td><span class="badge ${escHtml(p.estado)}">${escHtml(p.estado)}</span></td>
             <td>
               <button class="btn-action" onclick="viewPedidoDetails(${p.id})">👁️ Ver / Editar</button>
             </td>
@@ -1254,16 +2798,16 @@
       const items = typeof p.items === 'string' ? JSON.parse(p.items) : (p.items || []);
 
       let html = `
-        <div style="margin-bottom:1rem; background:#f9fafb; padding:1rem; border-radius:0.5rem; border:1px solid var(--border);">
-          <p style="margin-bottom:0.3rem;"><strong>Pedido ID:</strong> #${p.id} ${p.ecommerce_order_number ? `(${p.ecommerce_order_number})` : ''} | <strong>Origen:</strong> ${p.origen || 'bot'} | <strong>Estado:</strong> <span class="badge ${p.estado}">${p.estado}</span></p>
-          <p style="margin-bottom:0.3rem;"><strong>Estado de Pago:</strong> ${p.pago_estado || 'sin_pago'} ${p.pago_referencia ? `(Ref: ${p.pago_referencia})` : ''}</p>
-          <p style="margin-bottom:0.3rem;"><strong>Cliente:</strong> ${cliente.nombre || 'No especificado'} | <strong>Tel/WA:</strong> ${cliente.telefono || cliente.whatsapp || 'No especificado'}</p>
-          <p style="margin-bottom:0.3rem;"><strong>Email:</strong> ${cliente.email || 'No especificado'}</p>
-          <p><strong>Dirección:</strong> ${cliente.direccion || 'Retiro en sucursal'}</p>
+        <div style="margin-bottom:1rem; background:#f8fafc; padding:1rem; border-radius:0.5rem; border:1px solid var(--border-subtle);">
+          <p style="margin-bottom:0.3rem;"><strong>Pedido ID:</strong> #${p.id} ${p.ecommerce_order_number ? `(${escHtml(p.ecommerce_order_number)})` : ''} | <strong>Origen:</strong> ${escHtml(p.origen || 'bot')} | <strong>Estado:</strong> <span class="badge ${escHtml(p.estado)}">${escHtml(p.estado)}</span></p>
+          <p style="margin-bottom:0.3rem;"><strong>Estado de Pago:</strong> ${escHtml(p.pago_estado || 'sin_pago')} ${p.pago_referencia ? `(Ref: ${escHtml(p.pago_referencia)})` : ''}</p>
+          <p style="margin-bottom:0.3rem;"><strong>Cliente:</strong> ${escHtml(cliente.nombre || 'No especificado')} | <strong>Tel/WA:</strong> ${escHtml(cliente.telefono || cliente.whatsapp || 'No especificado')}</p>
+          <p style="margin-bottom:0.3rem;"><strong>Email:</strong> ${escHtml(cliente.email || 'No especificado')}</p>
+          <p><strong>Dirección:</strong> ${escHtml(cliente.direccion || 'Retiro en sucursal')}</p>
         </div>
 
-        <h4>📦 Productos Solicitados (Edición de Stock)</h4>
-        <table id="pedido-items-table" style="margin-bottom:1rem;">
+        <h4 style="margin: 1rem 0 0.5rem;">📦 Productos Solicitados (Edición de Stock)</h4>
+        <table id="pedido-items-table" style="margin-bottom:1rem; min-width:100%;">
           <thead>
             <tr>
               <th>SKU</th>
@@ -1276,10 +2820,10 @@
           <tbody>
             ${items.map((item, idx) => `
               <tr id="item-row-${idx}">
-                <td>${item.sku || '-'}</td>
-                <td>${item.nombre || item.producto || 'Producto'}</td>
-                <td><input type="number" id="item-cant-${idx}" value="${item.cantidad || 1}" style="width:60px;" min="0"></td>
-                <td>$${item.precio || 0}</td>
+                <td>${escHtml(item.sku || '-')}</td>
+                <td>${escHtml(item.nombre || item.producto || 'Producto')}</td>
+                <td><input type="number" id="item-cant-${idx}" value="${parseInt(item.cantidad, 10) || 1}" style="width:60px;" min="0"></td>
+                <td>U$S ${parseFloat(item.precio) || 0}</td>
                 <td><button class="btn-action btn-danger" onclick="removeItemRow(${idx})">🗑️ Quitar</button></td>
               </tr>
             `).join('')}
@@ -1287,16 +2831,16 @@
         </table>
 
         <label>Motivo de Modificación / Nota para la IA y el Cliente (ej. Sin stock del ítem X)</label>
-        <textarea id="pedido-motivo-input" rows="2" placeholder="Indicar brevemente si falta stock o se modifica el pedido...">${p.motivo_modificacion || ''}</textarea>
+        <textarea id="pedido-motivo-input" rows="2" placeholder="Indicar brevemente si falta stock o se modifica el pedido...">${escHtml(p.motivo_modificacion || '')}</textarea>
 
         <label>Notas Internas del Depósito</label>
-        <textarea id="pedido-notas-input" rows="2" placeholder="Notas de empaque o preparación...">${p.notas || ''}</textarea>
+        <textarea id="pedido-notas-input" rows="2" placeholder="Notas de empaque o preparación...">${escHtml(p.notas || '')}</textarea>
 
-        <div style="margin-top:1rem; display:flex; gap:0.5rem; flex-wrap:wrap;">
+        <div style="margin-top:1.25rem; display:flex; gap:0.5rem; flex-wrap:wrap;">
           <button class="btn-action btn-success" onclick="savePedidoChanges(${p.id}, 'confirmado')">✅ Confirmar / Pedido Listo</button>
           <button class="btn-action btn-primary" onclick="savePedidoChanges(${p.id}, 'entregado')">🚚 Marcar Entregado</button>
           <button class="btn-action btn-danger" onclick="savePedidoChanges(${p.id}, 'rechazado')">❌ Rechazar Pedido</button>
-          <button class="btn-action btn-secondary" onclick="savePedidoChanges(${p.id}, '${p.estado}')">💾 Guardar Cambios</button>
+          <button class="btn-action btn-secondary" onclick="savePedidoChanges(${p.id}, '${escHtml(p.estado)}')">💾 Guardar Cambios</button>
         </div>
       `;
 
@@ -1344,25 +2888,86 @@
       loadPedidos();
     }
 
-    // --- CATALOGO ---
-    async function loadProducts() {
-      const q = document.getElementById('product-search').value;
-      const res = await apiFetch(`${API_BASE}/productos?search=${encodeURIComponent(q)}`);
+    // --- CATALOGO (PAGINADO & BÚSQUEDA) ---
+    let catalogCurrentPage = 1;
+    let catalogTotalPages = 1;
+    let catalogDebounceTimer = null;
+
+    function debouncedLoadProducts() {
+      clearTimeout(catalogDebounceTimer);
+      catalogDebounceTimer = setTimeout(() => {
+        loadProducts(1);
+      }, 300);
+    }
+
+    function changeCatalogPage(delta) {
+      const targetPage = catalogCurrentPage + delta;
+      if (targetPage >= 1 && targetPage <= catalogTotalPages) {
+        loadProducts(targetPage);
+      }
+    }
+
+    async function loadProducts(page = 1) {
+      catalogCurrentPage = page;
+      const q = (document.getElementById('product-search')?.value || '').trim();
+      const cat = (document.getElementById('product-category')?.value || '').trim();
+      const limit = parseInt(document.getElementById('catalog-page-size')?.value || '50', 10);
+
+      const params = new URLSearchParams({
+        page: catalogCurrentPage,
+        limit,
+      });
+      if (q) params.set('search', q);
+      if (cat) params.set('categoria', cat);
+
+      const res = await apiFetch(`${API_BASE}/productos?${params.toString()}`);
       const data = await res.json();
+
+      const items = Array.isArray(data) ? data : (data.items || []);
+      const total = data.total !== undefined ? data.total : items.length;
+      catalogTotalPages = data.totalPages || 1;
+
+      const summaryEl = document.getElementById('catalog-summary-text');
+      if (summaryEl) {
+        summaryEl.innerText = `Total: ${total.toLocaleString()} productos vectorizados e indexados ($ UYU y U$S)`;
+      }
+      const pageInfoEl = document.getElementById('catalog-page-info');
+      if (pageInfoEl) {
+        pageInfoEl.innerText = `Página ${catalogCurrentPage} de ${catalogTotalPages}`;
+      }
+      const prevBtn = document.getElementById('btn-prev-page');
+      if (prevBtn) prevBtn.disabled = catalogCurrentPage <= 1;
+      const nextBtn = document.getElementById('btn-next-page');
+      if (nextBtn) nextBtn.disabled = catalogCurrentPage >= catalogTotalPages;
+
       const tbody = document.getElementById('products-table-body');
-      tbody.innerHTML = data.map(p => `
-        <tr>
-          <td><img src="${p.imagen_url || 'https://via.placeholder.com/45'}" class="img-thumb" alt="img" onerror="this.src='https://via.placeholder.com/45'"></td>
-          <td>${p.sku}</td>
-          <td><strong>${p.nombre}</strong></td>
-          <td>$${p.precio}</td>
-          <td>${p.marca || '-'}</td>
-          <td><span class="badge ${p.stock_status === 'in_stock' ? 'confirmado' : 'rechazado'}">${p.stock_status}</span></td>
-          <td>
-            ${p.producto_url ? `<a href="${p.producto_url}" target="_blank" style="color:var(--primary); font-size:0.85rem;">🔗 Ver en Web</a>` : '-'}
-          </td>
-        </tr>
-      `).join('');
+      if (items.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:var(--text-muted); padding:1.5rem;">No se encontraron productos coincidentes.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = items.map(p => {
+        const isUyu = (p.moneda || '').toUpperCase() === 'UYU' || (parseFloat(p.precio) >= 200 && (p.moneda || '').toUpperCase() !== 'USD');
+        const priceLabel = isUyu ? `$ ${parseFloat(p.precio) || 0} UYU` : `U$S ${parseFloat(p.precio) || 0}`;
+        const priceBadge = isUyu
+          ? `<span class="badge" style="background:#fef3c7; color:#b45309;">${priceLabel}</span>`
+          : `<span class="badge" style="background:#e0f2fe; color:#0369a1;">${priceLabel}</span>`;
+
+        return `
+          <tr>
+            <td><img src="${p.imagen_url || 'https://via.placeholder.com/45'}" class="img-thumb" alt="img" onerror="this.src='https://via.placeholder.com/45'"></td>
+            <td><code>${escHtml(p.sku)}</code></td>
+            <td><strong>${escHtml(p.nombre)}</strong></td>
+            <td>${priceBadge}</td>
+            <td>${escHtml(p.marca || '-')}</td>
+            <td><span style="font-size:0.8rem; color:var(--text-muted);">${escHtml(p.categoria || 'General')}</span></td>
+            <td><span class="badge ${p.stock_status === 'in_stock' ? 'confirmado' : 'rechazado'}">${escHtml(p.stock_status)}</span></td>
+            <td>
+              ${p.producto_url ? `<a href="${escHtml(p.producto_url)}" target="_blank" class="btn-action" style="padding:0.35rem 0.65rem; font-size:0.75rem; text-decoration:none;">🔗 Ver Web</a>` : '-'}
+            </td>
+          </tr>
+        `;
+      }).join('');
     }
 
     // --- LOCALES ---
@@ -1373,11 +2978,11 @@
       tbody.innerHTML = data.map(l => `
         <tr>
           <td>#${l.id}</td>
-          <td><strong>${l.nombre}</strong></td>
-          <td>${l.zona}</td>
-          <td>${l.direccion}</td>
-          <td>${l.telefono}</td>
-          <td>${l.horario}</td>
+          <td><strong>${escHtml(l.nombre)}</strong></td>
+          <td>${escHtml(l.zona)}</td>
+          <td>${escHtml(l.direccion)}</td>
+          <td>${escHtml(l.telefono)}</td>
+          <td>${escHtml(l.horario)}</td>
           <td>
             <button class="btn-action" onclick='editLocal(${JSON.stringify(l)})'>✏️ Editar</button>
             <button class="btn-action btn-danger" onclick="deleteLocal(${l.id})">🗑️</button>
@@ -1447,8 +3052,8 @@
       tbody.innerHTML = data.map(z => `
         <tr>
           <td>#${z.id}</td>
-          <td><strong>${z.departamento_ciudad}</strong></td>
-          <td>${z.barrio_zona}</td>
+          <td><strong>${escHtml(z.departamento_ciudad)}</strong></td>
+          <td>${escHtml(z.barrio_zona)}</td>
           <td>$${z.costo_envio}</td>
           <td><span class="badge ${z.activo ? 'confirmado' : 'rechazado'}">${z.activo ? 'Activa' : 'Inactiva'}</span></td>
           <td>
@@ -1500,9 +3105,9 @@
       tbody.innerHTML = data.map(f => `
         <tr>
           <td>#${f.id}</td>
-          <td><strong>${f.nombre}</strong></td>
-          <td>${f.descripcion || '-'}</td>
-          <td>${f.instrucciones || '-'}</td>
+          <td><strong>${escHtml(f.nombre)}</strong></td>
+          <td>${escHtml(f.descripcion || '-')}</td>
+          <td>${escHtml(f.instrucciones || '-')}</td>
           <td><span class="badge ${f.activo ? 'confirmado' : 'rechazado'}">${f.activo ? 'Activo' : 'Inactivo'}</span></td>
           <td>
             <button class="btn-action" onclick='editFormaPago(${JSON.stringify(f)})'>✏️ Editar</button>
@@ -1617,8 +3222,11 @@
       loadScraperStatus();
     }
 
-    // Init
-    loadDashboard();
+    // Initialization on Page Load
+    document.addEventListener('DOMContentLoaded', () => {
+      loadDashboard();
+      initSimulator();
+    });
   </script>
 </body>
 </html>

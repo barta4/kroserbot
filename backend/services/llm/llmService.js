@@ -1,4 +1,5 @@
 const configuracionRepo = require('../../repositories/configuracionRepository');
+const logger = require('../../config/logger');
 require('dotenv').config();
 
 let axios = null;
@@ -34,7 +35,7 @@ async function listAvailableModels(provider, apiKey, baseUrl) {
             }));
         }
       } catch (err) {
-        console.warn(`[LLM List Models Error - Gemini] ${err.message}`);
+        logger.warn('LLM list models error (Gemini)', { error: err.message });
       }
     }
 
@@ -68,7 +69,7 @@ async function listAvailableModels(provider, apiKey, baseUrl) {
           }));
       }
     } catch (err) {
-      console.warn(`[LLM List Models Error - OpenAI/Compatible] ${err.message}`);
+      logger.warn('LLM list models error (OpenAI/Compatible)', { error: err.message });
     }
   }
 
@@ -81,9 +82,34 @@ async function listAvailableModels(provider, apiKey, baseUrl) {
 }
 
 /**
+ * Post-processes and humanizes the LLM reply to strip robotic artifacts
+ */
+function cleanAndHumanizeReply(text = '', historyLength = 1) {
+  if (!text) return '';
+  let cleaned = text.trim();
+
+  // Strip robotic disclaimers
+  cleaned = cleaned.replace(/Como (asistente virtual|modelo de inteligencia artificial|IA|bot)[^.,\n]*[.,\n]/gi, '');
+  cleaned = cleaned.replace(/Soy un asistente virtual[^.,\n]*[.,\n]/gi, '');
+  cleaned = cleaned.replace(/Espero que esta respuesta le sea de utilidad\.?/gi, '');
+  cleaned = cleaned.replace(/Espero haberle sido de ayuda\.?/gi, '');
+
+  // If conversation is already in progress, strip repetitive greetings at the start
+  if (historyLength > 1) {
+    cleaned = cleaned.replace(/^(¡?(hola|buenos días|buenas tardes|buenas noches|estimado\/a|estimado cliente)[!,.\s]+)+/i, '');
+    // Capitalize first character if needed
+    if (cleaned.length > 0) {
+      cleaned = cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
+    }
+  }
+
+  return cleaned.trim();
+}
+
+/**
  * Call Google Gemini API dynamically with chosen model.
  */
-async function callGemini(systemPrompt, userMessages, modelName, apiKey) {
+async function callGemini(systemPrompt, userMessages, modelName, apiKey, temperature = 0.5) {
   const key = apiKey || process.env.GEMINI_API_KEY;
   if (!key) throw new Error('GEMINI_API_KEY missing');
 
@@ -97,6 +123,10 @@ async function callGemini(systemPrompt, userMessages, modelName, apiKey) {
       url,
       {
         contents: [{ parts: [{ text: fullPrompt }] }],
+        generationConfig: {
+          temperature,
+          topP: 0.95,
+        },
       },
       { timeout: 15000 }
     );
@@ -109,7 +139,10 @@ async function callGemini(systemPrompt, userMessages, modelName, apiKey) {
 
   const { GoogleGenerativeAI } = require('@google/generative-ai');
   const genAI = new GoogleGenerativeAI(key);
-  const model = genAI.getGenerativeModel({ model: selectedModel });
+  const model = genAI.getGenerativeModel({
+    model: selectedModel,
+    generationConfig: { temperature },
+  });
   const result = await model.generateContent(fullPrompt);
   return (await result.response).text();
 }
@@ -117,7 +150,7 @@ async function callGemini(systemPrompt, userMessages, modelName, apiKey) {
 /**
  * Call OpenAI or OpenAI-compatible API dynamically with chosen model & baseURL.
  */
-async function callOpenAI(systemPrompt, userMessages, modelName, apiKey, baseUrl) {
+async function callOpenAI(systemPrompt, userMessages, modelName, apiKey, baseUrl, temperature = 0.5) {
   const key = apiKey || process.env.OPENAI_API_KEY;
   const targetBaseUrl = baseUrl || process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1';
   const selectedModel = modelName || 'gpt-4o-mini';
@@ -140,7 +173,9 @@ async function callOpenAI(systemPrompt, userMessages, modelName, apiKey, baseUrl
       {
         model: selectedModel,
         messages,
-        temperature: 0.3,
+        temperature,
+        presence_penalty: 0.2,
+        frequency_penalty: 0.1,
       },
       { headers, timeout: 15000 }
     );
@@ -153,13 +188,16 @@ async function callOpenAI(systemPrompt, userMessages, modelName, apiKey, baseUrl
   const completion = await openai.chat.completions.create({
     model: selectedModel,
     messages,
-    temperature: 0.3,
+    temperature,
+    presence_penalty: 0.2,
+    frequency_penalty: 0.1,
   });
   return completion.choices[0].message.content;
 }
 
 module.exports = {
   listAvailableModels,
+  cleanAndHumanizeReply,
 
   async generateResponse(systemPrompt, userMessages) {
     // Read dynamic configuration from database
@@ -167,35 +205,43 @@ module.exports = {
     const selectedModel = (await configuracionRepo.get('llm_model')) || (provider === 'gemini' ? 'gemini-1.5-flash' : 'gpt-4o-mini');
     const apiKey = (await configuracionRepo.get('llm_api_key')) || (provider === 'gemini' ? process.env.GEMINI_API_KEY : process.env.OPENAI_API_KEY);
     const baseUrl = (await configuracionRepo.get('llm_base_url')) || process.env.OPENAI_BASE_URL;
+    const tempConfig = await configuracionRepo.get('llm_temperature');
+    const temperature = tempConfig ? parseFloat(tempConfig) : 0.5;
 
-    console.log(`[LLM Connector] Invoking provider: '${provider}', model: '${selectedModel}'`);
+    logger.info('LLM connector invoked', { provider, model: selectedModel, temperature });
+
+    let rawReply = '';
 
     // 1. Execute Gemini Provider
     if (provider === 'gemini' && (apiKey || process.env.GEMINI_API_KEY)) {
       try {
-        return await callGemini(systemPrompt, userMessages, selectedModel, apiKey);
+        rawReply = await callGemini(systemPrompt, userMessages, selectedModel, apiKey, temperature);
       } catch (err) {
-        console.warn(`[LLM Connector] Gemini call failed (${err.message}). Trying OpenAI fallback...`);
+        logger.warn('LLM Gemini call failed, trying fallback', { error: err.message });
       }
     }
 
     // 2. Execute OpenAI / Compatible Provider
-    if ((provider === 'openai' || provider === 'compatible') && (apiKey || process.env.OPENAI_API_KEY || baseUrl)) {
+    if (!rawReply && (provider === 'openai' || provider === 'compatible' || process.env.OPENAI_API_KEY) && (apiKey || process.env.OPENAI_API_KEY || baseUrl)) {
       try {
-        return await callOpenAI(systemPrompt, userMessages, selectedModel, apiKey, baseUrl);
+        rawReply = await callOpenAI(systemPrompt, userMessages, selectedModel, apiKey, baseUrl, temperature);
       } catch (err) {
-        console.warn(`[LLM Connector] OpenAI/Compatible call failed (${err.message}).`);
+        logger.warn('LLM OpenAI/Compatible call failed', { error: err.message });
       }
     }
 
-    // 3. Fallback heuristic response
-    const lastUserMsg = userMessages[userMessages.length - 1]?.content || '';
-    if (lastUserMsg.toLowerCase().includes('factura') || lastUserMsg.toLowerCase().includes('reclamo')) {
-      return 'DERIVAR: administracion';
+    // 3. Fallback heuristic response if both fail or offline
+    if (!rawReply) {
+      const lastUserMsg = userMessages[userMessages.length - 1]?.content || '';
+      if (lastUserMsg.toLowerCase().includes('factura') || lastUserMsg.toLowerCase().includes('reclamo')) {
+        return 'DERIVAR: administracion';
+      }
+      if (lastUserMsg.toLowerCase().includes('comprar') || lastUserMsg.toLowerCase().includes('pedido')) {
+        return 'Con mucho gusto tomamos su pedido. Por favor facilítenos su nombre completo, teléfono, dirección de entrega y los artículos que precisa.';
+      }
+      rawReply = '¡Buenos días! Bienvenido a Kroser Uruguay. ¿En qué producto o consulta le podemos colaborar hoy?';
     }
-    if (lastUserMsg.toLowerCase().includes('comprar') || lastUserMsg.toLowerCase().includes('pedido')) {
-      return '¡Perfecto! Con gusto te tomo el pedido. Por favor confirmame tu nombre, teléfono, dirección de entrega y los artículos que precisás.';
-    }
-    return '¡Hola! Bienvenido a Kroser. ¿En qué producto o consulta puedo ayudarte hoy?';
+
+    return cleanAndHumanizeReply(rawReply, userMessages.length);
   },
 };

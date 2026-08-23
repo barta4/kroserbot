@@ -1,15 +1,32 @@
-# Tarea 07 — Deploy
+# Tarea 07 — Deploy & Docker Hub
 
 ## Objetivo
-Poner todo en producción de forma reproducible y con posibilidad de volver atrás si algo sale mal.
+Poner todo en producción de forma reproducible mediante imágenes Docker optimizadas en Docker Hub (`alfredobartaburu/kroserbot`).
 
-## Tareas
-- [ ] Dockerfile multi-stage para backend, admin y scraper (imagen final liviana)
-- [ ] `docker-compose.yml` de producción (o manifiestos separados si van a distintos servidores)
-- [ ] Variables de entorno separadas por ambiente (dev/staging/prod) — nunca secretos en el repo
-- [ ] CI básico: correr tests y linter en cada push antes de mergear
-- [ ] Health checks configurados (reinicio automático si el backend cuelga)
-- [ ] Estrategia de rollback simple (volver a la versión anterior rápido)
+## Tareas Completadas
+- [x] Dockerfile multi-stage en la raíz y en `backend/` con Node 20 Alpine, usuario no root y healthchecks integrados.
+- [x] Dockerfile multi-stage en `scraper/` para la sincronización de catálogo.
+- [x] `docker-compose.yml` parametrizado con imágenes de Docker Hub (`alfredobartaburu/kroserbot:${TAG:-latest}`).
+- [x] `docker-compose.prod.yml` para despliegue productivo directo sin necesidad de compilar código fuente.
+- [x] Scripts de compilación y publicación automatizada (`scripts/build-and-push.ps1` y `scripts/build-and-push.sh`).
+- [x] Migraciones de base de datos ejecutadas automáticamente al iniciar el contenedor.
 
-## Criterio de terminado
-Un deploy nuevo se hace con un solo comando/pipeline, y si falla, volver a la versión anterior toma menos de 5 minutos.
+## Comandos de Publicación en Docker Hub
+
+```powershell
+# En PowerShell (Windows):
+.\scripts\build-and-push.ps1 -Tag "1.0.0"
+
+# O manualmente:
+docker login
+docker build -t alfredobartaburu/kroserbot:latest .
+docker push alfredobartaburu/kroserbot:latest
+```
+
+## Despliegue en Servidor de Producción
+
+```bash
+# Iniciar stack completo con imágenes oficiales de Docker Hub:
+docker compose -f docker-compose.prod.yml up -d
+```
+

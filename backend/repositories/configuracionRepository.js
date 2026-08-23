@@ -19,7 +19,6 @@ module.exports = {
   },
 
   async set(key, value) {
-    DEFAULTS[key] = value;
     try {
       const res = await db.query(
         `INSERT INTO configuracion (key, value, updated_at) 
@@ -28,8 +27,10 @@ module.exports = {
          RETURNING *`,
         [key, value]
       );
+      DEFAULTS[key] = value;
       return res.rows[0];
     } catch (_err) {
+      DEFAULTS[key] = value;
       return { key, value, updated_at: new Date().toISOString() };
     }
   },

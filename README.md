@@ -47,6 +47,25 @@ npm run migrate:up
 
 ---
 
+## 🐳 Docker Hub & Despliegue en Producción
+
+### Publicar imágenes en Docker Hub (`alfredobartaburu/kroserbot`):
+```powershell
+# En Windows (PowerShell):
+.\scripts\build-and-push.ps1 -Tag "1.0.0"
+
+# En Linux / Mac (Bash):
+chmod +x ./scripts/build-and-push.sh
+./scripts/build-and-push.sh "1.0.0"
+```
+
+### Desplegar en servidor con imágenes de Docker Hub:
+```bash
+docker compose -f docker-compose.prod.yml up -d
+```
+
+---
+
 ## 📂 Estructura del Proyecto
 
 ```

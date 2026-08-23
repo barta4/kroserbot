@@ -202,4 +202,38 @@ module.exports = {
     );
     return res.rows;
   },
+
+  async getOrdersByCustomerContext({ conversation_id, email, phone }) {
+    try {
+      const conditions = [];
+      const params = [];
+
+      if (conversation_id) {
+        conditions.push(`conversation_id = $${params.length + 1}`);
+        params.push(String(conversation_id));
+      }
+      if (email) {
+        conditions.push(`cliente->>'email' ILIKE $${params.length + 1}`);
+        params.push(email);
+      }
+      if (phone) {
+        conditions.push(`cliente->>'telefono' ILIKE $${params.length + 1}`);
+        params.push(`%${phone}%`);
+      }
+
+      if (conditions.length === 0) return [];
+
+      const sql = `
+        SELECT id, estado, items, created_at, origen, ecommerce_order_number 
+        FROM pedidos 
+        WHERE ${conditions.join(' OR ')}
+        ORDER BY created_at DESC 
+        LIMIT 5
+      `;
+      const res = await db.query(sql, params);
+      return res.rows;
+    } catch (_err) {
+      return [];
+    }
+  },
 };

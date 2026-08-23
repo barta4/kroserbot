@@ -161,23 +161,24 @@ class Database:
                 existed = cur.fetchone() is not None
                 cur.execute(
                     """
-                    INSERT INTO productos (sku, nombre, precio, precio_oferta, marca, categoria,
+                    INSERT INTO productos (sku, nombre, precio, precio_oferta, moneda, marca, categoria,
                         descripcion, imagen_url, producto_url, stock_status, contenido_hash,
                         discontinuado, updated_at)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, FALSE, NOW())
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, FALSE, NOW())
                     ON CONFLICT (sku) DO UPDATE SET
                         nombre = EXCLUDED.nombre, precio = EXCLUDED.precio,
-                        precio_oferta = EXCLUDED.precio_oferta, marca = EXCLUDED.marca,
-                        categoria = EXCLUDED.categoria, descripcion = EXCLUDED.descripcion,
-                        imagen_url = EXCLUDED.imagen_url, producto_url = EXCLUDED.producto_url,
-                        stock_status = EXCLUDED.stock_status, contenido_hash = EXCLUDED.contenido_hash,
-                        discontinuado = FALSE, updated_at = NOW()
+                        precio_oferta = EXCLUDED.precio_oferta, moneda = EXCLUDED.moneda,
+                        marca = EXCLUDED.marca, categoria = EXCLUDED.categoria,
+                        descripcion = EXCLUDED.descripcion, imagen_url = EXCLUDED.imagen_url,
+                        producto_url = EXCLUDED.producto_url, stock_status = EXCLUDED.stock_status,
+                        contenido_hash = EXCLUDED.contenido_hash, discontinuado = FALSE, updated_at = NOW()
                     """,
                     (
                         sku,
                         fields["nombre"],
                         fields.get("precio"),
                         fields.get("precio_oferta"),
+                        fields.get("moneda", "USD"),
                         fields.get("marca"),
                         fields.get("categoria"),
                         fields.get("descripcion"),

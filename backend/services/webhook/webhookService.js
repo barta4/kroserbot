@@ -7,11 +7,17 @@ const chatwootService = require('../chatwoot/chatwootService');
 const emailService = require('../email/emailService');
 const pedidosService = require('../pedidos/pedidosService');
 const ecommerceOrderService = require('../ecommerce/ecommerceOrderService');
+const mediaService = require('../media/mediaService');
+const intentDetector = require('./intentDetector');
+const promptBuilder = require('./promptBuilder');
+const customerMemoryService = require('../customer/customerMemoryService');
+const guardrailService = require('../guardrails/guardrailService');
 const debounceService = require('./debounceService');
 const logger = require('../../config/logger');
 
 const IDEMPOTENCY_TTL = 3600; // 1 hour
 const HUMAN_ACTIVE_TTL = 86400; // 24 hours
+const CONTEXT_WINDOW_LIMIT = 20; // Expanded to 20 messages for rich conversation memory
 
 async function isChannelDisabled(payload, conversation) {
   const rawConfig = await configuracionRepo.get('canales_desactivados');
@@ -23,15 +29,15 @@ async function isChannelDisabled(payload, conversation) {
     if (trimmed.startsWith('[')) {
       disabledList = JSON.parse(trimmed);
     } else {
-      disabledList = trimmed.split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+      disabledList = trimmed.split(',').map((s) => s.trim().toLowerCase()).filter(Boolean);
     }
   } catch (_e) {
-    disabledList = rawConfig.split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+    disabledList = rawConfig.split(',').map((s) => s.trim().toLowerCase()).filter(Boolean);
   }
 
   if (!Array.isArray(disabledList) || disabledList.length === 0) return false;
 
-  const normalizedDisabled = disabledList.map(item => String(item).toLowerCase().trim());
+  const normalizedDisabled = disabledList.map((item) => String(item).toLowerCase().trim());
 
   const channelType = (
     conversation.channel ||
@@ -118,7 +124,7 @@ module.exports = {
     const message = payload.message || payload;
     const messageId = message.id;
     const sender = message.sender || payload.sender || {};
-    const content = (message.content || '').trim();
+    let content = (message.content || '').trim();
     const senderType = (sender.type || message.sender_type || payload.sender_type || '').toLowerCase();
     const isHumanAgent = senderType === 'agent' || senderType === 'user';
 
@@ -189,7 +195,23 @@ module.exports = {
       }
     }
 
-    // 7. Mailer Daemon / Bounce Filter
+    // 7. Process Attachments (Multimodal: Audio voice notes & Images)
+    const attachments = message.attachments || payload.attachments || [];
+    if (attachments.length > 0) {
+      logger.info('Processing message attachments', { correlationId, count: attachments.length });
+      try {
+        const { mediaSummaries, transcribedTexts } = await mediaService.processMessageAttachments(attachments);
+        if (transcribedTexts.length > 0) {
+          content = content ? `${content}\n${transcribedTexts.join('\n')}` : transcribedTexts.join('\n');
+        } else if (mediaSummaries.length > 0) {
+          content = content ? `${content}\n${mediaSummaries.join('\n')}` : mediaSummaries.join('\n');
+        }
+      } catch (mediaErr) {
+        logger.warn('Error processing attachments in webhook', { correlationId, error: mediaErr.message });
+      }
+    }
+
+    // 8. Mailer Daemon / Bounce Filter
     if (
       content.toLowerCase().includes('mailer-daemon') ||
       content.toLowerCase().includes('mail delivery failed') ||
@@ -204,7 +226,7 @@ module.exports = {
       return { status: 'ignored', reason: 'empty_content' };
     }
 
-    // 8. E-commerce Order Detection
+    // 9. E-commerce Order Detection
     const inbox = conversation.inbox || payload.inbox || {};
     const inboxIdentifier = await configuracionRepo.get('ecommerce_inbox_identifier');
     const isEcommerceInbox =
@@ -224,7 +246,6 @@ module.exports = {
         return { status: 'processed', action: 'ecommerce_order', ...result };
       } catch (err) {
         logger.error('Error processing ecommerce order', { correlationId, error: err.message });
-        // Fall through to normal processing if ecommerce processing fails
       }
     }
 
@@ -233,27 +254,26 @@ module.exports = {
     // Log message to DB
     await conversacionesRepo.logMessage(conversationId, content, 'user');
 
-    // 9. Check Customer Order Cancellation Request
-    const lowerContent = content.toLowerCase();
-    if (
-      lowerContent.includes('ya no lo quiero') ||
-      lowerContent.includes('cancelar mi pedido') ||
-      lowerContent.includes('cancela el pedido')
-    ) {
+    // 10. Intent & Emotion Detection
+    const intentResult = intentDetector.detectIntent(content);
+    logger.info('Intent detected', { correlationId, intent: intentResult.intent, emotion: intentResult.emotion });
+
+    // 11. Check Customer Order Cancellation Request
+    if (intentResult.isCancellation) {
       const cancelled = await pedidosService.handleCustomerCancellation(conversationId, accountId);
       if (cancelled) {
         return { status: 'processed', action: 'order_cancelled' };
       }
     }
 
-    // 10. Redis Session Memory (History) & Debounce Buffer
+    // 12. Redis Session Memory & Debounce Buffer
     const bufferKey = `conv_buffer:${conversationId}`;
     const lockKey = `conv_lock:${conversationId}`;
 
     if (process.env.DEBOUNCE_DISABLED !== 'true') {
       const isFirstInWindow = await redis.set(lockKey, '1', 'EX', 4, 'NX');
       if (!isFirstInWindow) {
-        // Rapid sequential message received within 4s window -> buffer it
+        // Rapid sequential message received within debounce window -> buffer it
         await redis.rpush(bufferKey, content);
         await redis.expire(lockKey, 4);
         logger.info('Message buffered for debounce', { correlationId, conversationId });
@@ -265,38 +285,170 @@ module.exports = {
     let fullContent = content;
     const bufferedMessages = await redis.lrange(bufferKey, 0, -1);
     if (bufferedMessages && bufferedMessages.length > 0) {
-      fullContent = [content, ...bufferedMessages].join(' ');
+      fullContent = [content, ...bufferedMessages].join('\n');
       await redis.del(bufferKey);
       logger.info('Buffered messages combined', { correlationId, count: bufferedMessages.length + 1 });
+    }
+
+    // 13. Safety & Guardrails: Filter abuse, prompt injections, off-topic spam and floods
+    const guardrail = await guardrailService.evaluateInput({
+      text: fullContent,
+      conversationId,
+      sender,
+    });
+
+    if (guardrail.isBlocked) {
+      logger.warn('Webhook message intercepted by safety guardrail', {
+        correlationId,
+        conversationId,
+        category: guardrail.category,
+      });
+
+      if (guardrail.shouldEscalate) {
+        const area = guardrail.escalationArea || 'info';
+        const assigneeId = (await configuracionRepo.get(`assignee_id_${area}`)) || 1;
+        const msgDerivacion =
+          (await configuracionRepo.get('msg_derivacion')) ||
+          'Le estamos derivando con un asesor especializado que podrá brindarle una atención personalizada. Por favor aguarde un instante.';
+
+        if (conversationId) {
+          await redis.set(`human_active:${conversationId}`, '1', 'EX', HUMAN_ACTIVE_TTL);
+          debounceService.cancel(conversationId);
+          await redis.del(`conv_buffer:${conversationId}`);
+        }
+
+        await chatwootService.assignAgent(accountId, conversationId, assigneeId);
+        await chatwootService.sendMessage(accountId, conversationId, msgDerivacion);
+
+        await emailService.sendDerivationAlert({
+          area,
+          clienteNombre: sender.name,
+          clienteTelefono: sender.phone_number,
+          clienteMail: sender.email,
+          conversationId,
+          motivo: guardrail.reason || 'Guardrail de seguridad activado por conducta reiterada',
+        });
+
+        return { status: 'processed', action: 'guardrail_escalation', category: guardrail.category };
+      }
+
+      // Send firm, respectful guardrail response
+      await chatwootService.toggleTypingStatus(accountId, conversationId, 'on');
+      await new Promise((resolve) => setTimeout(resolve, Math.floor(Math.random() * 300) + 400));
+      await chatwootService.toggleTypingStatus(accountId, conversationId, 'off');
+
+      await chatwootService.sendMessage(accountId, conversationId, guardrail.reply);
+      await conversacionesRepo.logMessage(conversationId, guardrail.reply, 'assistant');
+
+      const sessionKey = `conv_memory:${conversationId}`;
+      const rawHistory = (await redis.get(sessionKey)) || '[]';
+      let history = JSON.parse(rawHistory);
+      history.push({ role: 'user', content: fullContent });
+      history.push({ role: 'assistant', content: guardrail.reply });
+      await redis.set(sessionKey, JSON.stringify(history), 'EX', 86400);
+
+      return {
+        status: 'processed',
+        action: 'guardrail_blocked',
+        category: guardrail.category,
+        reply: guardrail.reply,
+      };
     }
 
     const sessionKey = `conv_memory:${conversationId}`;
     const rawHistory = (await redis.get(sessionKey)) || '[]';
     let history = JSON.parse(rawHistory);
+
+    // 14. Smart Instant Handling for Pure Greetings & Farewells (Efficiency + Natural Variety)
+    if (intentResult.isPureGreeting && history.length <= 1) {
+      const greetingReply = intentResult.getGreetingMessage(sender.name);
+      
+      // Simulate realistic typing indicator and slight delay
+      await chatwootService.toggleTypingStatus(accountId, conversationId, 'on');
+      await new Promise((resolve) => setTimeout(resolve, Math.floor(Math.random() * 400) + 400));
+      await chatwootService.toggleTypingStatus(accountId, conversationId, 'off');
+
+      await chatwootService.sendMessage(accountId, conversationId, greetingReply);
+      await conversacionesRepo.logMessage(conversationId, greetingReply, 'assistant');
+
+      history.push({ role: 'user', content: fullContent });
+      history.push({ role: 'assistant', content: greetingReply });
+      await redis.set(sessionKey, JSON.stringify(history), 'EX', 86400);
+
+      logger.info('Pure greeting handled directly with formal time-of-day greeting', { correlationId });
+      return { status: 'processed', action: 'pure_greeting', reply: greetingReply };
+    }
+
+    if (intentResult.isPureFarewell && history.length > 0) {
+      const farewellReply = intentResult.getFarewellMessage();
+
+      // Simulate realistic typing indicator and slight delay
+      await chatwootService.toggleTypingStatus(accountId, conversationId, 'on');
+      await new Promise((resolve) => setTimeout(resolve, Math.floor(Math.random() * 400) + 400));
+      await chatwootService.toggleTypingStatus(accountId, conversationId, 'off');
+
+      await chatwootService.sendMessage(accountId, conversationId, farewellReply);
+      await conversacionesRepo.logMessage(conversationId, farewellReply, 'assistant');
+
+      history.push({ role: 'user', content: fullContent });
+      history.push({ role: 'assistant', content: farewellReply });
+      await redis.set(sessionKey, JSON.stringify(history), 'EX', 86400);
+
+      logger.info('Pure farewell handled directly with formal closing', { correlationId });
+      return { status: 'processed', action: 'pure_farewell', reply: farewellReply };
+    }
+
+    // Add current user message to conversation history
     history.push({ role: 'user', content: fullContent });
 
-    // Limit context window to last 10 messages
-    if (history.length > 10) history = history.slice(-10);
+    // 14. Expand Context Window & Handle Summarization if Long
+    let processedHistory = history;
+    if (history.length > CONTEXT_WINDOW_LIMIT) {
+      const olderMessages = history.slice(0, history.length - 12);
+      const recentMessages = history.slice(-12);
+      const summarySnippet = olderMessages
+        .map((m) => `${m.role === 'user' ? 'Cliente' : 'Asesor'}: ${m.content}`)
+        .join(' | ')
+        .substring(0, 300);
 
-    // 11. RAG Search Context
+      processedHistory = [
+        {
+          role: 'system',
+          content: `[Resumen de la conversación previa: ${summarySnippet}]`,
+        },
+        ...recentMessages,
+      ];
+    }
+
+    // 15. Cross-Conversation Memory & Customer Profile Context
+    const customerMemory = await customerMemoryService.getCustomerProfileContext({
+      conversationId,
+      sender,
+      clientPayload: payload.contact,
+    });
+
+    // 16. RAG Semantic & Catalog Search
     const { contextStr } = await ragService.getRelevantContext(fullContent);
 
-    // 12. Assemble System Prompt with Sales & Conversion Guidelines
-    const baseSystemPrompt =
-      (await configuracionRepo.get('system_prompt')) ||
-      'Sos el asistente virtual de Kroser Uruguay. Responde de forma amable, clara y concisa.';
+    // 17. Build Dynamic, Humanized, and Formal System Prompt
+    const fullSystemPrompt = await promptBuilder.buildSystemPrompt({
+      ragContextStr: contextStr,
+      customerProfileStr: customerMemory.contextStr,
+      detectedEmotion: intentResult.emotion,
+      messageCount: history.length,
+      customerName: sender.name,
+    });
 
-    const fullSystemPrompt = `${baseSystemPrompt}\n\n${contextStr}\nREGLAS IMPORTANTES:
-- Si el cliente necesita atención humana específica o si no puedes resolver su duda, responde exactamente con: DERIVAR: [AREA] (donde AREA puede ser: ecommerce, rrhh, administracion, franquicias o info).
-- Si el cliente desea comprar o hacer un pedido, colecta su Nombre, Teléfono, Dirección de Entrega y los productos deseados.
-- SI UN PRODUCTO CONSULTADO ESTÁ AGOTADO (stock_status = out_of_stock): Ofrece proactivamente las opciones listadas en 'ALTERNATIVAS RECOMENDADAS CON STOCK'.
-- VENTA CRUZADA (CROSS-SELLING): Sugiere de forma amigable 1 producto complementario listado en 'SUGERENCIAS DE VENTA CRUZADA' que sea útil para completar el trabajo del cliente.`;
+    // 18. Call LLM with Typing Indicator & Measured Human Delay
+    await chatwootService.toggleTypingStatus(accountId, conversationId, 'on');
+    const startLlmTime = Date.now();
 
-    // 13. Call LLM Service
-    const llmReply = await llmService.generateResponse(fullSystemPrompt, history);
-    logger.info('LLM reply generated', { correlationId, replyLength: llmReply.length });
+    const llmReply = await llmService.generateResponse(fullSystemPrompt, processedHistory);
+    const llmElapsed = Date.now() - startLlmTime;
 
-    // 14. Check Human Escalation (DERIVAR... pattern)
+    logger.info('LLM reply generated', { correlationId, replyLength: llmReply.length, llmElapsedMs: llmElapsed });
+
+    // 19. Check Human Escalation (DERIVAR... pattern)
     if (llmReply.toUpperCase().startsWith('DERIVAR:')) {
       const match = llmReply.match(/DERIVAR:\s*(\w+)/i);
       const area = match ? match[1].toLowerCase() : 'info';
@@ -304,7 +456,7 @@ module.exports = {
       const assigneeId = (await configuracionRepo.get(`assignee_id_${area}`)) || 1;
       const msgDerivacion =
         (await configuracionRepo.get('msg_derivacion')) ||
-        'Te estoy derivando con un asesor humano que va a poder ayudarte mejor.';
+        'Le estamos derivando con un asesor especializado que podrá brindarle una atención personalizada. Por favor aguarde un instante.';
 
       // Silence the bot for future messages in this conversation
       if (conversationId) {
@@ -312,6 +464,8 @@ module.exports = {
         debounceService.cancel(conversationId);
         await redis.del(`conv_buffer:${conversationId}`);
       }
+
+      await chatwootService.toggleTypingStatus(accountId, conversationId, 'off');
 
       // Assign in Chatwoot & send fixed message
       await chatwootService.assignAgent(accountId, conversationId, assigneeId);
@@ -330,14 +484,48 @@ module.exports = {
       return { status: 'processed', action: 'human_escalation', area };
     }
 
-    // 15. Send Assistant Response to Chatwoot
-    await chatwootService.sendMessage(accountId, conversationId, llmReply);
-    await conversacionesRepo.logMessage(conversationId, llmReply, 'assistant');
+    // 20. Output Guardrails Filter: Sanitize against prompt/secret leakage
+    let safeReply = guardrailService.filterOutput(llmReply);
+
+    // 21. Automatic Order Extraction & Creation
+    const orderExtractor = require('../pedidos/orderExtractor');
+    const { cleanReply, createdOrder } = await orderExtractor.processOrderFromReply({
+      rawReply: safeReply,
+      history,
+      conversationId,
+      accountId,
+      channel: conversation.channel || 'chatwoot',
+    });
+    safeReply = cleanReply;
+
+    if (createdOrder) {
+      logger.info('Order successfully created from webhook conversation', {
+        pedidoId: createdOrder.id,
+        conversationId,
+        cliente: createdOrder.cliente,
+      });
+    }
+
+    // 22. Human Typing Delay: calculate natural pacing based on response length
+    // (e.g., ~15-20ms per character, bounded between 1s and 3.5s total typing illusion)
+    const targetTypingDelay = Math.min(Math.max(safeReply.length * 15, 800), 3000) + Math.floor(Math.random() * 300);
+    const remainingDelay = targetTypingDelay - llmElapsed;
+    if (remainingDelay > 0 && process.env.NODE_ENV !== 'test') {
+      await new Promise((resolve) => setTimeout(resolve, remainingDelay));
+    }
+
+    // Turn off typing indicator
+    await chatwootService.toggleTypingStatus(accountId, conversationId, 'off');
+
+    // 22. Send Assistant Response to Chatwoot & Persist Session
+    await chatwootService.sendMessage(accountId, conversationId, safeReply);
+    await conversacionesRepo.logMessage(conversationId, safeReply, 'assistant');
 
     // Save updated history in Redis with 24h TTL
-    history.push({ role: 'assistant', content: llmReply });
+    history.push({ role: 'assistant', content: safeReply });
+    if (history.length > 30) history = history.slice(-25);
     await redis.set(sessionKey, JSON.stringify(history), 'EX', 86400);
 
-    return { status: 'processed', reply: llmReply };
+    return { status: 'processed', reply: safeReply };
   },
 };

@@ -32,11 +32,15 @@ services:
       retries: 5
 
   backend:
+    image: alfredobartaburu/kroserbot:${TAG:-latest}
     build:
       context: .
-      dockerfile: backend/Dockerfile
+      dockerfile: Dockerfile
     container_name: kroserbot-backend
     restart: always
+    env_file:
+      - path: .env
+        required: false
     environment:
       - NODE_ENV=${NODE_ENV:-production}
       - PORT=3000
@@ -73,7 +77,8 @@ services:
       - SMTP_PASS=${SMTP_PASS}
       - MAIL_FROM=${MAIL_FROM}
     ports:
-      - "${PORT:-3000}:3000"
+      - "3000:3000"
+      - "3050:3000"
     volumes:
       - ./admin:/app/admin
       - ./backend:/app/backend
@@ -83,17 +88,21 @@ services:
       redis:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/api/health || exit 1"]
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 3
 
   scraper:
+    image: alfredobartaburu/kroserbot-scraper:${TAG:-latest}
     build:
       context: .
       dockerfile: scraper/Dockerfile
     container_name: kroserbot-scraper
     restart: "no"
+    env_file:
+      - path: .env
+        required: false
     environment:
       - PYTHONUNBUFFERED=1
       - POSTGRES_USER=${POSTGRES_USER:-kroser}
@@ -101,6 +110,7 @@ services:
       - POSTGRES_DB=${POSTGRES_DB:-kroserbot}
       - POSTGRES_HOST=postgres
       - POSTGRES_PORT=5432
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-kroser}:${POSTGRES_PASSWORD:-kroser}@postgres:5432/${POSTGRES_DB:-kroserbot}
       - KROSER_DATA_SOURCE=${KROSER_DATA_SOURCE:-scraping}
       - KROSER_FALLBACK_SCRAPING=${KROSER_FALLBACK_SCRAPING:-true}
     depends_on:

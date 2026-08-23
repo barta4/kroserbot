@@ -1,15 +1,23 @@
+const db = require('../../config/db');
 const embeddingProvider = require('./embeddingProvider');
 const productosRepo = require('../../repositories/productosRepository');
 const localesRepo = require('../../repositories/localesRepository');
 
-const SIMILARITY_THRESHOLD = 0.45; // Increased cosine similarity threshold to reduce noise
+const SIMILARITY_THRESHOLD = 0.35; // Calibrated cosine similarity threshold for pgvector
 
 // Cross-selling category mapping dictionary
 const CROSS_SELLING_MAP = {
-  pintura: ['pincel', 'rodillo', 'cinta', 'lija', 'bandeja'],
-  taladro: ['broca', 'mecha', 'disco', 'proteccion'],
-  herramienta: ['guante', 'disco', 'organizador'],
-  impermeabilizante: ['malla', 'rodillo', 'sellador'],
+  pintura: ['pincel', 'rodillo', 'cinta', 'lija', 'bandeja', 'aguarras', 'fijador', 'enduido'],
+  yeso: ['perfil', 'solera', 'montante', 'tornillo', 'masilla', 'cinta', 'lija'],
+  placa: ['perfil', 'masilla', 'cinta', 'tornillo'],
+  drywall: ['perfil', 'tornillo', 'masilla', 'cinta'],
+  porcelanato: ['adhesivo', 'pegamento', 'pastina', 'cruceta', 'llana', 'nivelador'],
+  ceramica: ['adhesivo', 'pastina', 'cruceta', 'llana', 'esponja'],
+  adhesivo: ['llana', 'pastina', 'esponja', 'cruceta'],
+  taladro: ['broca', 'mecha', 'disco', 'guante'],
+  impermeabilizante: ['malla', 'rodillo', 'sellador', 'fijador'],
+  sanitaria: ['teflon', 'adhesivo pvc'],
+  electricidad: ['cinta aisladora', 'buscapolo', 'cable'],
 };
 
 module.exports = {
@@ -18,21 +26,35 @@ module.exports = {
     let alternativas = [];
     let complementarios = [];
     let locales = [];
+    let zonasEnvio = [];
+    let formasPago = [];
+
+    const lowerQ = (queryText || '').toLowerCase();
 
     try {
-      // 1. Generate Query Vector Embedding
-      const queryEmbedding = await embeddingProvider.generateSingleEmbedding(queryText);
+      // 1. Keyword / Token Search (Direct Lexical Hits)
+      const keywordResults = await productosRepo.searchByKeyword(queryText, 5);
 
-      // 2. Perform Vector Search on active products
-      if (queryEmbedding && queryEmbedding.length > 0) {
-        const rawResults = await productosRepo.searchVector(queryEmbedding, 5);
-        // Filter out results below similarity threshold
-        productos = rawResults.filter((p) => (p.similarity === undefined || p.similarity >= SIMILARITY_THRESHOLD));
-      }
+      // 2. Vector Semantic Search (pgvector)
+      let vectorResults = [];
+      try {
+        const queryEmbedding = await embeddingProvider.generateSingleEmbedding(queryText);
+        if (queryEmbedding && queryEmbedding.length > 0) {
+          const rawVector = await productosRepo.searchVector(queryEmbedding, 5);
+          vectorResults = rawVector.filter((p) => (p.similarity !== undefined && p.similarity >= 0.52));
+        }
+      } catch (_vErr) {}
 
-      // Fallback to keyword search if vector search returns no results
-      if (productos.length === 0) {
-        productos = await productosRepo.searchByKeyword(queryText, 5);
+      // 3. Fusion & Deduplication (Lexical direct matches prioritized over semantic matches)
+      const seenSkus = new Set();
+      productos = [];
+
+      for (const item of [...keywordResults, ...vectorResults]) {
+        if (!seenSkus.has(item.sku)) {
+          seenSkus.add(item.sku);
+          productos.push(item);
+        }
+        if (productos.length >= 5) break;
       }
 
       // 3. Smart Substitution for Out-of-Stock Products
@@ -64,18 +86,67 @@ module.exports = {
         }
       }
 
-      // 5. Search Store Locations if store-related terms present
-      const lowerQ = queryText.toLowerCase();
+      // 5. Search Store Locations (50+ Sucursales Kroser)
       if (
         lowerQ.includes('local') ||
         lowerQ.includes('sucursal') ||
         lowerQ.includes('horario') ||
         lowerQ.includes('direccion') ||
+        lowerQ.includes('dirección') ||
         lowerQ.includes('donde') ||
+        lowerQ.includes('dónde') ||
         lowerQ.includes('abierto') ||
-        lowerQ.includes('telefono')
+        lowerQ.includes('telefono') ||
+        lowerQ.includes('teléfono') ||
+        lowerQ.includes('retiro') ||
+        lowerQ.includes('retirar')
       ) {
-        locales = await localesRepo.getAll();
+        try {
+          locales = await localesRepo.getAll();
+        } catch (_e) {}
+      }
+
+      // 6. Search Shipping Zones & Delivery Costs
+      if (
+        lowerQ.includes('envio') ||
+        lowerQ.includes('envío') ||
+        lowerQ.includes('flete') ||
+        lowerQ.includes('entrega') ||
+        lowerQ.includes('delivery') ||
+        lowerQ.includes('despacho') ||
+        lowerQ.includes('domicilio') ||
+        lowerQ.includes('costo') ||
+        lowerQ.includes('montevideo') ||
+        lowerQ.includes('interior') ||
+        lowerQ.includes('zona')
+      ) {
+        try {
+          const resZonas = await db.query('SELECT * FROM zonas_envio WHERE activo = true ORDER BY departamento_ciudad, barrio_zona');
+          zonasEnvio = resZonas.rows || [];
+        } catch (_e) {}
+      }
+
+      // 7. Search Payment Methods
+      if (
+        lowerQ.includes('pago') ||
+        lowerQ.includes('pagar') ||
+        lowerQ.includes('tarjeta') ||
+        lowerQ.includes('mercadopago') ||
+        lowerQ.includes('transferencia') ||
+        lowerQ.includes('efectivo') ||
+        lowerQ.includes('cuotas') ||
+        lowerQ.includes('credito') ||
+        lowerQ.includes('crédito') ||
+        lowerQ.includes('debito') ||
+        lowerQ.includes('débito') ||
+        lowerQ.includes('oca') ||
+        lowerQ.includes('visa') ||
+        lowerQ.includes('master')
+      ) {
+        try {
+          const resPagos = await db.query('SELECT * FROM formas_pago WHERE activo = true ORDER BY nombre');
+          formasPago = resPagos.rows || [];
+        } catch (_e) {}
       }
     } catch (err) {
       console.warn(`[RAG Search Warning] ${err.message}. Falling back to keyword search.`);
@@ -84,14 +155,25 @@ module.exports = {
       } catch (_e) {}
     }
 
-    // 6. Format Prompt Context
+    // 8. Format Prompt Context
     let contextStr = '';
+
+    const formatCurrencyPrice = (p) => {
+      const isUyu = (p.moneda || '').toUpperCase() === 'UYU' || (parseFloat(p.precio) >= 200 && (p.moneda || '').toUpperCase() !== 'USD');
+      const symbol = isUyu ? '$' : 'U$S';
+      const suffix = isUyu ? ' UYU' : '';
+      if (p.precio_oferta) {
+        return `${symbol} ${p.precio_oferta}${suffix} (Oferta, Normal: ${symbol} ${p.precio}${suffix})`;
+      }
+      return `${symbol} ${p.precio}${suffix}`;
+    };
 
     if (productos.length > 0) {
       contextStr += 'PRODUCTOS RELEVANTES ENCONTRADOS EN CATÁLOGO:\n';
       productos.forEach((p) => {
-        const precioText = p.precio_oferta ? `$${p.precio_oferta} (Oferta, Normal: $${p.precio})` : `$${p.precio}`;
+        const precioText = formatCurrencyPrice(p);
         contextStr += `- SKU: ${p.sku} | ${p.nombre} | Marca: ${p.marca || 'N/A'} | Precio: ${precioText} | Stock: ${p.stock_status}\n`;
+        if (p.producto_url) contextStr += `  Enlace web: ${p.producto_url}\n`;
         if (p.descripcion) contextStr += `  Descripción: ${p.descripcion.substring(0, 150)}...\n`;
       });
       contextStr += '\n';
@@ -102,8 +184,9 @@ module.exports = {
     if (alternativas.length > 0) {
       contextStr += 'ALTERNATIVAS RECOMENDADAS CON STOCK (Para ofrecer si el producto principal está agotado o no disponible):\n';
       alternativas.forEach((p) => {
-        const precioText = p.precio_oferta ? `$${p.precio_oferta} (Oferta)` : `$${p.precio}`;
+        const precioText = formatCurrencyPrice(p);
         contextStr += `- SKU: ${p.sku} | ${p.nombre} | Marca: ${p.marca || 'N/A'} | Precio: ${precioText} | Stock: ${p.stock_status}\n`;
+        if (p.producto_url) contextStr += `  Enlace web: ${p.producto_url}\n`;
       });
       contextStr += '\n';
     }
@@ -111,16 +194,34 @@ module.exports = {
     if (complementarios.length > 0) {
       contextStr += 'SUGERENCIAS DE VENTA CRUZADA (CROSS-SELLING - Para ofrecer amablemente como complemento):\n';
       complementarios.forEach((p) => {
-        const precioText = p.precio_oferta ? `$${p.precio_oferta} (Oferta)` : `$${p.precio}`;
+        const precioText = formatCurrencyPrice(p);
         contextStr += `- SKU: ${p.sku} | ${p.nombre} | Precio: ${precioText}\n`;
+        if (p.producto_url) contextStr += `  Enlace web: ${p.producto_url}\n`;
       });
       contextStr += '\n';
     }
 
     if (locales.length > 0) {
-      contextStr += 'SUCURSALES Y LOCALES KROSER:\n';
+      contextStr += 'SUCURSALES Y LOCALES KROSER (Para retiro o visita):\n';
       locales.forEach((l) => {
         contextStr += `- ${l.nombre} (${l.zona}): ${l.direccion} | Tel: ${l.telefono} | Horario: ${l.horario}\n`;
+      });
+      contextStr += '\n';
+    }
+
+    if (zonasEnvio.length > 0) {
+      contextStr += 'ZONAS Y COSTOS DE ENVÍO A DOMICILIO KROSER:\n';
+      zonasEnvio.forEach((z) => {
+        const costoText = parseFloat(z.costo_envio) === 0 ? 'ENVÍO GRATIS' : `$${z.costo_envio}`;
+        contextStr += `- ${z.departamento_ciudad} (${z.barrio_zona}): Costo ${costoText}\n`;
+      });
+      contextStr += '\n';
+    }
+
+    if (formasPago.length > 0) {
+      contextStr += 'FORMAS DE PAGO ACEPTADAS:\n';
+      formasPago.forEach((f) => {
+        contextStr += `- ${f.nombre}: ${f.descripcion || ''} ${f.instrucciones ? `| Detalle: ${f.instrucciones}` : ''}\n`;
       });
       contextStr += '\n';
     }
@@ -131,6 +232,8 @@ module.exports = {
       alternativasEncontradas: alternativas,
       complementariosEncontrados: complementarios,
       localesEncontrados: locales,
+      zonasEnvioEncontradas: zonasEnvio,
+      formasPagoEncontradas: formasPago,
     };
   },
 };
