@@ -16,6 +16,7 @@ const formasPagoRoutes = require('./formasPagoRoutes');
 const mercadopagoRoutes = require('./mercadopagoRoutes');
 const chatwootRoutes = require('./chatwootRoutes');
 const simulatorRoutes = require('./simulatorRoutes');
+const guiasTecnicasRoutes = require('./guiasTecnicasRoutes');
 
 router.use('/', healthRoutes);
 router.use('/auth', authRoutes);
@@ -32,6 +33,7 @@ router.use('/formas-pago', formasPagoRoutes);
 router.use('/mercadopago', mercadopagoRoutes);
 router.use('/chatwoot', chatwootRoutes);
 router.use('/simulator', simulatorRoutes);
+router.use('/guias-tecnicas', guiasTecnicasRoutes);
 
 module.exports = router;
 

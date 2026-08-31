@@ -236,4 +236,49 @@ module.exports = {
       return [];
     }
   },
+
+  async searchOrderForTracking({ orderId, orderNumber, phone, conversationId } = {}) {
+    try {
+      // 1. Direct search by numeric ID
+      if (orderId && !isNaN(parseInt(orderId, 10))) {
+        const resId = await db.query('SELECT * FROM pedidos WHERE id = $1 LIMIT 1', [parseInt(orderId, 10)]);
+        if (resId.rows.length > 0) return resId.rows[0];
+      }
+
+      // 2. Search by external ecommerce order number or string ID
+      if (orderNumber) {
+        const cleanNumber = String(orderNumber).replace('#', '').trim();
+        const resExt = await db.query(
+          'SELECT * FROM pedidos WHERE ecommerce_order_number ILIKE $1 OR id::text = $2 LIMIT 1',
+          [`%${cleanNumber}%`, cleanNumber]
+        );
+        if (resExt.rows.length > 0) return resExt.rows[0];
+      }
+
+      // 3. Search by conversation ID
+      if (conversationId) {
+        const resConv = await db.query(
+          'SELECT * FROM pedidos WHERE conversation_id = $1 ORDER BY created_at DESC LIMIT 1',
+          [String(conversationId)]
+        );
+        if (resConv.rows.length > 0) return resConv.rows[0];
+      }
+
+      // 4. Search by phone number
+      if (phone) {
+        const cleanPhone = String(phone).replace(/[^0-9]/g, '').slice(-8);
+        if (cleanPhone.length >= 6) {
+          const resPhone = await db.query(
+            "SELECT * FROM pedidos WHERE cliente->>'telefono' ILIKE $1 OR cliente->>'whatsapp' ILIKE $1 ORDER BY created_at DESC LIMIT 1",
+            [`%${cleanPhone}%`]
+          );
+          if (resPhone.rows.length > 0) return resPhone.rows[0];
+        }
+      }
+
+      return null;
+    } catch (_err) {
+      return null;
+    }
+  },
 };

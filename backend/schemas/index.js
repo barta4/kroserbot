@@ -52,38 +52,38 @@ const pedidoUpdateSchema = z.object({
   items: z.array(z.object({}).passthrough()).optional(),
   cliente: z.record(z.any()).optional(),
   estado: z.enum(['pendiente', 'confirmado', 'en_preparacion', 'rechazado', 'cancelado', 'entregado']).optional(),
-  notas: z.string().optional(),
-  motivo_modificacion: z.string().optional(),
-  zona_envio_id: z.union([z.number(), z.string()]).optional(),
-  forma_pago_id: z.union([z.number(), z.string()]).optional(),
-  costo_envio: z.number().nonnegative().optional(),
-  cambiado_por: z.string().optional(),
+  notas: z.string().nullable().optional(),
+  motivo_modificacion: z.string().nullable().optional(),
+  zona_envio_id: z.union([z.number(), z.string()]).nullable().optional(),
+  forma_pago_id: z.union([z.number(), z.string()]).nullable().optional(),
+  costo_envio: z.union([z.number(), z.string()]).nullable().optional(),
+  cambiado_por: z.string().nullable().optional(),
 });
 
 const configuracionSchema = z.object({
   key: z.string().min(1).max(100),
-  value: z.string().max(10000),
+  value: z.string().max(10000).nullable().optional().default(''),
 });
 
 const localSchema = z.object({
   nombre: z.string().min(1).max(200),
-  zona: z.string().max(200).optional(),
-  direccion: z.string().optional(),
-  telefono: z.string().max(50).optional(),
-  horario: z.string().optional(),
+  zona: z.string().max(200).nullable().optional(),
+  direccion: z.string().nullable().optional(),
+  telefono: z.string().max(50).nullable().optional(),
+  horario: z.string().nullable().optional(),
 });
 
 const zonaEnvioSchema = z.object({
-  departamento_ciudad: z.string().max(100).optional().default('Montevideo'),
+  departamento_ciudad: z.string().max(100).nullable().optional().default('Montevideo'),
   barrio_zona: z.string().min(1).max(150),
-  costo_envio: z.union([z.number(), z.string()]).optional().default(0),
+  costo_envio: z.union([z.number(), z.string()]).nullable().optional().default(0),
   activo: z.boolean().optional().default(true),
 });
 
 const formaPagoSchema = z.object({
   nombre: z.string().min(1).max(100),
-  descripcion: z.string().optional().default(''),
-  instrucciones: z.string().optional().default(''),
+  descripcion: z.string().nullable().optional().default(''),
+  instrucciones: z.string().nullable().optional().default(''),
   activo: z.boolean().optional().default(true),
 });
 

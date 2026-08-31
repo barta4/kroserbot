@@ -1128,6 +1128,10 @@
                 <span>💳</span>
                 <span>Formas y Métodos de Pago</span>
               </button>
+              <button class="dropdown-item-btn" id="nav-btn-guias" onclick="switchTab('guias', event)">
+                <span>🛠️</span>
+                <span>Guías Técnicas & Cálculos</span>
+              </button>
             </div>
           </div>
 
@@ -1240,6 +1244,9 @@
       </button>
       <button class="mobile-nav-link" id="mob-btn-pagos" onclick="switchTab('pagos', event)">
         <span>💳</span> <span>Formas de Pago</span>
+      </button>
+      <button class="mobile-nav-link" id="mob-btn-guias" onclick="switchTab('guias', event)">
+        <span>🛠️</span> <span>Guías Técnicas & Cálculos</span>
       </button>
 
       <!-- 3. Pedidos -->
@@ -1839,12 +1846,94 @@
       </div>
     </section>
 
+    <!-- ========================================================
+         TAB 13: GUÍAS TÉCNICAS, CÁLCULOS & DIAGNÓSTICO
+         ======================================================== -->
+    <section id="tab-guias" class="tab-view-section">
+      <div class="card-box">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem; margin-bottom:1rem;">
+          <div>
+            <h3>Guías Técnicas, Rendimientos y Diagnóstico</h3>
+            <p style="color:var(--text-muted); font-size:0.85rem; margin-top:0.25rem;">
+              Base de conocimiento técnico que el Asistente IA consulta para calcular cantidades de material, sugerir kits y guiar reparaciones.
+            </p>
+          </div>
+          <button class="btn-action btn-success" onclick="openGuiaModal()">➕ Nueva Guía Técnica</button>
+        </div>
+
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Título</th>
+                <th>Categoría</th>
+                <th>Resumen / Palabras Clave</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="guias-table-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
   </main>
 
   <!-- ========================================================
-       MODALS: PEDIDOS, SUCURSALES, ZONAS, FORMAS DE PAGO & LOGIN
+       MODALS: PEDIDOS, SUCURSALES, ZONAS, FORMAS DE PAGO, GUÍAS & LOGIN
        ======================================================== -->
   
+  <!-- Modal Guía Técnica -->
+  <div class="modal-overlay" id="guia-modal">
+    <div class="modal-card" style="max-width:700px;">
+      <div class="modal-header">
+        <h3 id="guia-modal-title">Agregar Guía Técnica</h3>
+        <button class="btn-action btn-danger" onclick="closeModal('guia-modal')">✖</button>
+      </div>
+      <input type="hidden" id="guia-id">
+      <label>Título de la Guía</label>
+      <input type="text" id="guia-titulo" placeholder="Cálculo de Rendimiento de Pintura e Impermeabilizantes">
+      
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem;">
+        <div>
+          <label>Categoría</label>
+          <select id="guia-categoria" style="width:100%; padding:0.6rem; border-radius:4px; border:1px solid var(--border-subtle);">
+            <option value="pintura">Pintura & Impermeabilizantes</option>
+            <option value="humedad">Humedad & Filtraciones</option>
+            <option value="sanitaria">Sanitaria & Grifería</option>
+            <option value="yeso">Yeso / Drywall</option>
+            <option value="fijaciones">Tarugos & Fijaciones</option>
+            <option value="maderas_metales">Maderas & Metales</option>
+            <option value="electricidad">Electricidad</option>
+            <option value="general">General</option>
+          </select>
+        </div>
+        <div>
+          <label>Estado</label>
+          <select id="guia-activo" style="width:100%; padding:0.6rem; border-radius:4px; border:1px solid var(--border-subtle);">
+            <option value="true">Activa (Visible para IA)</option>
+            <option value="false">Inactiva</option>
+          </select>
+        </div>
+      </div>
+
+      <label style="margin-top:0.6rem;">Resumen Breve</label>
+      <input type="text" id="guia-resumen" placeholder="Fórmulas de m², manos, dilución y presentaciones comerciales...">
+
+      <label>Palabras Clave (Keywords separadas por coma para búsqueda rápida)</label>
+      <input type="text" id="guia-keywords" placeholder="pintura, calcular pintura, m2, latex, litros, balde...">
+
+      <label>Contenido Técnico / Instrucciones para el Asistente IA</label>
+      <textarea id="guia-contenido" rows="8" placeholder="Escriba aquí las fórmulas, soluciones diagnósticas, kits complementarios y pasos técnicos..."></textarea>
+
+      <div style="margin-top:1.25rem;">
+        <button class="btn-action btn-success" onclick="saveGuia()">💾 Guardar Guía Técnica</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Modal Detalle Pedido / Depósito -->
   <div class="modal-overlay" id="pedido-modal">
     <div class="modal-card">
@@ -2049,6 +2138,7 @@
       datasource: 'Estrategia y Fuente de Datos del Catálogo',
       llm: 'Conector Agente IA (Gemini / OpenAI / Modelos)',
       scraper: 'Panel de Control del Scraper Oficial',
+      guias: 'Guías Técnicas, Rendimientos de Materiales & Diagnóstico',
     };
 
     const TAB_PARENT_GROUPS = {
@@ -2057,6 +2147,7 @@
       locales: 'trigger-catalogo',
       zonas: 'trigger-catalogo',
       pagos: 'trigger-catalogo',
+      guias: 'trigger-catalogo',
       pedidos: 'trigger-pedidos',
       contactos: 'trigger-pedidos',
       prompt: 'trigger-config',
@@ -2174,6 +2265,7 @@
       if (tabName === 'contactos') loadContactos();
       if (tabName === 'zonas') loadZonas();
       if (tabName === 'pagos') loadFormasPago();
+      if (tabName === 'guias') loadGuias();
       if (tabName === 'scraper') loadScraperStatus();
 
       // Smooth scroll to top on mobile
@@ -3203,6 +3295,77 @@
       if (!confirm(`¿Eliminar método #${id}?`)) return;
       await apiFetch(`${API_BASE}/formas-pago/${id}`, { method: 'DELETE' });
       loadFormasPago();
+    }
+
+    // --- GUÍAS TÉCNICAS & CÁLCULOS ---
+    async function loadGuias() {
+      try {
+        const res = await apiFetch(`${API_BASE}/guias-tecnicas`);
+        const data = await res.json();
+        const tbody = document.getElementById('guias-table-body');
+        if (!tbody) return;
+        tbody.innerHTML = data.map(g => `
+          <tr>
+            <td>#${g.id}</td>
+            <td><strong>${escHtml(g.titulo)}</strong></td>
+            <td><span class="badge" style="background:#e0f2fe; color:#0369a1;">${escHtml(g.categoria)}</span></td>
+            <td>
+              <div style="font-size:0.83rem; font-weight:600; color:var(--text-main);">${escHtml(g.resumen || '-')}</div>
+              <div style="font-size:0.75rem; color:var(--text-muted); margin-top:2px;">🔑 <em>${escHtml(g.keywords || '-')}</em></div>
+            </td>
+            <td><span class="badge ${g.activo ? 'confirmado' : 'rechazado'}">${g.activo ? 'Activa' : 'Inactiva'}</span></td>
+            <td>
+              <button class="btn-action" onclick='editGuia(${JSON.stringify(g).replace(/'/g, "&#39;")})'>✏️ Editar</button>
+              <button class="btn-action btn-danger" onclick="deleteGuia(${g.id})">🗑️</button>
+            </td>
+          </tr>
+        `).join('');
+      } catch (err) {
+        console.error('Error cargando guías técnicas:', err);
+      }
+    }
+
+    function openGuiaModal(g = null) {
+      document.getElementById('guia-id').value = g ? g.id : '';
+      document.getElementById('guia-titulo').value = g ? g.titulo : '';
+      document.getElementById('guia-categoria').value = g ? g.categoria : 'pintura';
+      document.getElementById('guia-activo').value = g ? (g.activo ? 'true' : 'false') : 'true';
+      document.getElementById('guia-resumen').value = g ? (g.resumen || '') : '';
+      document.getElementById('guia-keywords').value = g ? (g.keywords || '') : '';
+      document.getElementById('guia-contenido').value = g ? (g.contenido || '') : '';
+      document.getElementById('guia-modal-title').innerText = g ? `Editar Guía Técnica #${g.id}` : 'Agregar Guía Técnica';
+      openModal('guia-modal');
+    }
+
+    function editGuia(g) { openGuiaModal(g); }
+
+    async function saveGuia() {
+      const id = document.getElementById('guia-id').value;
+      const body = {
+        titulo: document.getElementById('guia-titulo').value.trim(),
+        categoria: document.getElementById('guia-categoria').value,
+        activo: document.getElementById('guia-activo').value === 'true',
+        resumen: document.getElementById('guia-resumen').value.trim(),
+        keywords: document.getElementById('guia-keywords').value.trim(),
+        contenido: document.getElementById('guia-contenido').value.trim(),
+      };
+      if (!body.titulo || !body.contenido) {
+        alert('Por favor ingrese título y contenido técnico.');
+        return;
+      }
+      if (id) {
+        await apiFetch(`${API_BASE}/guias-tecnicas/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      } else {
+        await apiFetch(`${API_BASE}/guias-tecnicas`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      }
+      closeModal('guia-modal');
+      loadGuias();
+    }
+
+    async function deleteGuia(id) {
+      if (!confirm(`¿Eliminar guía técnica #${id}?`)) return;
+      await apiFetch(`${API_BASE}/guias-tecnicas/${id}`, { method: 'DELETE' });
+      loadGuias();
     }
 
     // --- SCRAPER ---

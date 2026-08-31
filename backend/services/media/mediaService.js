@@ -118,16 +118,29 @@ async function transcribeAudio({ url, data_url, mime_type, extension }) {
 }
 
 /**
- * Analyze Image using Gemini Vision or OpenAI Vision
+ * Specialized Visual Parts Finder for Hardware Store (Kroser Uruguay)
  */
 async function analyzeImage({ url, data_url, mime_type }) {
   const mediaUrl = url || data_url;
-  if (!mediaUrl) return '[Imagen adjunta recibida]';
+  if (!mediaUrl) return { description: '[Imagen adjunta recibida]', searchTerms: '', partName: '' };
 
   const geminiKey = (await configuracionRepo.get('llm_api_key')) || process.env.GEMINI_API_KEY;
   const openaiKey = (await configuracionRepo.get('llm_api_key')) || process.env.OPENAI_API_KEY;
 
-  const promptText = 'Sos el asistente virtual de ferretería Kroser Uruguay. Analizá esta foto enviada por el cliente. Describí brevemente qué producto, herramienta, repuesto, código, factura o problema técnico se observa en la imagen para poder asesorarlo.';
+  const hardwareVisionPrompt = `Sos el Asistente Técnico y Maestro Ferretero de Ferreterías Kroser Uruguay.
+Analizá minuciosamente la foto enviada por el cliente (puede ser una pieza rota, repuesto sanitario, tornillo, cerradura, herramienta, canilla, perfil, pintura o problema del hogar).
+
+Tu tarea:
+1. Identificar la pieza, herramienta o repuesto con precisión técnica (ej: 'Cartucho cerámico 35mm para canilla monocomando', 'Flexible mallado de 1/2 pulgada', 'Cuerito de goma para canilla tradicional', 'Tornillo autorroscante T2 para placa yeso', 'Disco de corte para amoladora 115mm', 'Taco Fischer DuoPower', 'Cerradura pomo para baño').
+2. Extraer medidas, materiales o características visibles (roscas, diámetros, acabado, marca).
+3. Indicar las 2 a 4 palabras clave exactas para buscar el repuesto o producto equivalente en el catálogo de Kroser.
+
+Respondé en este formato exacto:
+IDENTIFICACIÓN: <Nombre técnico claro de la pieza o problema>
+KEYWORDS: <palabras clave separadas por espacio o coma para buscar en catálogo>
+DETALLE: <Explicación breve de 1 o 2 oraciones para el cliente sobre qué pieza es y qué función cumple>`;
+
+  let rawAnalysis = '';
 
   // 1. Try Gemini Vision
   if (geminiKey) {
@@ -143,7 +156,7 @@ async function analyzeImage({ url, data_url, mime_type }) {
             contents: [
               {
                 parts: [
-                  { text: promptText },
+                  { text: hardwareVisionPrompt },
                   {
                     inlineData: {
                       mimeType: mime,
@@ -155,20 +168,19 @@ async function analyzeImage({ url, data_url, mime_type }) {
             ],
           }, { timeout: 20000 });
 
-          const description = res.data?.candidates?.[0]?.content?.parts?.[0]?.text;
-          if (description && description.trim()) {
-            logger.info('Image analyzed successfully with Gemini Vision', { length: description.length });
-            return description.trim();
+          const text = res.data?.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (text && text.trim()) {
+            rawAnalysis = text.trim();
           }
         }
       }
     } catch (err) {
-      logger.warn('Gemini vision analysis failed', { error: err.message });
+      logger.warn('Gemini hardware vision analysis failed', { error: err.message });
     }
   }
 
   // 2. Try OpenAI GPT-4o-mini Vision
-  if (openaiKey) {
+  if (!rawAnalysis && openaiKey) {
     try {
       const OpenAI = require('openai');
       const openai = new OpenAI({ apiKey: openaiKey });
@@ -179,7 +191,7 @@ async function analyzeImage({ url, data_url, mime_type }) {
           {
             role: 'user',
             content: [
-              { type: 'text', text: promptText },
+              { type: 'text', text: hardwareVisionPrompt },
               {
                 type: 'image_url',
                 image_url: { url: mediaUrl },
@@ -187,20 +199,47 @@ async function analyzeImage({ url, data_url, mime_type }) {
             ],
           },
         ],
-        max_tokens: 250,
+        max_tokens: 300,
       });
 
-      const description = response.choices?.[0]?.message?.content;
-      if (description && description.trim()) {
-        logger.info('Image analyzed successfully with OpenAI Vision', { length: description.length });
-        return description.trim();
+      const text = response.choices?.[0]?.message?.content;
+      if (text && text.trim()) {
+        rawAnalysis = text.trim();
       }
     } catch (err) {
-      logger.warn('OpenAI vision analysis failed', { error: err.message });
+      logger.warn('OpenAI hardware vision analysis failed', { error: err.message });
     }
   }
 
-  return '[Imagen enviada por el cliente: producto o consulta visual de ferretería]';
+  if (!rawAnalysis) {
+    return {
+      description: '[Imagen enviada por el cliente: producto o consulta visual de ferretería]',
+      searchTerms: '',
+      partName: '',
+    };
+  }
+
+  // Parse structured sections
+  const identMatch = rawAnalysis.match(/IDENTIFICACI[ÓO]N:\s*([^\n]+)/i);
+  const keywordsMatch = rawAnalysis.match(/KEYWORDS:\s*([^\n]+)/i);
+  const detalleMatch = rawAnalysis.match(/DETALLE:\s*([\s\S]+)/i);
+
+  const partName = identMatch ? identMatch[1].trim() : '';
+  const searchTerms = keywordsMatch ? keywordsMatch[1].trim() : partName;
+  const detalle = detalleMatch ? detalleMatch[1].trim() : rawAnalysis;
+
+  const description = partName
+    ? `[Foto del cliente identificada: ${partName}. ${detalle}]`
+    : `[Análisis visual de ferretería: ${rawAnalysis}]`;
+
+  logger.info('Visual Part Identified', { partName, searchTerms });
+
+  return {
+    description,
+    searchTerms,
+    partName,
+    rawAnalysis,
+  };
 }
 
 /**
@@ -208,11 +247,13 @@ async function analyzeImage({ url, data_url, mime_type }) {
  */
 async function processMessageAttachments(attachments = []) {
   if (!Array.isArray(attachments) || attachments.length === 0) {
-    return { mediaSummaries: [], transcribedTexts: [] };
+    return { mediaSummaries: [], transcribedTexts: [], visualSearchTerms: [], identifiedParts: [] };
   }
 
   const mediaSummaries = [];
   const transcribedTexts = [];
+  const visualSearchTerms = [];
+  const identifiedParts = [];
 
   for (const att of attachments) {
     const fileType = (att.file_type || '').toLowerCase();
@@ -230,19 +271,25 @@ async function processMessageAttachments(attachments = []) {
       transcribedTexts.push(transcription);
       mediaSummaries.push(`[Audio transcripto: "${transcription}"]`);
     } else if (fileType === 'image' || extension.includes('jpg') || extension.includes('jpeg') || extension.includes('png') || extension.includes('webp') || url?.includes('.jpg') || url?.includes('.png')) {
-      logger.info('Processing image attachment in message', { url });
-      const imageDescription = await analyzeImage({
+      logger.info('Processing image attachment in message (Visual Parts Finder)', { url });
+      const imageResult = await analyzeImage({
         url,
         data_url: att.data_url,
         mime_type: att.content_type,
       });
-      mediaSummaries.push(`[El cliente adjuntó una imagen. Análisis visual: ${imageDescription}]`);
+      mediaSummaries.push(imageResult.description);
+      if (imageResult.searchTerms) {
+        visualSearchTerms.push(imageResult.searchTerms);
+      }
+      if (imageResult.partName) {
+        identifiedParts.push(imageResult.partName);
+      }
     } else {
       mediaSummaries.push(`[Archivo adjunto: ${att.filename || att.name || 'documento'}]`);
     }
   }
 
-  return { mediaSummaries, transcribedTexts };
+  return { mediaSummaries, transcribedTexts, visualSearchTerms, identifiedParts };
 }
 
 module.exports = {

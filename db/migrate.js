@@ -3,15 +3,24 @@ const path = require('path');
 const { Client } = require('pg');
 require('dotenv').config();
 
-const connectionString =
-  process.env.DATABASE_URL ||
-  `postgres://${process.env.POSTGRES_USER || 'kroser'}:${process.env.POSTGRES_PASSWORD || 'kroser'}@${process.env.POSTGRES_HOST || 'localhost'}:${process.env.POSTGRES_PORT || 5432}/${process.env.POSTGRES_DB || 'kroserbot'}`;
+function getDbConfig() {
+  if (process.env.DATABASE_URL) {
+    return { connectionString: process.env.DATABASE_URL };
+  }
+  return {
+    host: process.env.POSTGRES_HOST || 'localhost',
+    port: parseInt(process.env.POSTGRES_PORT || '5432', 10),
+    user: process.env.POSTGRES_USER || 'kroser',
+    password: process.env.POSTGRES_PASSWORD || 'kroser',
+    database: process.env.POSTGRES_DB || 'kroserbot',
+  };
+}
 
 async function runMigrations() {
   const direction = process.argv[2] || 'up';
   console.log(`[DB Migration] Running migrations direction: ${direction}`);
 
-  const client = new Client({ connectionString });
+  const client = new Client(getDbConfig());
 
   try {
     await client.connect();

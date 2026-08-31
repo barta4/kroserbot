@@ -12,6 +12,7 @@ const intentDetector = require('./intentDetector');
 const promptBuilder = require('./promptBuilder');
 const customerMemoryService = require('../customer/customerMemoryService');
 const guardrailService = require('../guardrails/guardrailService');
+const orderTrackingService = require('../pedidos/orderTrackingService');
 const debounceService = require('./debounceService');
 const logger = require('../../config/logger');
 
@@ -195,16 +196,20 @@ module.exports = {
       }
     }
 
-    // 7. Process Attachments (Multimodal: Audio voice notes & Images)
+    // 7. Process Attachments (Multimodal: Audio voice notes & Images / Visual Parts Finder)
+    let visualKeywords = [];
     const attachments = message.attachments || payload.attachments || [];
     if (attachments.length > 0) {
       logger.info('Processing message attachments', { correlationId, count: attachments.length });
       try {
-        const { mediaSummaries, transcribedTexts } = await mediaService.processMessageAttachments(attachments);
+        const { mediaSummaries, transcribedTexts, visualSearchTerms } = await mediaService.processMessageAttachments(attachments);
         if (transcribedTexts.length > 0) {
           content = content ? `${content}\n${transcribedTexts.join('\n')}` : transcribedTexts.join('\n');
         } else if (mediaSummaries.length > 0) {
           content = content ? `${content}\n${mediaSummaries.join('\n')}` : mediaSummaries.join('\n');
+        }
+        if (visualSearchTerms && visualSearchTerms.length > 0) {
+          visualKeywords = visualSearchTerms;
         }
       } catch (mediaErr) {
         logger.warn('Error processing attachments in webhook', { correlationId, error: mediaErr.message });
@@ -427,13 +432,35 @@ module.exports = {
       clientPayload: payload.contact,
     });
 
-    // 16. RAG Semantic & Catalog Search
-    const { contextStr } = await ragService.getRelevantContext(fullContent);
+    // 15b. Order Tracking Self-Service Check
+    let trackingContextStr = '';
+    const hasOrderTrackingIntent = intentResult.isTracking || intentResult.intent === 'tracking_pedido' || /#\s*[0-9]{1,8}/.test(fullContent);
+    if (hasOrderTrackingIntent) {
+      const trackingResult = await orderTrackingService.getTrackingInfo({
+        text: fullContent,
+        conversationId,
+        sender,
+        clientPayload: payload.contact,
+      });
+      if (trackingResult.hasOrder && trackingResult.contextStr) {
+        trackingContextStr = trackingResult.contextStr;
+        logger.info('Order tracking context retrieved for prompt', {
+          correlationId,
+          orderRef: trackingResult.orderRef,
+          status: trackingResult.status,
+        });
+      }
+    }
+
+    // 16. RAG Semantic & Catalog Search (enriches with visual keywords if available)
+    const ragQuery = visualKeywords.length > 0 ? `${fullContent} ${visualKeywords.join(' ')}` : fullContent;
+    const { contextStr } = await ragService.getRelevantContext(ragQuery);
 
     // 17. Build Dynamic, Humanized, and Formal System Prompt
     const fullSystemPrompt = await promptBuilder.buildSystemPrompt({
       ragContextStr: contextStr,
       customerProfileStr: customerMemory.contextStr,
+      trackingContextStr,
       detectedEmotion: intentResult.emotion,
       messageCount: history.length,
       customerName: sender.name,

@@ -1,18 +1,12 @@
-# ==========================================================
-# KroserBot - Dokploy Production Stack
-# Domain: venta.kroser.uy
-# Reverse Proxy: Traefik (Dokploy Default)
-# ==========================================================
-
 services:
-  # --- 1. PostgreSQL + pgvector (Base de Datos & Búsqueda Semántica) ---
+  # ─── Base de Datos PostgreSQL + pgvector ─────────────────
   postgres:
     image: pgvector/pgvector:pg16
     container_name: kroserbot-postgres
-    restart: always
+    restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-kroser}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-kroser_secure_password_2026}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-Kroser.2026}
       POSTGRES_DB: ${POSTGRES_DB:-kroserbot}
     volumes:
       - postgres_data:/var/lib/postgresql/data
@@ -24,11 +18,11 @@ services:
     networks:
       - kroserbot-network
 
-  # --- 2. Redis (Cache & Memoria de Sesión) ---
+  # ─── Redis (Cache & Sesiones) ─────────────────────────────
   redis:
     image: redis:7-alpine
     container_name: kroserbot-redis
-    restart: always
+    restart: unless-stopped
     volumes:
       - redis_data:/data
     healthcheck:
@@ -39,55 +33,58 @@ services:
     networks:
       - kroserbot-network
 
-  # --- 3. Backend Express + RAG + Panel Admin ---
+  # ─── Backend Node.js (API + RAG + Panel Admin) ────────────
   backend:
-    image: alfredobartaburu/kroserbot:latest
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: alfredobartaburu/kroserbot:v1.2
     container_name: kroserbot-backend
-    restart: always
-    environment:
-      - NODE_ENV=production
-      - PORT=3000
-      - DOMAIN=venta.kroser.uy
-      - POSTGRES_HOST=postgres
-      - POSTGRES_PORT=5432
-      - POSTGRES_USER=${POSTGRES_USER:-kroser}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-kroser_secure_password_2026}
-      - POSTGRES_DB=${POSTGRES_DB:-kroserbot}
-      - DATABASE_URL=postgres://${POSTGRES_USER:-kroser}:${POSTGRES_PASSWORD:-kroser_secure_password_2026}@postgres:5432/${POSTGRES_DB:-kroserbot}
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - ADMIN_USER=${ADMIN_USER:-admin}
-      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-kroser2026}
-      - DEPOSITO_USER=${DEPOSITO_USER:-deposito}
-      - DEPOSITO_PASSWORD=${DEPOSITO_PASSWORD:-deposito2026}
-      - JWT_SECRET=${JWT_SECRET:-kroserbot_jwt_secret_key_2026_super_secure_min_32_chars}
-      - WEBHOOK_BASIC_AUTH=${WEBHOOK_BASIC_AUTH:-kroser:kroser2026}
-      - CORS_ORIGINS=https://venta.kroser.uy,http://localhost:3000
-      - CHATWOOT_API_URL=${CHATWOOT_API_URL:-}
-      - CHATWOOT_API_TOKEN=${CHATWOOT_API_TOKEN:-}
-      - CHATWOOT_ACCOUNT_ID=${CHATWOOT_ACCOUNT_ID:-1}
-      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
-      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
-      - MERCADOPAGO_ACCESS_TOKEN=${MERCADOPAGO_ACCESS_TOKEN:-}
-      - MERCADOPAGO_PUBLIC_KEY=${MERCADOPAGO_PUBLIC_KEY:-}
-      - MERCADOPAGO_WEBHOOK_SECRET=${MERCADOPAGO_WEBHOOK_SECRET:-}
-      - MERCADOPAGO_WEBHOOK_URL=https://venta.kroser.uy/api/mercadopago/webhook
-      - MERCADOPAGO_SUCCESS_URL=https://venta.kroser.uy/admin/#/pedidos
-      - MERCADOPAGO_FAILURE_URL=https://venta.kroser.uy/admin/#/pedidos
-      - MERCADOPAGO_PENDING_URL=https://venta.kroser.uy/admin/#/pedidos
-      - SMTP_HOST=${SMTP_HOST:-}
-      - SMTP_PORT=${SMTP_PORT:-587}
-      - SMTP_USER=${SMTP_USER:-}
-      - SMTP_PASS=${SMTP_PASS:-}
-      - MAIL_FROM=${MAIL_FROM:-pedidos@kroser.com.uy}
+    restart: unless-stopped
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - DOMAIN=${DOMAIN:-venta.urufile.duckdns.org}
+      # Base de datos
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=${POSTGRES_USER:-kroser}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-Kroser.2026}
+      - POSTGRES_DB=${POSTGRES_DB:-kroserbot}
+      # Redis
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      # Seguridad / Panel Admin
+      - ADMIN_USER=${ADMIN_USER:-administrador}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-Kroser.2026}
+      - DEPOSITO_USER=${DEPOSITO_USER:-deposito}
+      - DEPOSITO_PASSWORD=${DEPOSITO_PASSWORD:-deposito.2026}
+      - JWT_SECRET=${JWT_SECRET:-ikf05ab1gcstakc3xmhi57lkli0r8ubk}
+      - WEBHOOK_BASIC_AUTH=${WEBHOOK_BASIC_AUTH:-kroser:kroser2026}
+      - CORS_ORIGINS=https://${DOMAIN:-venta.urufile.duckdns.org},http://localhost:3000
+      # Inteligencia Artificial
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      # Chatwoot / Uruchat
+      - CHATWOOT_API_URL=${CHATWOOT_API_URL:-https://app.uruchat.com}
+      - CHATWOOT_API_TOKEN=${CHATWOOT_API_TOKEN}
+      - CHATWOOT_ACCOUNT_ID=${CHATWOOT_ACCOUNT_ID:-1}
+      # MercadoPago (Opcional)
+      - MERCADOPAGO_ACCESS_TOKEN=${MERCADOPAGO_ACCESS_TOKEN}
+      - MERCADOPAGO_PUBLIC_KEY=${MERCADOPAGO_PUBLIC_KEY}
+      - MERCADOPAGO_WEBHOOK_SECRET=${MERCADOPAGO_WEBHOOK_SECRET}
+      - MERCADOPAGO_WEBHOOK_URL=https://${DOMAIN:-venta.urufile.duckdns.org}/api/mercadopago/webhook
+      - MERCADOPAGO_SUCCESS_URL=https://${DOMAIN:-venta.urufile.duckdns.org}/admin/#/pedidos
+      - MERCADOPAGO_FAILURE_URL=https://${DOMAIN:-venta.urufile.duckdns.org}/admin/#/pedidos
+      - MERCADOPAGO_PENDING_URL=https://${DOMAIN:-venta.urufile.duckdns.org}/admin/#/pedidos
+      # SMTP / Email (Opcional)
+      - SMTP_HOST=${SMTP_HOST}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_USER=${SMTP_USER}
+      - SMTP_PASS=${SMTP_PASS}
+      - MAIL_FROM=${MAIL_FROM:-pedidos@kroser.com.uy}
     healthcheck:
       test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1"]
       interval: 15s
@@ -97,33 +94,33 @@ services:
       - kroserbot-network
       - dokploy-network
     labels:
-      # --- Configuración Traefik Dokploy para venta.kroser.uy ---
       - "traefik.enable=true"
-      - "traefik.http.routers.kroserbot.rule=Host(`venta.kroser.uy`)"
+      - "traefik.http.routers.kroserbot.rule=Host(`${DOMAIN:-venta.urufile.duckdns.org}`)"
       - "traefik.http.routers.kroserbot.entrypoints=websecure"
       - "traefik.http.routers.kroserbot.tls=true"
       - "traefik.http.routers.kroserbot.tls.certresolver=letsencrypt"
       - "traefik.http.services.kroserbot.loadbalancer.server.port=3000"
 
-  # --- 4. Scraper Worker Python (Catálogo & Sincronización) ---
+  # ─── Scraper Python (Catalogo Kroser) ────────────────────
   scraper:
-    image: alfredobartaburu/kroserbot-scraper:latest
-    build:
-      context: .
-      dockerfile: scraper/Dockerfile
+    image: alfredobartaburu/kroserbot-scraper:v1.2
     container_name: kroserbot-scraper
-    restart: always
-    environment:
-      - DATABASE_URL=postgres://${POSTGRES_USER:-kroser}:${POSTGRES_PASSWORD:-kroser_secure_password_2026}@postgres:5432/${POSTGRES_DB:-kroserbot}
-      - KROSER_BASE_URL=https://www.kroser.com.uy
-      - SCRAPER_DELAY_MIN=6.0
-      - SCRAPER_DELAY_MAX=11.0
-      - SCRAPER_NO_SLEEP=false
-      - SCRAPER_SCHEDULE_HOUR=3
-      - SCRAPER_SCHEDULE_MINUTE=0
+    restart: unless-stopped
     depends_on:
       postgres:
         condition: service_healthy
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=${POSTGRES_USER:-kroser}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-Kroser.2026}
+      - POSTGRES_DB=${POSTGRES_DB:-kroserbot}
+      - KROSER_BASE_URL=${KROSER_BASE_URL:-https://www.kroser.com.uy}
+      - SCRAPER_DELAY_MIN=${SCRAPER_DELAY_MIN:-6.0}
+      - SCRAPER_DELAY_MAX=${SCRAPER_DELAY_MAX:-11.0}
+      - SCRAPER_NO_SLEEP=${SCRAPER_NO_SLEEP:-false}
+      - SCRAPER_SCHEDULE_HOUR=${SCRAPER_SCHEDULE_HOUR:-3}
+      - SCRAPER_SCHEDULE_MINUTE=${SCRAPER_SCHEDULE_MINUTE:-0}
     networks:
       - kroserbot-network
 
@@ -139,3 +136,4 @@ networks:
     driver: bridge
   dokploy-network:
     external: true
+    name: dokploy-network

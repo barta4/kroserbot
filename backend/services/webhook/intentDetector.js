@@ -21,6 +21,14 @@ const CANCELLATION_PATTERNS = [
   'cancelen el pedido', 'deseo cancelar la compra',
 ];
 
+const TRACKING_PATTERNS = [
+  'como viene mi pedido', 'estado de mi pedido', 'estado de mi compra', 'estado del pedido',
+  'cuando llega mi pedido', 'cuando me entregan', 'seguimiento de pedido', 'numero de seguimiento',
+  'rastreo de pedido', 'donde esta mi pedido', 'ya despacharon', 'ya enviaron mi pedido',
+  'saber de mi pedido', 'mi pedido llego', 'estado de la orden', 'consultar pedido',
+  'como va mi pedido', 'como esta mi pedido', 'informacion de mi pedido', 'seguimiento',
+];
+
 const COMPLAINT_PATTERNS = [
   'reclamo', 'factura con error', 'queja', 'es un desastre', 'inaceptable',
   'pesimo servicio', 'defectuoso', 'vino roto', 'cobro mal', 'me cobraron de mas',
@@ -106,6 +114,7 @@ function detectIntent(text = '') {
 
   // Normalized pattern check
   const isCancellation = CANCELLATION_PATTERNS.some((pattern) => cleanText.includes(normalizeText(pattern)));
+  const isTracking = TRACKING_PATTERNS.some((pattern) => cleanText.includes(normalizeText(pattern))) || /#\s*[0-9]{1,8}/.test(text);
   const isComplaint = COMPLAINT_PATTERNS.some((pattern) => cleanText.includes(normalizeText(pattern)));
   const isUrgent = URGENCY_PATTERNS.some((pattern) => cleanText.includes(normalizeText(pattern)));
 
@@ -114,14 +123,14 @@ function detectIntent(text = '') {
   const hasGreeting = Boolean(matchedGreeting);
 
   // Pure Greeting
-  const isPureGreeting = hasGreeting && wordCount <= 4 && !cleanText.includes('precio') && !cleanText.includes('stock') && !cleanText.includes('taladro') && !cleanText.includes('pintura') && !cleanText.includes('donde') && !cleanText.includes('cuanto');
+  const isPureGreeting = hasGreeting && wordCount <= 4 && !cleanText.includes('precio') && !cleanText.includes('stock') && !cleanText.includes('taladro') && !cleanText.includes('pintura') && !cleanText.includes('donde') && !cleanText.includes('cuanto') && !isTracking;
 
   // Farewell Check
   const matchedFarewell = FAREWELL_PATTERNS.find((pattern) => cleanText.includes(normalizeText(pattern)));
   const hasFarewell = Boolean(matchedFarewell);
-  const isPureFarewell = hasFarewell && wordCount <= 6 && !cleanText.includes('pedido') && !cleanText.includes('comprar') && !cleanText.includes('precio');
+  const isPureFarewell = hasFarewell && wordCount <= 6 && !cleanText.includes('pedido') && !cleanText.includes('comprar') && !cleanText.includes('precio') && !isTracking;
 
-  // 6. Emotion determination
+  // Emotion determination
   let emotion = 'neutral';
   if (isComplaint) {
     emotion = 'frustrado';
@@ -133,6 +142,7 @@ function detectIntent(text = '') {
 
   let primaryIntent = 'consulta_general';
   if (isCancellation) primaryIntent = 'cancelacion';
+  else if (isTracking) primaryIntent = 'tracking_pedido';
   else if (isComplaint) primaryIntent = 'reclamo';
   else if (isPureGreeting) primaryIntent = 'saludo';
   else if (isPureFarewell) primaryIntent = 'despedida';
@@ -146,6 +156,7 @@ function detectIntent(text = '') {
     hasFarewell,
     isPureFarewell,
     isCancellation,
+    isTracking,
     isComplaint,
     isUrgent,
     getGreetingMessage: (name) => getTimeOfDayGreeting(name),
