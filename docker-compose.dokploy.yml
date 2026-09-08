@@ -35,7 +35,7 @@ services:
 
   # ─── Backend Node.js (API + RAG + Panel Admin) ────────────
   backend:
-    image: alfredobartaburu/kroserbot:v1.2
+    image: alfredobartaburu/kroserbot:v1.3
     container_name: kroserbot-backend
     restart: unless-stopped
     depends_on:
@@ -103,7 +103,7 @@ services:
 
   # ─── Scraper Python (Catalogo Kroser) ────────────────────
   scraper:
-    image: alfredobartaburu/kroserbot-scraper:v1.2
+    image: alfredobartaburu/kroserbot-scraper:v1.3
     container_name: kroserbot-scraper
     restart: unless-stopped
     depends_on:
