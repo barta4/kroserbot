@@ -82,10 +82,14 @@ module.exports = {
         return res.status(400).json({ error: 'Payload inválido', details: result.errors });
       }
       const { id } = req.params;
+      const parsedId = parseInt(id, 10);
+      if (isNaN(parsedId) || parsedId <= 0) {
+        return res.status(400).json({ error: 'ID de pedido inválido' });
+      }
       const { items, cliente, estado, notas, motivo_modificacion, zona_envio_id, forma_pago_id, costo_envio, cambiado_por } = result.data;
 
-      const pedidoActualizado = await pedidosRepo.updateFull(
-        id,
+      const pedidoActualizado = await pedidosService.updateOrderFull(
+        parsedId,
         { items, cliente, estado, notas, motivo_modificacion, zona_envio_id, forma_pago_id, costo_envio },
         cambiado_por || 'admin'
       );

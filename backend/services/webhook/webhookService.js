@@ -15,10 +15,23 @@ const guardrailService = require('../guardrails/guardrailService');
 const orderTrackingService = require('../pedidos/orderTrackingService');
 const debounceService = require('./debounceService');
 const logger = require('../../config/logger');
+const orderExtractor = require('../pedidos/orderExtractor');
+const derivationNoteService = require('../chatwoot/derivationNoteService');
 
 const IDEMPOTENCY_TTL = 3600; // 1 hour
 const HUMAN_ACTIVE_TTL = 86400; // 24 hours
 const CONTEXT_WINDOW_LIMIT = 20; // Expanded to 20 messages for rich conversation memory
+
+function safeParseHistory(rawHistory) {
+  if (!rawHistory) return [];
+  try {
+    const parsed = JSON.parse(rawHistory);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (_err) {
+    logger.warn('Error al parsear historial de Redis, reiniciando historial', { error: _err.message });
+    return [];
+  }
+}
 
 async function isChannelDisabled(payload, conversation) {
   const rawConfig = await configuracionRepo.get('canales_desactivados');
@@ -127,7 +140,8 @@ module.exports = {
     const sender = message.sender || payload.sender || {};
     let content = (message.content || '').trim();
     const senderType = (sender.type || message.sender_type || payload.sender_type || '').toLowerCase();
-    const isHumanAgent = senderType === 'agent' || senderType === 'user';
+    const messageType = (message.message_type || payload.message_type || '').toLowerCase();
+    const isHumanAgent = senderType === 'agent' || (senderType === 'user' && messageType === 'outgoing');
 
     // 2. Idempotency Check: Dedup by message_id
     if (messageId) {
@@ -275,7 +289,7 @@ module.exports = {
     const bufferKey = `conv_buffer:${conversationId}`;
     const lockKey = `conv_lock:${conversationId}`;
 
-    if (process.env.DEBOUNCE_DISABLED !== 'true') {
+    if (process.env.DEBOUNCE_DISABLED !== 'true' && !payload._alreadyDebounced) {
       const isFirstInWindow = await redis.set(lockKey, '1', 'EX', 4, 'NX');
       if (!isFirstInWindow) {
         // Rapid sequential message received within debounce window -> buffer it
@@ -325,6 +339,17 @@ module.exports = {
         await chatwootService.assignAgent(accountId, conversationId, assigneeId);
         await chatwootService.sendMessage(accountId, conversationId, msgDerivacion);
 
+        // Generate executive summary & action plan as private note for agent
+        await derivationNoteService.generateAndSendDerivationNote({
+          accountId,
+          conversationId,
+          area,
+          sender,
+          reason: guardrail.reason || 'Guardrail de seguridad activado por conducta reiterada',
+          history: [{ role: 'user', content: fullContent }],
+          ragContextStr: '',
+        });
+
         await emailService.sendDerivationAlert({
           area,
           clienteNombre: sender.name,
@@ -346,8 +371,8 @@ module.exports = {
       await conversacionesRepo.logMessage(conversationId, guardrail.reply, 'assistant');
 
       const sessionKey = `conv_memory:${conversationId}`;
-      const rawHistory = (await redis.get(sessionKey)) || '[]';
-      let history = JSON.parse(rawHistory);
+      const rawHistory = await redis.get(sessionKey);
+      let history = safeParseHistory(rawHistory);
       history.push({ role: 'user', content: fullContent });
       history.push({ role: 'assistant', content: guardrail.reply });
       await redis.set(sessionKey, JSON.stringify(history), 'EX', 86400);
@@ -361,8 +386,8 @@ module.exports = {
     }
 
     const sessionKey = `conv_memory:${conversationId}`;
-    const rawHistory = (await redis.get(sessionKey)) || '[]';
-    let history = JSON.parse(rawHistory);
+    const rawHistory = await redis.get(sessionKey);
+    let history = safeParseHistory(rawHistory);
 
     // 14. Smart Instant Handling for Pure Greetings & Farewells (Efficiency + Natural Variety)
     if (intentResult.isPureGreeting && history.length <= 1) {
@@ -498,6 +523,17 @@ module.exports = {
       await chatwootService.assignAgent(accountId, conversationId, assigneeId);
       await chatwootService.sendMessage(accountId, conversationId, msgDerivacion);
 
+      // Generate executive summary & action plan as private note for agent
+      await derivationNoteService.generateAndSendDerivationNote({
+        accountId,
+        conversationId,
+        area,
+        sender,
+        reason: content,
+        history,
+        ragContextStr: contextStr,
+      });
+
       // Send email alert to internal area
       await emailService.sendDerivationAlert({
         area,
@@ -515,7 +551,6 @@ module.exports = {
     let safeReply = guardrailService.filterOutput(llmReply);
 
     // 21. Automatic Order Extraction & Creation
-    const orderExtractor = require('../pedidos/orderExtractor');
     const { cleanReply, createdOrder } = await orderExtractor.processOrderFromReply({
       rawReply: safeReply,
       history,
@@ -552,6 +587,30 @@ module.exports = {
     history.push({ role: 'assistant', content: safeReply });
     if (history.length > 30) history = history.slice(-25);
     await redis.set(sessionKey, JSON.stringify(history), 'EX', 86400);
+
+    // Release debounce lock and drain any pending messages buffered during processing
+    if (lockKey && !payload._alreadyDebounced) {
+      await redis.del(lockKey);
+      const remainingBuffered = await redis.lrange(bufferKey, 0, -1);
+      if (remainingBuffered && remainingBuffered.length > 0) {
+        await redis.del(bufferKey);
+        const nextContent = remainingBuffered.join('\n');
+        setImmediate(async () => {
+          try {
+            await module.exports.processWebhookEvent({
+              ...payload,
+              _alreadyDebounced: true,
+              message: {
+                ...(payload.message || {}),
+                content: nextContent,
+              },
+            });
+          } catch (err) {
+            logger.error('Error processing subsequent buffered messages', { conversationId, error: err.message });
+          }
+        });
+      }
+    }
 
     return { status: 'processed', reply: safeReply };
   },

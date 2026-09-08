@@ -4,6 +4,7 @@ const intentDetector = require('../services/webhook/intentDetector');
 const llmService = require('../services/llm/llmService');
 const configuracionRepo = require('../repositories/configuracionRepository');
 const logger = require('../config/logger');
+const orderExtractor = require('../services/pedidos/orderExtractor');
 
 module.exports = {
   async simulateMessage(req, res, next) {
@@ -14,6 +15,8 @@ module.exports = {
         history = [],
         customerName = 'Cliente de Prueba',
         channel = 'webwidget',
+        provider: customProvider,
+        model: customModel,
       } = req.body;
 
       if (!message || typeof message !== 'string' || message.trim() === '') {
@@ -48,8 +51,8 @@ module.exports = {
       });
 
       // 5. Query LLM Provider
-      const activeProvider = (await configuracionRepo.get('llm_provider')) || process.env.LLM_PROVIDER || 'gemini';
-      const activeModel = (await configuracionRepo.get('llm_model')) || process.env.LLM_MODEL || (activeProvider === 'openai' ? 'gpt-4o-mini' : 'gemini-1.5-flash');
+      const activeProvider = customProvider || (await configuracionRepo.get('llm_provider')) || process.env.LLM_PROVIDER || 'gemini';
+      const activeModel = customModel || (await configuracionRepo.get('llm_model')) || process.env.LLM_MODEL || (activeProvider === 'openai' ? 'gpt-4o-mini' : 'gemini-1.5-flash');
 
       const userMessages = [
         ...history.map((m) => ({ role: m.role || 'user', content: m.content || '' })),
@@ -67,7 +70,6 @@ module.exports = {
         rawReply = `Estimado cliente, gracias por comunicarse con Kroser. En este momento estamos procesando su consulta sobre "${trimmedMessage}". ${ragResult.productosEncontrados?.length > 0 ? `Disponemos de ${ragResult.productosEncontrados[0].nombre} a U$S ${ragResult.productosEncontrados[0].precio}.` : ''}`;
       }
 
-      const orderExtractor = require('../services/pedidos/orderExtractor');
       const { cleanReply, createdOrder } = await orderExtractor.processOrderFromReply({
         rawReply,
         history: userMessages,
@@ -78,7 +80,7 @@ module.exports = {
 
       const latencyMs = Date.now() - startTime;
 
-      res.json({
+      const responsePayload = {
         success: true,
         reply: cleanReply,
         pedidoCreated: createdOrder,
@@ -99,8 +101,13 @@ module.exports = {
           zonasEnvio: ragResult.zonasEnvioEncontradas || [],
           formasPago: ragResult.formasPagoEncontradas || [],
         },
-        systemPrompt,
-      });
+      };
+
+      if (req.query.debug === 'true') {
+        responsePayload.systemPrompt = systemPrompt;
+      }
+
+      res.json(responsePayload);
     } catch (err) {
       next(err);
     }

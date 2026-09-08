@@ -1,4 +1,30 @@
+const path = require('path');
+const { spawn } = require('child_process');
 const db = require('../config/db');
+const redis = require('../config/redis');
+const logger = require('../config/logger');
+
+function triggerScraperProcess() {
+  try {
+    const pythonCmd = process.platform === 'win32' ? 'python' : 'python3';
+    const scraperProcess = spawn(pythonCmd, ['-m', 'scraper', '--resume'], {
+      detached: true,
+      stdio: 'ignore',
+      cwd: path.join(__dirname, '../../'),
+    });
+
+    scraperProcess.on('error', (err) => {
+      logger.warn('Could not launch local python scraper process directly (may run via Docker worker)', {
+        error: err.message,
+      });
+    });
+
+    scraperProcess.unref();
+    logger.info('Background python scraper process triggered');
+  } catch (err) {
+    logger.warn('Failed to spawn scraper process directly', { error: err.message });
+  }
+}
 
 module.exports = {
   async startScraper(req, res, next) {
@@ -19,9 +45,19 @@ module.exports = {
          RETURNING *`
       );
 
+      const run = insertRes.rows[0];
+
+      // Publish start event to Redis for worker containers
+      await redis.publish('scraper:start', JSON.stringify({ runId: run.id }));
+
+      // Trigger local python worker
+      triggerScraperProcess();
+
+      logger.info('Scraper run initiated from admin panel', { runId: run.id });
+
       res.status(202).json({
         message: 'Scraping iniciado',
-        run: insertRes.rows[0],
+        run,
       });
     } catch (err) {
       next(err);
@@ -41,9 +77,16 @@ module.exports = {
         return res.status(404).json({ error: 'No hay corridas de scraping activas para detener' });
       }
 
+      const run = updateRes.rows[0];
+
+      // Publish stop event to Redis
+      await redis.publish('scraper:stop', JSON.stringify({ runId: run.id }));
+
+      logger.info('Scraper stop requested from admin panel', { runId: run.id });
+
       res.json({
         message: 'Solicitud de detención enviada',
-        run: updateRes.rows[0],
+        run,
       });
     } catch (err) {
       next(err);

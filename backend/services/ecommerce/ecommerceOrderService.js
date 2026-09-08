@@ -11,6 +11,7 @@ const chatwootService = require('../chatwoot/chatwootService');
 const emailService = require('../email/emailService');
 const emailParser = require('./ecommerceEmailParser');
 const stateMachine = require('../pedidos/orderStateMachine');
+const logger = require('../../config/logger');
 
 module.exports = {
   /**
@@ -32,22 +33,22 @@ module.exports = {
    * @param {string} params.messageId - Chatwoot message ID (for logging)
    */
   async processOrderEmail({ content, conversationId, accountId, sender, messageId }) {
-    console.log(`[EcommerceOrder] Processing order email from conv #${conversationId}`);
+    logger.info(`[EcommerceOrder] Processing order email from conv #${conversationId}`);
 
     // 1. Parse the email content
     const parsed = emailParser.parseOrderEmail(content);
     if (!parsed || !parsed.orderNumber) {
-      console.warn(`[EcommerceOrder] Could not parse order number from email in conv #${conversationId}`);
+      logger.warn(`[EcommerceOrder] Could not parse order number from email in conv #${conversationId}`);
       // Still create a pedido with raw content so nothing is lost
       return await this._createUnparsedOrder({ content, conversationId, accountId, sender });
     }
 
-    console.log(`[EcommerceOrder] Parsed order: ${parsed.orderNumber}, payment: ${parsed.paymentStatus}`);
+    logger.info(`[EcommerceOrder] Parsed order: ${parsed.orderNumber}, payment: ${parsed.paymentStatus}`);
 
     // 2. Deduplication: check if this order number already exists
     const existing = await pedidosRepo.getByEcommerceOrderNumber(parsed.orderNumber);
     if (existing) {
-      console.log(`[EcommerceOrder] Order ${parsed.orderNumber} already exists as pedido #${existing.id}, skipping`);
+      logger.info(`[EcommerceOrder] Order ${parsed.orderNumber} already exists as pedido #${existing.id}, skipping`);
       return { action: 'duplicate_skipped', orderId: existing.id, orderNumber: parsed.orderNumber };
     }
 
@@ -85,7 +86,7 @@ module.exports = {
       estado_inicial: initialEstado,
     });
 
-    console.log(`[EcommerceOrder] Created pedido #${pedido.id} (estado: ${initialEstado}, pago: ${pagoEstado})`);
+    logger.info(`[EcommerceOrder] Created pedido #${pedido.id} (estado: ${initialEstado}, pago: ${pagoEstado})`);
 
     // 6. Send notifications based on state
     if (shouldAutoConfirm) {
@@ -129,13 +130,13 @@ module.exports = {
       ecommerce_order_number: null,
     });
 
-    console.warn(`[EcommerceOrder] Created unparsed order #${pedido.id} for manual review`);
+    logger.warn(`[EcommerceOrder] Created unparsed order #${pedido.id} for manual review`);
 
     // Notify team that manual review is needed
     try {
       await emailService.sendNewOrderAlert(pedido);
     } catch (err) {
-      console.warn(`[EcommerceOrder] Alert email failed: ${err.message}`);
+      logger.warn(`[EcommerceOrder] Alert email failed: ${err.message}`);
     }
 
     return { action: 'unparsed_created', orderId: pedido.id };
@@ -149,7 +150,7 @@ module.exports = {
     try {
       await emailService.sendPreparationAlert(pedido);
     } catch (err) {
-      console.warn(`[EcommerceOrder] Preparation alert email failed: ${err.message}`);
+      logger.warn(`[EcommerceOrder] Preparation alert email failed: ${err.message}`);
     }
 
     // Send Chatwoot message confirming the order was received and is being prepared
@@ -159,7 +160,7 @@ module.exports = {
         `✅ Pedido ${pedido.ecommerce_order_number || '#' + pedido.id} recibido y confirmado. Pago acreditado. El pedido pasa a preparación.`;
       await chatwootService.sendMessage(accountId, conversationId, msg);
     } catch (err) {
-      console.warn(`[EcommerceOrder] Chatwoot confirmation message failed: ${err.message}`);
+      logger.warn(`[EcommerceOrder] Chatwoot confirmation message failed: ${err.message}`);
     }
   },
 
@@ -171,7 +172,7 @@ module.exports = {
     try {
       await emailService.sendNewOrderAlert(pedido);
     } catch (err) {
-      console.warn(`[EcommerceOrder] New order alert email failed: ${err.message}`);
+      logger.warn(`[EcommerceOrder] New order alert email failed: ${err.message}`);
     }
 
     // Send Chatwoot message acknowledging the order
@@ -181,7 +182,7 @@ module.exports = {
         `📋 Pedido ${pedido.ecommerce_order_number || '#' + pedido.id} recibido. Estamos verificando el pago. Te avisamos cuando esté confirmado.`;
       await chatwootService.sendMessage(accountId, conversationId, msg);
     } catch (err) {
-      console.warn(`[EcommerceOrder] Chatwoot pending message failed: ${err.message}`);
+      logger.warn(`[EcommerceOrder] Chatwoot pending message failed: ${err.message}`);
     }
   },
 };

@@ -73,6 +73,10 @@ async function runMigrations() {
         DROP TABLE IF EXISTS conversaciones CASCADE;
         DROP TABLE IF EXISTS pedidos_historial CASCADE;
         DROP TABLE IF EXISTS pedidos CASCADE;
+        DROP TABLE IF EXISTS guias_tecnicas CASCADE;
+        DROP TABLE IF EXISTS zonas_envio CASCADE;
+        DROP TABLE IF EXISTS formas_pago CASCADE;
+        DROP TABLE IF EXISTS prompt_history CASCADE;
         DROP TABLE IF EXISTS locales CASCADE;
         DROP TABLE IF EXISTS configuracion CASCADE;
         DROP TABLE IF EXISTS productos CASCADE;

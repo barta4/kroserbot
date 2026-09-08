@@ -1,5 +1,6 @@
 const webhookService = require('../services/webhook/webhookService');
 const debounceService = require('../services/webhook/debounceService');
+const logger = require('../config/logger');
 
 module.exports = {
   async handleWebhook(req, res, next) {
@@ -12,10 +13,12 @@ module.exports = {
       res.status(200).json({ status: 'received' });
 
       const sender = payload.message?.sender || payload.sender || {};
+      const isOutgoing = payload.message?.message_type === 'outgoing' || payload.message_type === 'outgoing';
       const isAgentOrOutgoing =
-        payload.message?.message_type === 'outgoing' ||
+        isOutgoing ||
         sender.type === 'agent' ||
-        sender.type === 'bot';
+        sender.type === 'bot' ||
+        (sender.type === 'user' && isOutgoing);
 
       if (conversationId && content && payload.event === 'message_created' && !isAgentOrOutgoing) {
         // Use debounce to aggregate user messages sent within ~8s
@@ -23,6 +26,7 @@ module.exports = {
           try {
             const customPayload = {
               ...payload,
+              _alreadyDebounced: true,
               message: {
                 ...(payload.message || {}),
                 content: fullContent,
@@ -30,7 +34,7 @@ module.exports = {
             };
             await webhookService.processWebhookEvent(customPayload);
           } catch (err) {
-            console.error('[WebhookController] Error en callback de debounce:', err);
+            logger.error('[WebhookController] Error en callback de debounce:', { error: err.message });
           }
         });
       } else {
@@ -41,7 +45,7 @@ module.exports = {
       if (!res.headersSent) {
         next(err);
       } else {
-        console.error('[WebhookController] Error asíncrono procesando webhook:', err);
+        logger.error('[WebhookController] Error asíncrono procesando webhook:', { error: err.message });
       }
     }
   },

@@ -8,6 +8,8 @@ module.exports = {
       let totalProducts = 0;
       let totalDerivations = 0;
 
+      let topProducts = [];
+
       try {
         const ordersCountRes = await db.query('SELECT COUNT(*) FROM pedidos');
         totalOrders = parseInt(ordersCountRes.rows[0].count, 10);
@@ -28,6 +30,23 @@ module.exports = {
           WHERE mensaje ILIKE '%DERIVAR%' OR rol = 'system'
         `);
         totalDerivations = parseInt(convRes.rows[0].count, 10);
+
+        try {
+          const topProdRes = await db.query(`
+            SELECT 
+              item->>'nombre' AS nombre, 
+              COUNT(*)::int AS consultas
+            FROM pedidos, 
+            jsonb_array_elements(CASE WHEN jsonb_typeof(items) = 'array' THEN items ELSE '[]'::jsonb END) AS item
+            WHERE item->>'nombre' IS NOT NULL AND item->>'nombre' != ''
+            GROUP BY item->>'nombre'
+            ORDER BY consultas DESC
+            LIMIT 5
+          `);
+          topProducts = topProdRes.rows;
+        } catch (_topErr) {
+          topProducts = [];
+        }
       } catch (_err) {
         // Mock analytics data if DB empty/offline
         ordersPerDay = [
@@ -37,6 +56,12 @@ module.exports = {
         totalOrders = 20;
         totalProducts = 150;
         totalDerivations = 5;
+        topProducts = [
+          { nombre: 'Pintura Látex Interior 20L', consultas: 45 },
+          { nombre: 'Taladro Percutor 750W', consultas: 32 },
+          { nombre: 'Juego de Herramientas 108 piezas', consultas: 28 },
+          { nombre: 'Esmalte Sintético Blanco 4L', consultas: 21 },
+        ];
       }
 
       res.json({
@@ -46,12 +71,7 @@ module.exports = {
           totalDerivations,
         },
         ordersPerDay,
-        topProducts: [
-          { nombre: 'Pintura Látex Interior 20L', consultas: 45 },
-          { nombre: 'Taladro Percutor 750W', consultas: 32 },
-          { nombre: 'Juego de Herramientas 108 piezas', consultas: 28 },
-          { nombre: 'Esmalte Sintético Blanco 4L', consultas: 21 },
-        ],
+        topProducts,
       });
     } catch (err) {
       next(err);

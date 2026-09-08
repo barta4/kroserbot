@@ -1,4 +1,3 @@
-const redis = require('../../config/redis');
 const logger = require('../../config/logger');
 
 const DEBOUNCE_WAIT_MS = parseInt(process.env.DEBOUNCE_WAIT_MS || '8000', 10);

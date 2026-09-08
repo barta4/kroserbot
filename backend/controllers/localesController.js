@@ -29,16 +29,12 @@ module.exports = {
       }
       const { nombre, zona, direccion, telefono, horario } = result.data;
 
-      try {
-        const insertRes = await db.query(
-          `INSERT INTO locales (nombre, zona, direccion, telefono, horario)
-           VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-          [nombre, zona, direccion, telefono, horario]
-        );
-        return res.status(201).json(insertRes.rows[0]);
-      } catch (_err) {
-        return res.status(201).json({ id: Date.now(), nombre, zona, direccion, telefono, horario });
-      }
+      const insertRes = await db.query(
+        `INSERT INTO locales (nombre, zona, direccion, telefono, horario)
+         VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+        [nombre, zona, direccion, telefono, horario]
+      );
+      return res.status(201).json(insertRes.rows[0]);
     } catch (err) {
       next(err);
     }
@@ -51,19 +47,22 @@ module.exports = {
         return res.status(400).json({ error: 'Payload inválido', details: result.errors });
       }
       const { id } = req.params;
+      const parsedId = parseInt(id, 10);
+      if (isNaN(parsedId) || parsedId <= 0) {
+        return res.status(400).json({ error: 'ID de local inválido' });
+      }
       const { nombre, zona, direccion, telefono, horario } = result.data;
 
-      try {
-        const updateRes = await db.query(
-          `UPDATE locales
-           SET nombre = $1, zona = $2, direccion = $3, telefono = $4, horario = $5
-           WHERE id = $6 RETURNING *`,
-          [nombre, zona, direccion, telefono, horario, id]
-        );
-        return res.json(updateRes.rows[0]);
-      } catch (_err) {
-        return res.json({ id: parseInt(id, 10), nombre, zona, direccion, telefono, horario });
+      const updateRes = await db.query(
+        `UPDATE locales
+         SET nombre = $1, zona = $2, direccion = $3, telefono = $4, horario = $5
+         WHERE id = $6 RETURNING *`,
+        [nombre, zona, direccion, telefono, horario, parsedId]
+      );
+      if (updateRes.rowCount === 0) {
+        return res.status(404).json({ error: 'Local no encontrado' });
       }
+      return res.json(updateRes.rows[0]);
     } catch (err) {
       next(err);
     }
@@ -72,10 +71,15 @@ module.exports = {
   async deleteLocal(req, res, next) {
     try {
       const { id } = req.params;
-      try {
-        await db.query('DELETE FROM locales WHERE id = $1', [id]);
-      } catch (_err) {}
-      res.json({ success: true, message: `Local #${id} eliminado` });
+      const parsedId = parseInt(id, 10);
+      if (isNaN(parsedId) || parsedId <= 0) {
+        return res.status(400).json({ error: 'ID de local inválido' });
+      }
+      const result = await db.query('DELETE FROM locales WHERE id = $1', [parsedId]);
+      if (result.rowCount === 0) {
+        return res.status(404).json({ error: 'Local no encontrado' });
+      }
+      res.json({ success: true, message: `Local #${parsedId} eliminado` });
     } catch (err) {
       next(err);
     }

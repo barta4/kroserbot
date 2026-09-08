@@ -32,11 +32,15 @@ async function getChatwootClient() {
 }
 
 module.exports = {
-  async sendMessage(accountId, conversationId, content) {
+  async sendMessage(accountId, conversationId, content, isPrivate = false) {
     const client = await getChatwootClient();
     if (!client) {
-      logger.info('Chatwoot outgoing mock', { conversationId, contentLength: content.length });
-      return { success: true, mock: true };
+      logger.info(isPrivate ? 'Chatwoot private note mock' : 'Chatwoot outgoing mock', {
+        conversationId,
+        contentLength: content.length,
+        isPrivate,
+      });
+      return { success: true, mock: true, isPrivate };
     }
 
     try {
@@ -45,14 +49,18 @@ module.exports = {
         {
           content,
           message_type: 'outgoing',
-          private: false,
+          private: Boolean(isPrivate),
         }
       );
       return response.data;
     } catch (err) {
-      logger.error('Chatwoot send error', { conversationId, error: err.message });
+      logger.error('Chatwoot send error', { conversationId, isPrivate, error: err.message });
       return { success: false, error: err.message };
     }
+  },
+
+  async addPrivateNote(accountId, conversationId, content) {
+    return await this.sendMessage(accountId, conversationId, content, true);
   },
 
   async assignAgent(accountId, conversationId, assigneeId) {

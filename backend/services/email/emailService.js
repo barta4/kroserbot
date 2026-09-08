@@ -17,21 +17,29 @@ const AREA_MAILS = {
   info: process.env.MAIL_INFO || 'info@kroser.com.uy',
 };
 
+let cachedTransporter = null;
+
+function getTransporter() {
+  if (!cachedTransporter && nodemailer && process.env.SMTP_HOST) {
+    cachedTransporter = nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port: parseInt(process.env.SMTP_PORT || '587', 10),
+      secure: false,
+      auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS,
+      },
+    });
+  }
+  return cachedTransporter;
+}
+
 async function sendEmailWithRetry(mailOptions, retries = 3) {
-  if (!nodemailer || !process.env.SMTP_HOST) {
+  const transporter = getTransporter();
+  if (!transporter) {
     logger.info('Email mock sent', { to: mailOptions.to, subject: mailOptions.subject });
     return { success: true, mock: true };
   }
-
-  const transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
-    port: parseInt(process.env.SMTP_PORT || '587'),
-    secure: false,
-    auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS,
-    },
-  });
 
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {

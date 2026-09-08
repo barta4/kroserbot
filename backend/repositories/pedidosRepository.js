@@ -108,8 +108,8 @@ module.exports = {
           nuevoEstado,
           notas !== undefined ? notas : actual.notas,
           motivo_modificacion !== undefined ? motivo_modificacion : actual.motivo_modificacion,
-          zona_envio_id || actual.zona_envio_id,
-          forma_pago_id || actual.forma_pago_id,
+          zona_envio_id !== undefined ? zona_envio_id : actual.zona_envio_id,
+          forma_pago_id !== undefined ? forma_pago_id : actual.forma_pago_id,
           costo_envio !== undefined ? costo_envio : actual.costo_envio,
           id,
         ]
@@ -142,7 +142,7 @@ module.exports = {
   async getActiveByConversation(conversation_id) {
     const res = await db.query(
       `SELECT * FROM pedidos 
-       WHERE conversation_id = $1 AND estado = 'pendiente' 
+       WHERE conversation_id = $1 AND estado IN ('pendiente', 'confirmado', 'en_preparacion') 
        ORDER BY created_at DESC LIMIT 1`,
       [conversation_id]
     );
@@ -197,7 +197,7 @@ module.exports = {
   async getPendingOlderThanHours(hours = 2) {
     const res = await db.query(
       `SELECT * FROM pedidos 
-       WHERE estado = 'pendiente' AND created_at < NOW() - ($1 || ' hours')::INTERVAL`,
+       WHERE estado = 'pendiente' AND created_at < NOW() - ($1 * INTERVAL '1 hour')`,
       [hours]
     );
     return res.rows;

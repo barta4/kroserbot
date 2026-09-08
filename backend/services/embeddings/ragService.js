@@ -4,7 +4,44 @@ const productosRepo = require('../../repositories/productosRepository');
 const localesRepo = require('../../repositories/localesRepository');
 const guiasTecnicasRepo = require('../../repositories/guiasTecnicasRepository');
 
-const SIMILARITY_THRESHOLD = 0.35; // Calibrated cosine similarity threshold for pgvector
+const SIMILARITY_THRESHOLD = 0.52; // Calibrated cosine similarity threshold for pgvector
+
+const CACHE_TTL_MS = 5 * 60 * 1000;
+let cachedLocales = { data: null, expiresAt: 0 };
+let cachedZonas = { data: null, expiresAt: 0 };
+let cachedPagos = { data: null, expiresAt: 0 };
+
+async function getCachedLocales() {
+  const now = Date.now();
+  if (cachedLocales.data && cachedLocales.expiresAt > now) {
+    return cachedLocales.data;
+  }
+  const data = await localesRepo.getAll();
+  cachedLocales = { data, expiresAt: now + CACHE_TTL_MS };
+  return data;
+}
+
+async function getCachedZonas() {
+  const now = Date.now();
+  if (cachedZonas.data && cachedZonas.expiresAt > now) {
+    return cachedZonas.data;
+  }
+  const res = await db.query('SELECT * FROM zonas_envio WHERE activo = true ORDER BY departamento_ciudad, barrio_zona');
+  const data = res.rows || [];
+  cachedZonas = { data, expiresAt: now + CACHE_TTL_MS };
+  return data;
+}
+
+async function getCachedFormasPago() {
+  const now = Date.now();
+  if (cachedPagos.data && cachedPagos.expiresAt > now) {
+    return cachedPagos.data;
+  }
+  const res = await db.query('SELECT * FROM formas_pago WHERE activo = true ORDER BY nombre');
+  const data = res.rows || [];
+  cachedPagos = { data, expiresAt: now + CACHE_TTL_MS };
+  return data;
+}
 
 // Expanded Cross-Selling & Hardware Work Bundles Map
 const CROSS_SELLING_MAP = {
@@ -78,7 +115,7 @@ module.exports = {
         const queryEmbedding = await embeddingProvider.generateSingleEmbedding(queryText);
         if (queryEmbedding && queryEmbedding.length > 0) {
           const rawVector = await productosRepo.searchVector(queryEmbedding, 5);
-          vectorResults = rawVector.filter((p) => p.similarity !== undefined && p.similarity >= 0.52);
+          vectorResults = rawVector.filter((p) => p.similarity !== undefined && p.similarity >= SIMILARITY_THRESHOLD);
         }
       } catch (_vErr) {}
 
@@ -147,7 +184,7 @@ module.exports = {
       lowerQ.includes('retirar')
     ) {
       try {
-        locales = await localesRepo.getAll();
+        locales = await getCachedLocales();
       } catch (_e) {}
     }
 
@@ -166,8 +203,7 @@ module.exports = {
       lowerQ.includes('zona')
     ) {
       try {
-        const resZonas = await db.query('SELECT * FROM zonas_envio WHERE activo = true ORDER BY departamento_ciudad, barrio_zona');
-        zonasEnvio = resZonas.rows || [];
+        zonasEnvio = await getCachedZonas();
       } catch (_e) {}
     }
 
@@ -189,8 +225,7 @@ module.exports = {
       lowerQ.includes('master')
     ) {
       try {
-        const resPagos = await db.query('SELECT * FROM formas_pago WHERE activo = true ORDER BY nombre');
-        formasPago = resPagos.rows || [];
+        formasPago = await getCachedFormasPago();
       } catch (_e) {}
     }
 

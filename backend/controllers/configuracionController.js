@@ -16,6 +16,24 @@ const SECRET_KEYS = new Set([
   'api_productos_key',
 ]);
 
+const ALLOWED_EXACT_KEYS = new Set([
+  'system_prompt',
+  'bot_enabled',
+  'mercadopago_enabled',
+  'order_email_receiver',
+  'debounce_wait_ms',
+  'mercadopago_access_token',
+  'mercadopago_public_key',
+  'mercadopago_webhook_secret',
+]);
+
+const ALLOWED_PREFIXES = ['msg_', 'assignee_id_'];
+
+function isAllowedConfigKey(key) {
+  if (ALLOWED_EXACT_KEYS.has(key)) return true;
+  return ALLOWED_PREFIXES.some((prefix) => key.startsWith(prefix));
+}
+
 module.exports = {
   async getConfig(req, res, next) {
     try {
@@ -40,6 +58,9 @@ module.exports = {
       }
       if (typeof key !== 'string' || typeof value !== 'string') {
         return res.status(400).json({ error: 'key y value deben ser strings' });
+      }
+      if (!isAllowedConfigKey(key)) {
+        return res.status(400).json({ error: `Clave de configuración '${key}' no permitida` });
       }
       const updated = await configuracionRepo.set(key, value);
 

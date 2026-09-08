@@ -127,9 +127,6 @@ class ScraperRuntime:
                     fuente = "scraping"
 
                 if fuente != "scraping":
-                    run_id = self.db.create_run()
-                    contadores = {"nuevos": 0, "actu": 0, "discont": 0, "errores": 0}
-                    
                     import hashlib
                     seen_skus = set()
                     for p in products:

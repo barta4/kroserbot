@@ -28,10 +28,18 @@ module.exports = {
           contextStr += '- Pedidos anteriores registrados:\n';
           pastOrders.forEach((p) => {
             let itemSummary = 'Productos varios';
-            if (Array.isArray(p.items)) {
-              itemSummary = p.items.map((it) => `${it.nombre || it.sku || 'Item'} (x${it.cantidad || 1})`).join(', ');
-            } else if (typeof p.items === 'object' && p.items !== null) {
-              itemSummary = JSON.stringify(p.items).substring(0, 80);
+            let items = p.items;
+            if (typeof items === 'string') {
+              try {
+                items = JSON.parse(items);
+              } catch (_e) {
+                items = null;
+              }
+            }
+            if (Array.isArray(items)) {
+              itemSummary = items.map((it) => `${it.nombre || it.sku || 'Item'} (x${it.cantidad || 1})`).join(', ');
+            } else if (typeof items === 'object' && items !== null) {
+              itemSummary = JSON.stringify(items).substring(0, 80);
             }
             const dateStr = p.created_at ? new Date(p.created_at).toLocaleDateString('es-UY') : '';
             contextStr += `  * Pedido #${p.id} (${dateStr}) - Estado: ${p.estado} - Artículos: ${itemSummary}\n`;

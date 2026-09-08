@@ -9,6 +9,8 @@
 
 const configuracionRepo = require('../../repositories/configuracionRepository');
 const pedidosRepo = require('../../repositories/pedidosRepository');
+const pedidosService = require('../pedidos/pedidosService');
+const logger = require('../../config/logger');
 
 let MercadoPago = null;
 try {
@@ -31,7 +33,7 @@ async function isEnabled() {
  */
 async function getClient() {
   if (!MercadoPago) {
-    console.warn('[MercadoPago] SDK not installed. Run: npm install mercadopago');
+    logger.warn('[MercadoPago] SDK not installed. Run: npm install mercadopago');
     return null;
   }
 
@@ -45,7 +47,7 @@ async function getClient() {
     process.env.MERCADOPAGO_ACCESS_TOKEN;
 
   if (!accessToken) {
-    console.warn('[MercadoPago] No access token configured');
+    logger.warn('[MercadoPago] No access token configured');
     return null;
   }
 
@@ -67,7 +69,7 @@ module.exports = {
   async toggle(enable) {
     const value = enable ? 'true' : 'false';
     await configuracionRepo.set('mercadopago_enabled', value);
-    console.log(`[MercadoPago] Integration ${enable ? 'ENABLED' : 'DISABLED'}`);
+    logger.info(`[MercadoPago] Integration ${enable ? 'ENABLED' : 'DISABLED'}`);
     return { enabled: enable };
   },
 
@@ -96,31 +98,39 @@ module.exports = {
 
     try {
       const preference = new MercadoPago.Preference(client);
-      const result = await preference.create({
-        body: {
-          items: items.map((item) => ({
-            title: item.name || item.nombre || 'Producto Kroser',
-            quantity: item.quantity || item.cantidad || 1,
-            unit_price: parseFloat(item.price || item.precio || 0),
-            currency_id: 'UYU',
-          })),
-          payer: {
-            name: cliente.nombre || '',
-            email: cliente.email || '',
-            phone: { number: cliente.telefono || '' },
-          },
-          external_reference: `pedido_${pedidoId}`,
-          notification_url: process.env.MERCADOPAGO_WEBHOOK_URL || '',
-          back_urls: {
-            success: process.env.MERCADOPAGO_SUCCESS_URL || '',
-            failure: process.env.MERCADOPAGO_FAILURE_URL || '',
-            pending: process.env.MERCADOPAGO_PENDING_URL || '',
-          },
-          auto_return: 'approved',
+      const webhookUrl = process.env.MERCADOPAGO_WEBHOOK_URL || (await configuracionRepo.get('mercadopago_webhook_url'));
+      const preferenceBody = {
+        items: items.map((item) => ({
+          title: item.name || item.nombre || 'Producto Kroser',
+          quantity: item.quantity || item.cantidad || 1,
+          unit_price: parseFloat(item.price || item.precio || 0),
+          currency_id: 'UYU',
+        })),
+        payer: {
+          name: cliente.nombre || '',
+          email: cliente.email || '',
+          phone: { number: cliente.telefono || '' },
         },
+        external_reference: `pedido_${pedidoId}`,
+        back_urls: {
+          success: process.env.MERCADOPAGO_SUCCESS_URL || '',
+          failure: process.env.MERCADOPAGO_FAILURE_URL || '',
+          pending: process.env.MERCADOPAGO_PENDING_URL || '',
+        },
+        auto_return: 'approved',
+      };
+
+      if (webhookUrl && String(webhookUrl).trim().startsWith('http')) {
+        preferenceBody.notification_url = String(webhookUrl).trim();
+      } else {
+        logger.warn('[MercadoPago] MERCADOPAGO_WEBHOOK_URL no configurada o inválida. Se omite notification_url.');
+      }
+
+      const result = await preference.create({
+        body: preferenceBody,
       });
 
-      console.log(`[MercadoPago] Preference created for pedido #${pedidoId}: ${result.id}`);
+      logger.info(`[MercadoPago] Preference created for pedido #${pedidoId}: ${result.id}`);
       return {
         enabled: true,
         preferenceId: result.id,
@@ -128,7 +138,7 @@ module.exports = {
         sandboxInitPoint: result.sandbox_init_point,
       };
     } catch (err) {
-      console.error(`[MercadoPago] Error creating preference for pedido #${pedidoId}:`, err.message);
+      logger.error(`[MercadoPago] Error creating preference for pedido #${pedidoId}: ${err.message}`);
       throw err;
     }
   },
@@ -159,7 +169,7 @@ module.exports = {
         transactionAmount: result.transaction_amount,
       };
     } catch (err) {
-      console.error(`[MercadoPago] Error fetching payment #${paymentId}:`, err.message);
+      logger.error(`[MercadoPago] Error fetching payment #${paymentId}: ${err.message}`);
       throw err;
     }
   },
@@ -171,19 +181,19 @@ module.exports = {
   async handleWebhookNotification(body) {
     const enabled = await isEnabled();
     if (!enabled) {
-      console.log('[MercadoPago] Webhook received but integration is disabled');
+      logger.info('[MercadoPago] Webhook received but integration is disabled');
       return { processed: false, reason: 'disabled' };
     }
 
     const { type, data } = body;
 
     if (type !== 'payment') {
-      console.log(`[MercadoPago] Ignoring webhook type: ${type}`);
+      logger.info(`[MercadoPago] Ignoring webhook type: ${type}`);
       return { processed: false, reason: 'not_payment_type' };
     }
 
     if (!data || !data.id) {
-      console.warn('[MercadoPago] Webhook missing data.id');
+      logger.warn('[MercadoPago] Webhook missing data.id');
       return { processed: false, reason: 'missing_data' };
     }
 
@@ -199,14 +209,14 @@ module.exports = {
       const externalRef = paymentInfo.externalReference || '';
       const pedidoIdMatch = externalRef.match(/pedido_(\d+)/);
       if (!pedidoIdMatch) {
-        console.warn(`[MercadoPago] Unknown external_reference: ${externalRef}`);
+        logger.warn(`[MercadoPago] Unknown external_reference: ${externalRef}`);
         return { processed: false, reason: 'unknown_reference' };
       }
 
       const pedidoId = parseInt(pedidoIdMatch[1], 10);
       const pedido = await pedidosRepo.getById(pedidoId);
       if (!pedido) {
-        console.warn(`[MercadoPago] Pedido #${pedidoId} not found`);
+        logger.warn(`[MercadoPago] Pedido #${pedidoId} not found`);
         return { processed: false, reason: 'pedido_not_found' };
       }
 
@@ -221,17 +231,17 @@ module.exports = {
       const pagoEstado = statusMap[paymentInfo.status] || 'pendiente_pago';
       await pedidosRepo.updatePagoEstado(pedidoId, pagoEstado, `mp_${data.id}`);
 
-      // If payment approved and order is pending, auto-confirm
+      // If payment approved and order is pending, auto-confirm using pedidosService (triggers customer notification)
       if (paymentInfo.status === 'approved' && pedido.estado === 'pendiente') {
-        const { pedido: updated } = await pedidosRepo.updateEstado(pedidoId, 'confirmado', 'mercadopago');
-        console.log(`[MercadoPago] Pedido #${pedidoId} auto-confirmed after payment approval`);
-        return { processed: true, action: 'auto_confirmed', pedidoId };
+        const updated = await pedidosService.updateOrderStatus(pedidoId, 'confirmado', 'mercadopago');
+        logger.info(`[MercadoPago] Pedido #${pedidoId} auto-confirmed after payment approval`);
+        return { processed: true, action: 'auto_confirmed', pedidoId, pedido: updated };
       }
 
-      console.log(`[MercadoPago] Updated pedido #${pedidoId} payment status to: ${pagoEstado}`);
+      logger.info(`[MercadoPago] Updated pedido #${pedidoId} payment status to: ${pagoEstado}`);
       return { processed: true, action: 'payment_updated', pedidoId, pagoEstado };
     } catch (err) {
-      console.error(`[MercadoPago] Error handling webhook:`, err.message);
+      logger.error(`[MercadoPago] Error handling webhook: ${err.message}`);
       return { processed: false, reason: 'error', error: err.message };
     }
   },

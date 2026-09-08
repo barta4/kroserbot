@@ -91,15 +91,16 @@ module.exports = {
   async getComplementaryItems(categories = [], limit = 3) {
     if (!categories || categories.length === 0) return [];
     const conditions = categories.map((_, i) => `categoria ILIKE $${i + 1} OR nombre ILIKE $${i + 1}`).join(' OR ');
+    const params = categories.map((c) => `%${c}%`);
+    params.push(parseInt(limit, 10) || 3);
     const sql = `
       SELECT id, sku, nombre, precio, precio_oferta, moneda, marca, categoria, descripcion, imagen_url, producto_url, stock_status
       FROM productos
       WHERE discontinuado = FALSE
         AND stock_status != 'out_of_stock'
         AND (${conditions})
-      LIMIT ${limit};
+      LIMIT $${params.length};
     `;
-    const params = categories.map((c) => `%${c}%`);
     const res = await db.query(sql, params);
     return res.rows;
   },

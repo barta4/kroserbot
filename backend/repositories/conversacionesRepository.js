@@ -1,4 +1,5 @@
 const db = require('../config/db');
+const logger = require('../config/logger');
 
 module.exports = {
   async logMessage(conversation_id, mensaje, rol = 'user') {
@@ -10,7 +11,7 @@ module.exports = {
       );
       return res.rows[0];
     } catch (err) {
-      console.warn(`[ConversacionesLog Error] ${err.message}`);
+      logger.warn('[ConversacionesLog Error]', { error: err.message });
     }
   },
 
@@ -24,7 +25,7 @@ module.exports = {
       );
       return res.rows.reverse();
     } catch (err) {
-      console.warn(`[ConversacionesGetHistory Error] ${err.message}`);
+      logger.warn('[ConversacionesGetHistory Error]', { error: err.message });
       return [];
     }
   },

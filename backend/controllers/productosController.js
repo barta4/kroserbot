@@ -72,10 +72,15 @@ module.exports = {
   async deleteProducto(req, res, next) {
     try {
       const { id } = req.params;
-      try {
-        await db.query('DELETE FROM productos WHERE id = $1', [id]);
-      } catch (_err) {}
-      res.json({ success: true, message: `Producto #${id} eliminado` });
+      const parsedId = parseInt(id, 10);
+      if (isNaN(parsedId) || parsedId <= 0) {
+        return res.status(400).json({ error: 'ID de producto inválido' });
+      }
+      const result = await db.query('DELETE FROM productos WHERE id = $1', [parsedId]);
+      if (result.rowCount === 0) {
+        return res.status(404).json({ error: 'Producto no encontrado' });
+      }
+      res.json({ success: true, message: `Producto #${parsedId} eliminado` });
     } catch (err) {
       next(err);
     }

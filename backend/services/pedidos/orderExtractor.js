@@ -126,7 +126,9 @@ module.exports = {
 
           createdOrder = fallbackOrder;
           logger.info('Fallback order created from conversation cues', { pedidoId: fallbackOrder.id });
-        } catch (_fErr) {}
+        } catch (fErr) {
+          logger.warn('Failed to create fallback order from conversation cues', { error: fErr.message });
+        }
       }
     }
 

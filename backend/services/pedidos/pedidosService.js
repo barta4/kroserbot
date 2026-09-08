@@ -116,8 +116,9 @@ module.exports = {
 
   async handleCustomerCancellation(conversationId, accountId) {
     const activeOrder = await pedidosRepo.getActiveByConversation(conversationId);
-    if (activeOrder && activeOrder.estado === 'pendiente') {
-      logger.info('Customer requested cancellation', { pedidoId: activeOrder.id, conversationId });
+    const cancellableStates = ['pendiente', 'confirmado', 'en_preparacion'];
+    if (activeOrder && cancellableStates.includes(activeOrder.estado)) {
+      logger.info('Customer requested cancellation', { pedidoId: activeOrder.id, conversationId, estadoAnterior: activeOrder.estado });
       await this.updateOrderStatus(activeOrder.id, 'cancelado', 'cliente');
       await chatwootService.sendMessage(
         accountId,
@@ -135,5 +136,43 @@ module.exports = {
       logger.warn('Pending orders alert', { count: pendingOrders.length, olderThanHours: hours });
     }
     return pendingOrders;
+  },
+
+  async updateOrderFull(id, data, cambiadoPor = 'admin') {
+    const pedidoActual = await pedidosRepo.getById(id);
+    if (!pedidoActual) {
+      const err = new Error(`Pedido #${id} no encontrado`);
+      err.statusCode = 404;
+      throw err;
+    }
+
+    if (data.estado && data.estado !== pedidoActual.estado) {
+      stateMachine.assertTransition(pedidoActual.estado, data.estado);
+    }
+
+    const pedidoActualizado = await pedidosRepo.updateFull(id, data, cambiadoPor);
+
+    if (data.estado && data.estado !== pedidoActual.estado) {
+      logger.info('Order status updated via updateOrderFull', { pedidoId: id, from: pedidoActual.estado, to: data.estado, by: cambiadoPor });
+      if (data.estado === 'confirmado') {
+        const msgListo =
+          (await configuracionRepo.get('msg_pedido_listo')) ||
+          '¡Tu pedido fue confirmado! Te contactamos para coordinar la entrega.';
+        if (pedidoActualizado.account_id && pedidoActualizado.conversation_id) {
+          await chatwootService.sendMessage(pedidoActualizado.account_id, pedidoActualizado.conversation_id, msgListo);
+        }
+      } else if (data.estado === 'rechazado') {
+        const msgRechazado =
+          (await configuracionRepo.get('msg_pedido_rechazado')) ||
+          'Lamentamos informarte que no pudimos procesar tu pedido. Un asesor te contactará.';
+        if (pedidoActualizado.account_id && pedidoActualizado.conversation_id) {
+          await chatwootService.sendMessage(pedidoActualizado.account_id, pedidoActualizado.conversation_id, msgRechazado);
+        }
+      } else if (data.estado === 'en_preparacion') {
+        await this.sendPreparationAlert(pedidoActualizado);
+      }
+    }
+
+    return pedidoActualizado;
   },
 };

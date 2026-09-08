@@ -8,6 +8,7 @@ const path = require('path');
 const apiLimiter = require('./middleware/rateLimiter');
 const errorHandler = require('./middleware/errorHandler');
 const routes = require('./routes');
+const logger = require('./config/logger');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -62,9 +63,37 @@ app.use('/api', apiLimiter, routes);
 app.use(errorHandler);
 
 if (require.main === module) {
-  app.listen(PORT, () => {
-    console.log(`[Bot Kroser Backend] Server running on port ${PORT} (env: ${process.env.NODE_ENV || 'development'})`);
+  const server = app.listen(PORT, () => {
+    logger.info(`[Bot Kroser Backend] Server running on port ${PORT} (env: ${process.env.NODE_ENV || 'development'})`);
   });
+
+  const shutdown = async (signal) => {
+    logger.info(`[Shutdown] Received ${signal}. Starting graceful shutdown...`);
+    server.close(async () => {
+      try {
+        const db = require('./config/db');
+        const redis = require('./config/redis');
+        if (db.pool) await db.pool.end();
+        if (redis.redisClient && typeof redis.redisClient.quit === 'function') {
+          await redis.redisClient.quit();
+        }
+        logger.info('[Shutdown] All connections closed cleanly. Exiting.');
+        process.exit(0);
+      } catch (err) {
+        logger.error('[Shutdown] Error during shutdown:', { error: err.message });
+        process.exit(1);
+      }
+    });
+
+    // Force close after 10 seconds if hanging
+    setTimeout(() => {
+      logger.error('[Shutdown] Forced shutdown after timeout');
+      process.exit(1);
+    }, 10000).unref();
+  };
+
+  process.on('SIGTERM', () => shutdown('SIGTERM'));
+  process.on('SIGINT', () => shutdown('SIGINT'));
 }
 
 module.exports = app;

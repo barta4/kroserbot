@@ -8,6 +8,8 @@
  * paymentMethod, shippingMethod.
  */
 
+const logger = require('../../config/logger');
+
 /**
  * Detecta si el contenido parece un email de pedido e-commerce.
  * Busca patrones comunes en emails de tiendas online.
@@ -289,11 +291,11 @@ function parseOrderEmail(content) {
   }
 
   if (isTiendanubeEmail(content)) {
-    console.log('[EcommerceParser] Detected Tiendanube email format');
+    logger.info('[EcommerceParser] Detected Tiendanube email format');
     return parseTiendanubeOrderEmail(content);
   }
 
-  console.log('[EcommerceParser] Using generic email parser');
+  logger.info('[EcommerceParser] Using generic email parser');
   return parseGenericOrderEmail(content);
 }
 

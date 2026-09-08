@@ -199,14 +199,14 @@ module.exports = {
   listAvailableModels,
   cleanAndHumanizeReply,
 
-  async generateResponse(systemPrompt, userMessages) {
-    // Read dynamic configuration from database
-    const provider = (await configuracionRepo.get('llm_provider')) || (process.env.GEMINI_API_KEY ? 'gemini' : 'openai');
-    const selectedModel = (await configuracionRepo.get('llm_model')) || (provider === 'gemini' ? 'gemini-1.5-flash' : 'gpt-4o-mini');
-    const apiKey = (await configuracionRepo.get('llm_api_key')) || (provider === 'gemini' ? process.env.GEMINI_API_KEY : process.env.OPENAI_API_KEY);
-    const baseUrl = (await configuracionRepo.get('llm_base_url')) || process.env.OPENAI_BASE_URL;
-    const tempConfig = await configuracionRepo.get('llm_temperature');
-    const temperature = tempConfig ? parseFloat(tempConfig) : 0.5;
+  async generateResponse(systemPrompt, userMessages, options = {}) {
+    // Read dynamic configuration from database or options
+    const provider = options.provider || (await configuracionRepo.get('llm_provider')) || (process.env.GEMINI_API_KEY ? 'gemini' : 'openai');
+    const selectedModel = options.model || (await configuracionRepo.get('llm_model')) || (provider === 'gemini' ? 'gemini-1.5-flash' : 'gpt-4o-mini');
+    const apiKey = options.apiKey || (await configuracionRepo.get('llm_api_key')) || (provider === 'gemini' ? process.env.GEMINI_API_KEY : process.env.OPENAI_API_KEY);
+    const baseUrl = options.baseUrl || (await configuracionRepo.get('llm_base_url')) || process.env.OPENAI_BASE_URL;
+    const tempConfig = options.temperature !== undefined ? options.temperature : await configuracionRepo.get('llm_temperature');
+    const temperature = tempConfig !== undefined && tempConfig !== null ? parseFloat(tempConfig) : 0.5;
 
     logger.info('LLM connector invoked', { provider, model: selectedModel, temperature });
 
@@ -239,7 +239,14 @@ module.exports = {
       if (lastUserMsg.toLowerCase().includes('comprar') || lastUserMsg.toLowerCase().includes('pedido')) {
         return 'Con mucho gusto tomamos su pedido. Por favor facilítenos su nombre completo, teléfono, dirección de entrega y los artículos que precisa.';
       }
-      rawReply = '¡Buenos días! Bienvenido a Kroser Uruguay. ¿En qué producto o consulta le podemos colaborar hoy?';
+      const hour = new Date().getHours();
+      let greeting = '¡Buenas tardes!';
+      if (hour >= 6 && hour < 12) {
+        greeting = '¡Buenos días!';
+      } else if (hour >= 20 || hour < 6) {
+        greeting = '¡Buenas noches!';
+      }
+      rawReply = `${greeting} Bienvenido a Kroser Uruguay. ¿En qué producto o consulta le podemos colaborar hoy?`;
     }
 
     return cleanAndHumanizeReply(rawReply, userMessages.length);

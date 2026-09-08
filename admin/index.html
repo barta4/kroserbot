@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>KroserBot AI — Panel de Control & Simulador Chatwoot</title>
+  <title>KroserBot AI — Panel de Control & Consola Uruchat</title>
   <link rel="shortcut icon" href="https://f.fcdn.app/assets/commerce/www.kroser.com.uy/94f6_e862/public/web/favicon.ico">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
   <style>
     /* ========================================================
-       CHATWOOT & SAAS 2026 DESIGN SYSTEM TOKENS
+       URUCHAT & SAAS 2026 DESIGN SYSTEM TOKENS
        ======================================================== */
     :root {
       --bg-app: #f8fafc;
@@ -584,7 +584,7 @@
     }
 
     /* ========================================================
-       CHATWOOT CONVERSATION VIEW & RAG TELEMETRY SUITE
+       URUCHAT CONVERSATION VIEW & RAG TELEMETRY SUITE
        ======================================================== */
     .chatwoot-suite-card {
       background: var(--bg-surface);
@@ -689,7 +689,7 @@
       background: #f8fafc;
     }
 
-    /* Chatwoot Speech Bubbles */
+    /* Uruchat Speech Bubbles */
     .chat-bubble-user {
       align-self: flex-end;
       max-width: 85%;
@@ -1312,13 +1312,13 @@
         </div>
       </div>
 
-      <!-- Chatwoot Live Conversation & Telemetry Suite -->
+      <!-- Uruchat Live Conversation & Telemetry Suite -->
       <div class="chatwoot-suite-card">
         <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem; margin-bottom:0.4rem;">
           <div>
-            <h3>💬 Consola de Chat & Sandbox RAG (Estilo Chatwoot)</h3>
+            <h3>💬 Consola de Chat & Sandbox RAG (Uruchat)</h3>
             <p style="color:var(--text-muted); font-size:0.85rem; margin-top:0.15rem;">
-              Prueba en vivo las respuestas de la IA, el catálogo en <strong>USD (U$S)</strong>, asesoramiento técnico, sucursales y envíos <strong>sin conectar WhatsApp ni Chatwoot</strong>.
+              Prueba en vivo las respuestas de la IA, el catálogo en <strong>USD (U$S)</strong>, asesoramiento técnico, sucursales y envíos <strong>sin conectar WhatsApp ni Uruchat</strong>.
             </p>
           </div>
           <div>
@@ -1489,7 +1489,7 @@
          ======================================================== -->
     <section id="tab-chatwoot" class="tab-view-section">
       <div class="card-box">
-        <h3>Configuración de Servidor Uruchat / Chatwoot</h3>
+        <h3>Configuración de Servidor Uruchat</h3>
         <p style="color:var(--text-muted); font-size:0.85rem; margin-top:0.25rem;">
           Permite configurar el servidor y token de Uruchat. Si un campo queda en blanco, se utilizará el valor predeterminado de <code>.env</code>.
         </p>
@@ -1500,7 +1500,7 @@
         <input type="password" id="chatwoot-token-input" placeholder="API Access Token de la cuenta / usuario">
 
         <div style="margin-top:1.25rem;">
-          <button class="btn-action btn-success" onclick="saveChatwootConfig()">💾 Guardar Configuración Uruchat</button>
+          <button class="btn-action btn-success" onclick="saveUruchatConfig()">💾 Guardar Configuración Uruchat</button>
         </div>
       </div>
 
@@ -1513,13 +1513,13 @@
               Lista sincronizada en tiempo real con Uruchat. Puedes <strong>apagar el bot en bandejas o canales específicos</strong> para atención 100% humana.
             </p>
           </div>
-          <button class="btn-action" onclick="refreshChatwootInboxes()" style="padding:0.4rem 0.85rem; font-size:0.85rem;">
+          <button class="btn-action" onclick="refreshUruchatInboxes()" style="padding:0.4rem 0.85rem; font-size:0.85rem;">
             🔄 Sincronizar Inboxes con Uruchat
           </button>
         </div>
 
         <div id="inboxes-loading" style="display:none; padding:1.5rem; text-align:center; color:var(--text-muted);">
-          Cargando bandejas desde la API de Uruchat/Chatwoot...
+          Cargando bandejas desde la API de Uruchat...
         </div>
 
         <div id="inboxes-list-container" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:1rem; margin-top:1rem;">
@@ -2256,7 +2256,7 @@
         initSimulator();
       }
       if (tabName === 'prompt') loadConfig();
-      if (tabName === 'chatwoot') loadChatwootConfig();
+      if (tabName === 'chatwoot') loadUruchatConfig();
       if (tabName === 'datasource') loadDataSourceConfig();
       if (tabName === 'llm') fetchAvailableModels();
       if (tabName === 'pedidos') loadPedidos();
@@ -2565,7 +2565,7 @@
       alert(`Configuración '${key}' guardada exitosamente.`);
     }
 
-    // --- CHATWOOT & CANALES (DINÁMICO) ---
+    // --- URUCHAT & CANALES (DINÁMICO) ---
     let currentInboxes = [];
     let currentDisabledChannels = [];
 
@@ -2593,7 +2593,7 @@
       return channelType || 'Canal';
     }
 
-    async function loadChatwootConfig() {
+    async function loadUruchatConfig() {
       try {
         const res = await apiFetch(`${API_BASE}/configuracion`);
         const cfg = await res.json();
@@ -2613,13 +2613,13 @@
           }
         }
         currentDisabledChannels = disabledList;
-        await refreshChatwootInboxes();
+        await refreshUruchatInboxes();
       } catch (err) {
         console.error('Error cargando configuración de Uruchat / Canales:', err);
       }
     }
 
-    async function refreshChatwootInboxes() {
+    async function refreshUruchatInboxes() {
       const container = document.getElementById('inboxes-list-container');
       const loader = document.getElementById('inboxes-loading');
       if (loader) loader.style.display = 'block';
@@ -2630,7 +2630,7 @@
         currentInboxes = data.inboxes || [];
         renderInboxesList();
       } catch (err) {
-        console.error('Error obteniendo inboxes de Chatwoot:', err);
+        console.error('Error obteniendo inboxes de Uruchat:', err);
         if (container) {
           container.innerHTML = `<div style="color:var(--danger); grid-column:1/-1;">Error al consultar la API de Uruchat: ${escHtml(err.message)}</div>`;
         }
@@ -2717,7 +2717,7 @@
       }
     }
 
-    async function saveChatwootConfig() {
+    async function saveUruchatConfig() {
       const url = document.getElementById('chatwoot-url-input').value;
       const token = document.getElementById('chatwoot-token-input').value;
       await apiFetch(`${API_BASE}/configuracion`, {
@@ -2729,7 +2729,7 @@
         body: JSON.stringify({ key: 'chatwoot_api_token', value: token })
       });
       alert('Configuración de Uruchat guardada exitosamente.');
-      await refreshChatwootInboxes();
+      await refreshUruchatInboxes();
     }
 
     async function saveChannelConfig() {

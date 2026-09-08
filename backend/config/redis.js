@@ -79,9 +79,11 @@ module.exports = {
         return await redisClient.rpush(key, value);
       } catch (_err) {}
     }
-    const list = memoryStore.get(key) || [];
-    if (!Array.isArray(list)) memoryStore.set(key, []);
-    const arr = memoryStore.get(key) || [];
+    const existing = memoryStore.get(key);
+    if (existing !== undefined && !Array.isArray(existing)) {
+      throw new Error(`WRONGTYPE Operation against a key holding the wrong kind of value for key: ${key}`);
+    }
+    const arr = existing || [];
     arr.push(value);
     memoryStore.set(key, arr);
     return arr.length;
@@ -107,6 +109,15 @@ module.exports = {
     }
     setTimeout(() => memoryStore.delete(key), seconds * 1000);
     return 1;
+  },
+
+  async publish(channel, message) {
+    if (redisClient && redisClient.status === 'ready') {
+      try {
+        return await redisClient.publish(channel, message);
+      } catch (_err) {}
+    }
+    return 0;
   },
 
   isReady() {

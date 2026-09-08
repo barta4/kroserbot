@@ -16,7 +16,9 @@ module.exports = {
 
   assertTransition(currentStatus, targetStatus) {
     if (!this.isValidTransition(currentStatus, targetStatus)) {
-      throw new Error(`Transición de estado inválida: no se puede pasar de '${currentStatus}' a '${targetStatus}'`);
+      const err = new Error(`Transición de estado inválida: no se puede pasar de '${currentStatus}' a '${targetStatus}'`);
+      err.statusCode = 400;
+      throw err;
     }
   },
 };

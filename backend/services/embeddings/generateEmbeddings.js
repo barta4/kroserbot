@@ -1,27 +1,28 @@
 const db = require('../../config/db');
 const embeddingProvider = require('./embeddingProvider');
+const logger = require('../../config/logger');
 
 const BATCH_SIZE = 20;
 
 async function processIncrementalEmbeddings() {
-  console.log('[RAG Pipeline] Checking for products needing vector embeddings...');
+  logger.info('[RAG Pipeline] Checking for products needing vector embeddings...');
 
   try {
     const res = await db.query(`
       SELECT id, sku, nombre, categoria, marca, descripcion 
       FROM productos 
-      WHERE (embedding IS NULL OR updated_at > NOW() - INTERVAL '1 day')
+      WHERE (embedding IS NULL OR embedding_updated_at IS NULL OR updated_at > embedding_updated_at)
         AND discontinuado = FALSE
       ORDER BY id ASC
     `);
 
     const products = res.rows;
     if (products.length === 0) {
-      console.log('[RAG Pipeline] All active products have up-to-date embeddings.');
+      logger.info('[RAG Pipeline] All active products have up-to-date embeddings.');
       return { processed: 0 };
     }
 
-    console.log(`[RAG Pipeline] Found ${products.length} products to process in batches of ${BATCH_SIZE}...`);
+    logger.info(`[RAG Pipeline] Found ${products.length} products to process in batches of ${BATCH_SIZE}...`);
 
     let totalProcessed = 0;
 
@@ -41,25 +42,25 @@ async function processIncrementalEmbeddings() {
           const product = batch[j];
           const vectorStr = `[${embeddings[j].join(',')}]`;
           await client.query(
-            'UPDATE productos SET embedding = $1::vector, updated_at = NOW() WHERE id = $2',
+            'UPDATE productos SET embedding = $1::vector, embedding_updated_at = NOW() WHERE id = $2',
             [vectorStr, product.id]
           );
         }
         await client.query('COMMIT');
         totalProcessed += batch.length;
-        console.log(`[RAG Pipeline] Saved batch ${i / BATCH_SIZE + 1} (${totalProcessed}/${products.length} products updated).`);
+        logger.info(`[RAG Pipeline] Saved batch ${i / BATCH_SIZE + 1} (${totalProcessed}/${products.length} products updated).`);
       } catch (err) {
         await client.query('ROLLBACK');
-        console.error(`[RAG Pipeline Error] Batch update failed: ${err.message}`);
+        logger.error(`[RAG Pipeline Error] Batch update failed: ${err.message}`);
       } finally {
         client.release();
       }
     }
 
-    console.log(`[RAG Pipeline] COMPLETED. Processed ${totalProcessed} product embeddings.`);
+    logger.info(`[RAG Pipeline] COMPLETED. Processed ${totalProcessed} product embeddings.`);
     return { processed: totalProcessed };
   } catch (err) {
-    console.error(`[RAG Pipeline Error] ${err.message}`);
+    logger.error(`[RAG Pipeline Error] ${err.message}`);
     return { processed: 0, error: err.message };
   }
 }
