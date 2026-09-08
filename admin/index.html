@@ -2527,15 +2527,17 @@
       const extraInfo = document.getElementById('insp-extra-info');
       if (extraInfo) {
         const parts = [];
-        if (data.rag?.locales?.length > 0) parts.push(`🏪 <strong>${data.rag.locales.length} Sucursales</strong> inyectadas`);
-        if (data.rag?.zonasEnvio?.length > 0) parts.push(`🚚 <strong>${data.rag.zonasEnvio.length} Zonas de Envío</strong> inyectadas`);
-        if (data.rag?.formasPago?.length > 0) parts.push(`💳 <strong>${data.rag.formasPago.length} Formas de Pago</strong> inyectadas`);
-
-        if (parts.length === 0) {
-          extraInfo.innerHTML = 'Consulta no requirió datos de locales, envíos ni pagos.';
+        if (data.toolsUsed && data.toolsUsed.length > 0) {
+          parts.push(`⚙️ <strong>Herramientas ejecutadas:</strong> ` + data.toolsUsed.map(t => `<code style="background:#e2e8f0; padding:1px 5px; border-radius:3px; font-size:0.75rem;">${t.name}</code>`).join(' '));
         } else {
-          extraInfo.innerHTML = parts.join('<br>');
+          parts.push(`⚡ <em style="color:var(--text-muted);">Respuesta directa (sin herramientas requeridas)</em>`);
         }
+        if (data.rag?.locales?.length > 0) parts.push(`🏪 <strong>${data.rag.locales.length} Sucursales</strong> consultadas`);
+        if (data.rag?.zonasEnvio?.length > 0) parts.push(`🚚 <strong>${data.rag.zonasEnvio.length} Zonas de Envío</strong> consultadas`);
+        if (data.rag?.formasPago?.length > 0) parts.push(`💳 <strong>${data.rag.formasPago.length} Formas de Pago</strong> consultadas`);
+        if (data.rag?.guiasTecnicas?.length > 0) parts.push(`📚 <strong>${data.rag.guiasTecnicas.length} Guías Técnicas</strong> consultadas`);
+
+        extraInfo.innerHTML = parts.join('<br>');
       }
 
       const rawPrompt = document.getElementById('insp-raw-prompt');

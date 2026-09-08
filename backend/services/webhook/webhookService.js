@@ -477,13 +477,8 @@ module.exports = {
       }
     }
 
-    // 16. RAG Semantic & Catalog Search (enriches with visual keywords if available)
-    const ragQuery = visualKeywords.length > 0 ? `${fullContent} ${visualKeywords.join(' ')}` : fullContent;
-    const { contextStr } = await ragService.getRelevantContext(ragQuery);
-
-    // 17. Build Dynamic, Humanized, and Formal System Prompt
+    // 16. Build Dynamic, Humanized, Lightweight System Prompt (No unconditional RAG)
     const fullSystemPrompt = await promptBuilder.buildSystemPrompt({
-      ragContextStr: contextStr,
       customerProfileStr: customerMemory.contextStr,
       trackingContextStr,
       detectedEmotion: intentResult.emotion,
@@ -491,16 +486,32 @@ module.exports = {
       customerName: sender.name,
     });
 
-    // 18. Call LLM with Typing Indicator & Measured Human Delay
+    // 17. Call LLM with Agentic Tools & Typing Indicator Active
     await chatwootService.toggleTypingStatus(accountId, conversationId, 'on');
     const startLlmTime = Date.now();
 
-    const llmReply = await llmService.generateResponse(fullSystemPrompt, processedHistory);
+    const toolContext = {
+      conversationId,
+      accountId,
+      channel: conversation.channel || 'chatwoot',
+      sender,
+    };
+
+    const { reply: llmReply, toolsUsed, createdOrder: toolCreatedOrder } = await llmService.generateWithTools(
+      fullSystemPrompt,
+      processedHistory,
+      { toolContext }
+    );
     const llmElapsed = Date.now() - startLlmTime;
 
-    logger.info('LLM reply generated', { correlationId, replyLength: llmReply.length, llmElapsedMs: llmElapsed });
+    logger.info('LLM reply generated with tools', {
+      correlationId,
+      replyLength: llmReply.length,
+      llmElapsedMs: llmElapsed,
+      toolsCount: toolsUsed.length,
+    });
 
-    // 19. Check Human Escalation (DERIVAR... pattern)
+    // 18. Check Human Escalation (DERIVAR... pattern)
     if (llmReply.toUpperCase().startsWith('DERIVAR:')) {
       const match = llmReply.match(/DERIVAR:\s*(\w+)/i);
       const area = match ? match[1].toLowerCase() : 'info';
@@ -531,7 +542,7 @@ module.exports = {
         sender,
         reason: content,
         history,
-        ragContextStr: contextStr,
+        ragContextStr: toolsUsed.length > 0 ? JSON.stringify(toolsUsed) : '',
       });
 
       // Send email alert to internal area
@@ -547,21 +558,25 @@ module.exports = {
       return { status: 'processed', action: 'human_escalation', area };
     }
 
-    // 20. Output Guardrails Filter: Sanitize against prompt/secret leakage
+    // 19. Output Guardrails Filter: Sanitize against prompt/secret leakage
     let safeReply = guardrailService.filterOutput(llmReply);
 
-    // 21. Automatic Order Extraction & Creation
-    const { cleanReply, createdOrder } = await orderExtractor.processOrderFromReply({
-      rawReply: safeReply,
-      history,
-      conversationId,
-      accountId,
-      channel: conversation.channel || 'chatwoot',
-    });
-    safeReply = cleanReply;
+    // 20. Automatic Order Extraction & Creation (Priority to Tool Created Order, fallback to heuristic)
+    let createdOrder = toolCreatedOrder;
+    if (!createdOrder) {
+      const { cleanReply, createdOrder: parsedOrder } = await orderExtractor.processOrderFromReply({
+        rawReply: safeReply,
+        history,
+        conversationId,
+        accountId,
+        channel: conversation.channel || 'chatwoot',
+      });
+      safeReply = cleanReply;
+      createdOrder = parsedOrder;
+    }
 
     if (createdOrder) {
-      logger.info('Order successfully created from webhook conversation', {
+      logger.info('Order confirmed in webhook conversation', {
         pedidoId: createdOrder.id,
         conversationId,
         cliente: createdOrder.cliente,

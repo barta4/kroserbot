@@ -35,7 +35,7 @@ services:
 
   # ─── Backend Node.js (API + RAG + Panel Admin) ────────────
   backend:
-    image: alfredobartaburu/kroserbot:v1.3
+    image: alfredobartaburu/kroserbot:v1.4
     container_name: kroserbot-backend
     restart: unless-stopped
     depends_on:
