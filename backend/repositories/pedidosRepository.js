@@ -1,4 +1,5 @@
 const db = require('../config/db');
+const stateMachine = require('../services/pedidos/orderStateMachine');
 
 module.exports = {
   async create({ conversation_id, account_id, cliente, items, origen, pago_estado, pago_referencia, ecommerce_order_number, estado_inicial }) {
@@ -51,6 +52,8 @@ module.exports = {
       }
       const estadoAnterior = currentRes.rows[0].estado;
 
+      stateMachine.assertTransition(estadoAnterior, nuevoEstado);
+
       const updateRes = await client.query(
         `UPDATE pedidos 
          SET estado = $1, updated_at = NOW() 
@@ -88,6 +91,10 @@ module.exports = {
       const actual = currentRes.rows[0];
 
       const nuevoEstado = estado || actual.estado;
+
+      if (estado && estado !== actual.estado) {
+        stateMachine.assertTransition(actual.estado, nuevoEstado);
+      }
 
       const updateRes = await client.query(
         `UPDATE pedidos

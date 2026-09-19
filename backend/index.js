@@ -40,9 +40,9 @@ app.use(cors({
 
 app.use(cookieParser());
 
-// Body Parsers
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// Body Parsers (H10: explicit 1mb limit to mitigate DoS)
+app.use(express.json({ limit: '1mb' }));
+app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
 // Serve static admin files
 app.use('/admin', express.static(path.join(__dirname, '../admin')));
@@ -54,6 +54,10 @@ app.get('/', (req, res) => {
 
 app.get('/deposito', (req, res) => {
   res.redirect('/admin/deposito.html');
+});
+
+app.get('/manual', (req, res) => {
+  res.redirect('/admin/manual.html');
 });
 
 // Apply rate limiting & Mount main API routes (all endpoints live under /api)

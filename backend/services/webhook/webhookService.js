@@ -12,11 +12,14 @@ const intentDetector = require('./intentDetector');
 const promptBuilder = require('./promptBuilder');
 const customerMemoryService = require('../customer/customerMemoryService');
 const guardrailService = require('../guardrails/guardrailService');
+const botLoopDetector = require('../guardrails/botLoopDetector');
 const orderTrackingService = require('../pedidos/orderTrackingService');
 const debounceService = require('./debounceService');
 const logger = require('../../config/logger');
 const orderExtractor = require('../pedidos/orderExtractor');
 const derivationNoteService = require('../chatwoot/derivationNoteService');
+const autoResolveService = require('../chatwoot/autoResolveService');
+const businessHours = require('../../utils/businessHours');
 
 const IDEMPOTENCY_TTL = 3600; // 1 hour
 const HUMAN_ACTIVE_TTL = 86400; // 24 hours
@@ -118,6 +121,8 @@ module.exports = {
           await redis.set(`human_active:${conversationId}`, '1', 'EX', HUMAN_ACTIVE_TTL);
           debounceService.cancel(conversationId);
           await redis.del(`conv_buffer:${conversationId}`);
+          await botLoopDetector.resetTurns(conversationId);
+          autoResolveService.cancelScheduledResolve(conversationId);
           logger.info('Conversation assigned to human agent. Bot silenced.', { correlationId, conversationId, assigneeId });
           return { status: 'processed', action: 'human_assigned', conversationId, assigneeId };
         } else if (!assigneeId) {
@@ -143,15 +148,14 @@ module.exports = {
     const messageType = (message.message_type || payload.message_type || '').toLowerCase();
     const isHumanAgent = senderType === 'agent' || (senderType === 'user' && messageType === 'outgoing');
 
-    // 2. Idempotency Check: Dedup by message_id
+    // 2. Idempotency Check: Atomic dedup by message_id with SET NX
     if (messageId) {
       const dedupKey = `msg_processed:${messageId}`;
-      const alreadyProcessed = await redis.get(dedupKey);
-      if (alreadyProcessed) {
+      const isNew = await redis.set(dedupKey, '1', 'EX', IDEMPOTENCY_TTL, 'NX');
+      if (!isNew) {
         logger.info('Duplicate message ignored', { correlationId, messageId });
         return { status: 'ignored', reason: 'duplicate_message' };
       }
-      await redis.set(dedupKey, '1', 'EX', IDEMPOTENCY_TTL);
     }
 
     // 3. Human Agent Takeover: If a human agent sends a message, immediately silence the bot
@@ -161,6 +165,8 @@ module.exports = {
         await redis.set(`human_active:${conversationId}`, '1', 'EX', HUMAN_ACTIVE_TTL);
         debounceService.cancel(conversationId);
         await redis.del(`conv_buffer:${conversationId}`);
+        await botLoopDetector.resetTurns(conversationId);
+        autoResolveService.cancelScheduledResolve(conversationId);
       }
       return { status: 'ignored', reason: 'agent_message' };
     }
@@ -169,6 +175,11 @@ module.exports = {
     if (message.message_type === 'outgoing' || senderType === 'bot') {
       logger.info('Outgoing/bot message ignored', { correlationId });
       return { status: 'ignored', reason: 'bot_or_outgoing_message' };
+    }
+
+    // Active customer message: cancel any pending auto-resolve for this conversation
+    if (conversationId) {
+      autoResolveService.cancelScheduledResolve(conversationId);
     }
 
     // 4. Channel / Inbox Blocking: Check if bot is disabled for this specific channel/inbox
@@ -240,6 +251,29 @@ module.exports = {
       return { status: 'ignored', reason: 'bounce_email' };
     }
 
+    // 8b. Bot Loop Shield: Auto-responder & IVR Menu Early Drop Filter
+    const autoResponderCheck = botLoopDetector.isAutoResponderOrIVR(content);
+    if (autoResponderCheck) {
+      logger.info('External auto-responder / bot message dropped silently', {
+        correlationId,
+        conversationId,
+        category: autoResponderCheck.category,
+        pattern: autoResponderCheck.matchedPattern,
+      });
+      if (conversationId && accountId) {
+        await chatwootService.addPrivateNote(
+          accountId,
+          conversationId,
+          `ℹ️ [Auto-Shield] Se detectó respuesta automática externa (${autoResponderCheck.category}). El bot no responderá para evitar un bucle.`
+        );
+      }
+      return {
+        status: 'ignored',
+        reason: 'auto_responder_detected',
+        category: autoResponderCheck.category,
+      };
+    }
+
     if (!content) {
       logger.info('Empty message content ignored', { correlationId });
       return { status: 'ignored', reason: 'empty_content' };
@@ -309,6 +343,12 @@ module.exports = {
       logger.info('Buffered messages combined', { correlationId, count: bufferedMessages.length + 1 });
     }
 
+    // Bound user message length right away to prevent context & memory explosion
+    const MAX_USER_MSG_CHARS = 2500;
+    if (fullContent && fullContent.length > MAX_USER_MSG_CHARS) {
+      fullContent = fullContent.slice(0, MAX_USER_MSG_CHARS) + '\n... [Mensaje truncado por longitud]';
+    }
+
     // 13. Safety & Guardrails: Filter abuse, prompt injections, off-topic spam and floods
     const guardrail = await guardrailService.evaluateInput({
       text: fullContent,
@@ -330,14 +370,57 @@ module.exports = {
           (await configuracionRepo.get('msg_derivacion')) ||
           'Le estamos derivando con un asesor especializado que podrá brindarle una atención personalizada. Por favor aguarde un instante.';
 
-        if (conversationId) {
+        // Check human business hours
+        const channel = (
+          conversation.channel ||
+          conversation.inbox?.channel_type ||
+          payload.inbox?.channel_type ||
+          payload.channel ||
+          payload.channel_type ||
+          'whatsapp'
+        ).toLowerCase();
+
+        const bConfig = {
+          business_hours_weekday_start: await configuracionRepo.get('business_hours_weekday_start'),
+          business_hours_weekday_end: await configuracionRepo.get('business_hours_weekday_end'),
+          business_hours_saturday_enabled: await configuracionRepo.get('business_hours_saturday_enabled'),
+          business_hours_saturday_start: await configuracionRepo.get('business_hours_saturday_start'),
+          business_hours_saturday_end: await configuracionRepo.get('business_hours_saturday_end'),
+          contact_alternative_email: await configuracionRepo.get('contact_alternative_email'),
+          msg_fuera_de_horario: await configuracionRepo.get('msg_fuera_de_horario'),
+        };
+
+        const hoursStatus = businessHours.isWithinBusinessHours(new Date(), bConfig);
+        const nextBusinessDay = businessHours.getNextBusinessDayString(new Date(), bConfig);
+        const isOutOfHours = !hoursStatus.isWithin;
+
+        let msgToSend = msgDerivacion;
+        if (isOutOfHours) {
+          msgToSend = businessHours.getOutHoursMessage({
+            channel,
+            nextBusinessDay,
+            alternativeEmail: bConfig.contact_alternative_email || 'atencion@kroser.com.uy',
+            customTemplate: bConfig.msg_fuera_de_horario,
+          });
+        }
+
+        if (conversationId && !isOutOfHours) {
           await redis.set(`human_active:${conversationId}`, '1', 'EX', HUMAN_ACTIVE_TTL);
+          debounceService.cancel(conversationId);
+          await redis.del(`conv_buffer:${conversationId}`);
+        } else if (conversationId && isOutOfHours) {
           debounceService.cancel(conversationId);
           await redis.del(`conv_buffer:${conversationId}`);
         }
 
         await chatwootService.assignAgent(accountId, conversationId, assigneeId);
-        await chatwootService.sendMessage(accountId, conversationId, msgDerivacion);
+        await chatwootService.sendMessage(accountId, conversationId, msgToSend);
+
+        if (isOutOfHours) {
+          const labels = ['fuera-de-horario'];
+          if (hoursStatus.reason === 'weekend') labels.push('fin-de-semana');
+          await chatwootService.addLabels(accountId, conversationId, labels);
+        }
 
         // Generate executive summary & action plan as private note for agent
         await derivationNoteService.generateAndSendDerivationNote({
@@ -345,7 +428,9 @@ module.exports = {
           conversationId,
           area,
           sender,
-          reason: guardrail.reason || 'Guardrail de seguridad activado por conducta reiterada',
+          reason: isOutOfHours
+            ? `[Fuera de Horario - ${hoursStatus.reason.toUpperCase()}] ${guardrail.reason || 'Guardrail activado'}. Atención humana retoma ${nextBusinessDay}.`
+            : (guardrail.reason || 'Guardrail de seguridad activado por conducta reiterada'),
           history: [{ role: 'user', content: fullContent }],
           ragContextStr: '',
         });
@@ -356,10 +441,12 @@ module.exports = {
           clienteTelefono: sender.phone_number,
           clienteMail: sender.email,
           conversationId,
-          motivo: guardrail.reason || 'Guardrail de seguridad activado por conducta reiterada',
+          motivo: isOutOfHours
+            ? `[FUERA DE HORARIO - ${hoursStatus.reason.toUpperCase()}] ${guardrail.reason || 'Guardrail activado'}`
+            : (guardrail.reason || 'Guardrail de seguridad activado por conducta reiterada'),
         });
 
-        return { status: 'processed', action: 'guardrail_escalation', category: guardrail.category };
+        return { status: 'processed', action: 'guardrail_escalation', category: guardrail.category, isOutOfHours };
       }
 
       // Send firm, respectful guardrail response
@@ -388,6 +475,33 @@ module.exports = {
     const sessionKey = `conv_memory:${conversationId}`;
     const rawHistory = await redis.get(sessionKey);
     let history = safeParseHistory(rawHistory);
+
+    // Fallback: If Redis session expired or cache was evicted, hydrate from persistent DB
+    if (history.length === 0 && conversationId) {
+      try {
+        const dbHistory = await conversacionesRepo.getHistory(conversationId, CONTEXT_WINDOW_LIMIT);
+        if (dbHistory && dbHistory.length > 0) {
+          history = dbHistory.map((m) => ({
+            role: (m.rol === 'assistant' || m.rol === 'model') ? 'assistant' : 'user',
+            content: m.mensaje,
+          }));
+          logger.info('History hydrated from PostgreSQL database backup', {
+            conversationId,
+            messageCount: history.length,
+          });
+        }
+      } catch (dbErr) {
+        logger.warn('Failed to hydrate history from database', { error: dbErr.message });
+      }
+    }
+
+    // 13b. Bot Loop Shield: Suppress farewell if assistant already closed the conversation to prevent politeness spiral
+    if (botLoopDetector.shouldSuppressFarewell(history, fullContent)) {
+      logger.info('Farewell suppressed to prevent politeness spiral loop', { correlationId, conversationId });
+      history.push({ role: 'user', content: fullContent });
+      await redis.set(sessionKey, JSON.stringify(history), 'EX', 86400);
+      return { status: 'ignored', reason: 'farewell_loop_prevented' };
+    }
 
     // 14. Smart Instant Handling for Pure Greetings & Farewells (Efficiency + Natural Variety)
     if (intentResult.isPureGreeting && history.length <= 1) {
@@ -424,8 +538,14 @@ module.exports = {
       history.push({ role: 'assistant', content: farewellReply });
       await redis.set(sessionKey, JSON.stringify(history), 'EX', 86400);
 
-      logger.info('Pure farewell handled directly with formal closing', { correlationId });
-      return { status: 'processed', action: 'pure_farewell', reply: farewellReply };
+      // Auto-resolve immediately on farewell if enabled
+      const autoResolveFarewell = (await configuracionRepo.get('auto_resolve_on_farewell')) !== 'false';
+      if (autoResolveFarewell) {
+        await autoResolveService.resolveImmediately(accountId, conversationId, 'farewell');
+      }
+
+      logger.info('Pure farewell handled directly with formal closing', { correlationId, autoResolved: autoResolveFarewell });
+      return { status: 'processed', action: 'pure_farewell', reply: farewellReply, autoResolved: autoResolveFarewell };
     }
 
     // Add current user message to conversation history
@@ -433,21 +553,24 @@ module.exports = {
 
     // 14. Expand Context Window & Handle Summarization if Long
     let processedHistory = history;
+    let conversationSummaryStr = '';
     if (history.length > CONTEXT_WINDOW_LIMIT) {
-      const olderMessages = history.slice(0, history.length - 12);
-      const recentMessages = history.slice(-12);
-      const summarySnippet = olderMessages
+      const olderMessages = history.slice(0, history.length - 8);
+      let recentMessages = history.slice(-8);
+
+      // Ensure recent window starts with a user message for natural dialog flow
+      if (recentMessages.length > 0 && recentMessages[0].role === 'assistant') {
+        recentMessages = recentMessages.slice(1);
+      }
+
+      // Compact summary of older turns for the System Prompt
+      conversationSummaryStr = olderMessages
         .map((m) => `${m.role === 'user' ? 'Cliente' : 'Asesor'}: ${m.content}`)
         .join(' | ')
-        .substring(0, 300);
+        .slice(-600);
 
-      processedHistory = [
-        {
-          role: 'system',
-          content: `[Resumen de la conversación previa: ${summarySnippet}]`,
-        },
-        ...recentMessages,
-      ];
+      // Keep processedHistory strictly containing user/assistant dialog messages
+      processedHistory = recentMessages;
     }
 
     // 15. Cross-Conversation Memory & Customer Profile Context
@@ -477,10 +600,65 @@ module.exports = {
       }
     }
 
+    // 15c. Bot Loop Shield: Check Repetitive Message Loop
+    const repetitionCheck = await botLoopDetector.checkAndTrackRepetition(conversationId, fullContent);
+    if (repetitionCheck.isLoop) {
+      logger.warn('Repetitive message loop detected. Pausing bot for conversation', { correlationId, conversationId });
+      if (conversationId) {
+        await redis.set(`human_active:${conversationId}`, '1', 'EX', HUMAN_ACTIVE_TTL);
+        debounceService.cancel(conversationId);
+        await redis.del(`conv_buffer:${conversationId}`);
+      }
+      if (conversationId && accountId) {
+        await chatwootService.addPrivateNote(
+          accountId,
+          conversationId,
+          '⚠️ [Auto-Shield] Bucle repetitivo detectado (el interlocutor envió el mismo mensaje 3 veces seguidas). Bot pausado para revisión humana.'
+        );
+      }
+      return { status: 'processed', action: 'repetitive_loop_blocked', conversationId };
+    }
+
+    // 15d. Bot Loop Shield: Turn Limit Circuit Breaker (Max bot interactions before human handoff)
+    const turnCheck = await botLoopDetector.checkAndIncrementTurns(conversationId);
+    if (turnCheck.isLimitReached) {
+      logger.warn('Bot turn limit reached. Triggering circuit breaker', {
+        correlationId,
+        conversationId,
+        turnCount: turnCheck.turnCount,
+        maxTurns: turnCheck.maxTurns,
+      });
+
+      const limitMsg =
+        (await configuracionRepo.get('msg_limite_turnos')) ||
+        'Hemos alcanzado el límite de respuestas automáticas para esta consulta. En breve un asesor de nuestro equipo continuará la atención personalizada.';
+
+      if (conversationId) {
+        await redis.set(`human_active:${conversationId}`, '1', 'EX', HUMAN_ACTIVE_TTL);
+        debounceService.cancel(conversationId);
+        await redis.del(`conv_buffer:${conversationId}`);
+        autoResolveService.cancelScheduledResolve(conversationId);
+      }
+
+      await chatwootService.sendMessage(accountId, conversationId, limitMsg);
+      await conversacionesRepo.logMessage(conversationId, limitMsg, 'assistant');
+
+      if (conversationId && accountId) {
+        await chatwootService.addPrivateNote(
+          accountId,
+          conversationId,
+          `🛑 [Auto-Shield] Se alcanzó el límite de ${turnCheck.maxTurns} turnos automáticos en esta conversación. Bot pausado para atención humana.`
+        );
+      }
+
+      return { status: 'processed', action: 'turn_limit_reached', turnCount: turnCheck.turnCount };
+    }
+
     // 16. Build Dynamic, Humanized, Lightweight System Prompt (No unconditional RAG)
     const fullSystemPrompt = await promptBuilder.buildSystemPrompt({
       customerProfileStr: customerMemory.contextStr,
       trackingContextStr,
+      conversationSummaryStr,
       detectedEmotion: intentResult.emotion,
       messageCount: history.length,
       customerName: sender.name,
@@ -517,22 +695,81 @@ module.exports = {
       const area = match ? match[1].toLowerCase() : 'info';
 
       const assigneeId = (await configuracionRepo.get(`assignee_id_${area}`)) || 1;
-      const msgDerivacion =
+      const defaultMsgDerivacion =
         (await configuracionRepo.get('msg_derivacion')) ||
         'Le estamos derivando con un asesor especializado que podrá brindarle una atención personalizada. Por favor aguarde un instante.';
 
-      // Silence the bot for future messages in this conversation
-      if (conversationId) {
+      // Check human business hours
+      const channel = (
+        conversation.channel ||
+        conversation.inbox?.channel_type ||
+        payload.inbox?.channel_type ||
+        payload.channel ||
+        payload.channel_type ||
+        'whatsapp'
+      ).toLowerCase();
+
+      const bConfig = {
+        business_hours_weekday_start: await configuracionRepo.get('business_hours_weekday_start'),
+        business_hours_weekday_end: await configuracionRepo.get('business_hours_weekday_end'),
+        business_hours_saturday_enabled: await configuracionRepo.get('business_hours_saturday_enabled'),
+        business_hours_saturday_start: await configuracionRepo.get('business_hours_saturday_start'),
+        business_hours_saturday_end: await configuracionRepo.get('business_hours_saturday_end'),
+        contact_alternative_email: await configuracionRepo.get('contact_alternative_email'),
+        msg_fuera_de_horario: await configuracionRepo.get('msg_fuera_de_horario'),
+      };
+
+      const hoursStatus = businessHours.isWithinBusinessHours(new Date(), bConfig);
+      const nextBusinessDay = businessHours.getNextBusinessDayString(new Date(), bConfig);
+      const isOutOfHours = !hoursStatus.isWithin;
+
+      let msgToSend = defaultMsgDerivacion;
+      if (isOutOfHours) {
+        msgToSend = businessHours.getOutHoursMessage({
+          channel,
+          nextBusinessDay,
+          alternativeEmail: bConfig.contact_alternative_email || 'atencion@kroser.com.uy',
+          customTemplate: bConfig.msg_fuera_de_horario,
+        });
+      }
+
+      // Silence the bot ONLY if within business hours (human is ready to respond immediately).
+      // If out-of-hours / weekend, do NOT silence the bot permanently so customer can keep asking about products/catalog!
+      if (conversationId && !isOutOfHours) {
         await redis.set(`human_active:${conversationId}`, '1', 'EX', HUMAN_ACTIVE_TTL);
         debounceService.cancel(conversationId);
         await redis.del(`conv_buffer:${conversationId}`);
+        autoResolveService.cancelScheduledResolve(conversationId);
+      } else if (conversationId && isOutOfHours) {
+        // Cancel pending debounce & scheduled resolve, but keep bot awake for catalog queries
+        debounceService.cancel(conversationId);
+        await redis.del(`conv_buffer:${conversationId}`);
+        autoResolveService.cancelScheduledResolve(conversationId);
       }
 
       await chatwootService.toggleTypingStatus(accountId, conversationId, 'off');
 
-      // Assign in Chatwoot & send fixed message
+      // Assign in Chatwoot & send appropriate message
       await chatwootService.assignAgent(accountId, conversationId, assigneeId);
-      await chatwootService.sendMessage(accountId, conversationId, msgDerivacion);
+      await chatwootService.sendMessage(accountId, conversationId, msgToSend);
+      await conversacionesRepo.logMessage(conversationId, msgToSend, 'assistant');
+
+      // Persist escalation or out-of-hours response in Redis memory
+      history.push({ role: 'assistant', content: msgToSend });
+      if (history.length > CONTEXT_WINDOW_LIMIT) {
+        history = history.slice(-CONTEXT_WINDOW_LIMIT);
+        if (history.length > 0 && history[0].role === 'assistant') {
+          history = history.slice(1);
+        }
+      }
+      await redis.set(sessionKey, JSON.stringify(history), 'EX', 86400);
+
+      // Add out-of-hours tags in Chatwoot if applicable
+      if (isOutOfHours) {
+        const labels = ['fuera-de-horario'];
+        if (hoursStatus.reason === 'weekend') labels.push('fin-de-semana');
+        await chatwootService.addLabels(accountId, conversationId, labels);
+      }
 
       // Generate executive summary & action plan as private note for agent
       await derivationNoteService.generateAndSendDerivationNote({
@@ -540,7 +777,9 @@ module.exports = {
         conversationId,
         area,
         sender,
-        reason: content,
+        reason: isOutOfHours
+          ? `Derivación fuera de horario (${hoursStatus.reason.toUpperCase()}). Atención humana retoma ${nextBusinessDay}. Consulta original: "${content}"`
+          : content,
         history,
         ragContextStr: toolsUsed.length > 0 ? JSON.stringify(toolsUsed) : '',
       });
@@ -552,10 +791,18 @@ module.exports = {
         clienteTelefono: sender.phone_number,
         clienteMail: sender.email,
         conversationId,
-        motivo: content,
+        motivo: isOutOfHours
+          ? `[FUERA DE HORARIO - ${hoursStatus.reason.toUpperCase()}] ${content}`
+          : content,
       });
 
-      return { status: 'processed', action: 'human_escalation', area };
+      return {
+        status: 'processed',
+        action: 'human_escalation',
+        area,
+        isOutOfHours,
+        reason: hoursStatus.reason,
+      };
     }
 
     // 19. Output Guardrails Filter: Sanitize against prompt/secret leakage
@@ -576,6 +823,7 @@ module.exports = {
     }
 
     if (createdOrder) {
+      await botLoopDetector.resetTurns(conversationId);
       logger.info('Order confirmed in webhook conversation', {
         pedidoId: createdOrder.id,
         conversationId,
@@ -598,32 +846,49 @@ module.exports = {
     await chatwootService.sendMessage(accountId, conversationId, safeReply);
     await conversacionesRepo.logMessage(conversationId, safeReply, 'assistant');
 
+    // Schedule inactivity auto-resolve for this conversation
+    await autoResolveService.scheduleAutoResolve(accountId, conversationId);
+
     // Save updated history in Redis with 24h TTL
     history.push({ role: 'assistant', content: safeReply });
-    if (history.length > 30) history = history.slice(-25);
+    if (history.length > CONTEXT_WINDOW_LIMIT) {
+      history = history.slice(-CONTEXT_WINDOW_LIMIT);
+      if (history.length > 0 && history[0].role === 'assistant') {
+        history = history.slice(1);
+      }
+    }
     await redis.set(sessionKey, JSON.stringify(history), 'EX', 86400);
 
     // Release debounce lock and drain any pending messages buffered during processing
+    const recursionDepth = payload._recursionDepth || 0;
     if (lockKey && !payload._alreadyDebounced) {
       await redis.del(lockKey);
       const remainingBuffered = await redis.lrange(bufferKey, 0, -1);
       if (remainingBuffered && remainingBuffered.length > 0) {
         await redis.del(bufferKey);
         const nextContent = remainingBuffered.join('\n');
-        setImmediate(async () => {
-          try {
-            await module.exports.processWebhookEvent({
-              ...payload,
-              _alreadyDebounced: true,
-              message: {
-                ...(payload.message || {}),
-                content: nextContent,
-              },
-            });
-          } catch (err) {
-            logger.error('Error processing subsequent buffered messages', { conversationId, error: err.message });
-          }
-        });
+        if (recursionDepth < 2) {
+          setImmediate(async () => {
+            try {
+              await module.exports.processWebhookEvent({
+                ...payload,
+                _alreadyDebounced: true,
+                _recursionDepth: recursionDepth + 1,
+                message: {
+                  ...(payload.message || {}),
+                  content: nextContent,
+                },
+              });
+            } catch (err) {
+              logger.error('Error processing subsequent buffered messages', { conversationId, error: err.message });
+            }
+          });
+        } else {
+          logger.warn('Max webhook recursion depth reached, discarding remaining buffer', {
+            conversationId,
+            droppedCount: remainingBuffered.length,
+          });
+        }
       }
     }
 

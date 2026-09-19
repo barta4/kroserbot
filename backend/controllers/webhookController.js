@@ -1,15 +1,25 @@
 const webhookService = require('../services/webhook/webhookService');
 const debounceService = require('../services/webhook/debounceService');
+const { webhookPayloadSchema } = require('../schemas');
 const logger = require('../config/logger');
 
 module.exports = {
   async handleWebhook(req, res, next) {
     try {
-      const payload = req.body;
+      const validation = webhookPayloadSchema.safeParse(req.body);
+      if (!validation.success) {
+        logger.warn('Webhook payload validation failed', { errors: validation.error.issues });
+        return res.status(400).json({
+          error: 'Payload de webhook inválido',
+          details: validation.error.issues,
+        });
+      }
+
+      const payload = validation.data;
       const conversationId = payload.conversation?.id || payload.conversation_id;
       const content = (payload.message?.content || payload.content || '').trim();
 
-      // Send 200 OK immediately to Chatwoot to avoid Chatwoot timeout
+      // Send 200 OK immediately to Chatwoot after successful contract validation
       res.status(200).json({ status: 'received' });
 
       const sender = payload.message?.sender || payload.sender || {};

@@ -92,6 +92,11 @@ const llmConfigSchema = z.object({
   model: z.string().optional(),
   apiKey: z.string().optional(),
   baseUrl: z.string().optional(),
+  fallbackProvider: z.string().optional(),
+  fallbackModel: z.string().optional(),
+  fallbackApiKey: z.string().optional(),
+  fallbackBaseUrl: z.string().optional(),
+  fallbackEnabled: z.union([z.boolean(), z.string()]).optional(),
 });
 
 const llmModelsSchema = z.object({

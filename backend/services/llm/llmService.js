@@ -186,7 +186,9 @@ async function callGeminiWithTools({
   const key = apiKey || process.env.GEMINI_API_KEY;
   if (!key) throw new Error('GEMINI_API_KEY missing');
 
-  const tools = toolExecutor.getGeminiTools();
+  const pedidosConfig = await configuracionRepo.get('pedidos_enabled');
+  const enableOrders = pedidosConfig !== 'false';
+  const tools = toolExecutor.getGeminiTools({ enableOrders });
   const contents = buildGeminiContents(userMessages);
   const toolsUsed = [];
   let createdOrder = null;
@@ -235,13 +237,15 @@ async function callGeminiWithTools({
       createdOrder = result.createdOrder;
     }
 
+    const structuredResponse =
+      typeof result === 'object' && result !== null && !Array.isArray(result)
+        ? { name: fnName, ...result }
+        : { name: fnName, content: result };
+
     functionResponses.push({
       functionResponse: {
         name: fnName,
-        response: {
-          name: fnName,
-          content: result,
-        },
+        response: structuredResponse,
       },
     });
   }
@@ -252,7 +256,7 @@ async function callGeminiWithTools({
     parts: parts1,
   });
   contents.push({
-    role: 'function',
+    role: 'user',
     parts: functionResponses,
   });
 
@@ -295,7 +299,9 @@ async function callOpenAIWithTools({
   const key = apiKey || process.env.OPENAI_API_KEY;
   const targetBaseUrl = baseUrl || process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1';
 
-  const tools = toolExecutor.getOpenAITools();
+  const pedidosConfig = await configuracionRepo.get('pedidos_enabled');
+  const enableOrders = pedidosConfig !== 'false';
+  const tools = toolExecutor.getOpenAITools({ enableOrders });
   const messages = buildOpenAIMessages(systemPrompt, userMessages);
   const toolsUsed = [];
   let createdOrder = null;
@@ -323,15 +329,21 @@ async function callOpenAIWithTools({
     };
   }
 
-  // Append assistant message with tool calls
-  messages.push(message1);
+  // Append assistant message with tool calls cleanly
+  messages.push({
+    role: 'assistant',
+    content: message1.content || null,
+    tool_calls: message1.tool_calls,
+  });
 
   // Execute tools
   for (const tc of message1.tool_calls) {
-    const fnName = tc.function.name;
+    const fnName = tc.function?.name;
     let fnArgs = {};
     try {
-      fnArgs = JSON.parse(tc.function.arguments || '{}');
+      fnArgs = typeof tc.function?.arguments === 'string'
+        ? JSON.parse(tc.function.arguments || '{}')
+        : (tc.function?.arguments || {});
     } catch (_e) {
       fnArgs = {};
     }
@@ -473,60 +485,98 @@ module.exports = {
       };
     }
 
-    const provider = options.provider || (await configuracionRepo.get('llm_provider')) || (process.env.GEMINI_API_KEY ? 'gemini' : 'openai');
-    const selectedModel = options.model || (await configuracionRepo.get('llm_model')) || (provider === 'gemini' ? 'gemini-1.5-flash' : 'gpt-4o-mini');
-    const apiKey = options.apiKey || (await configuracionRepo.get('llm_api_key')) || (provider === 'gemini' ? process.env.GEMINI_API_KEY : process.env.OPENAI_API_KEY);
-    const baseUrl = options.baseUrl || (await configuracionRepo.get('llm_base_url')) || process.env.OPENAI_BASE_URL;
+    // 1. Primary Model Configuration
+    const primaryProvider = options.provider || (await configuracionRepo.get('llm_provider')) || (process.env.GEMINI_API_KEY ? 'gemini' : 'openai');
+    const primaryModel = options.model || (await configuracionRepo.get('llm_model')) || (primaryProvider === 'gemini' ? 'gemini-1.5-flash' : 'gpt-4o-mini');
+    const primaryApiKey = options.apiKey || (await configuracionRepo.get('llm_api_key')) || (primaryProvider === 'gemini' ? process.env.GEMINI_API_KEY : process.env.OPENAI_API_KEY);
+    const primaryBaseUrl = options.baseUrl || (await configuracionRepo.get('llm_base_url')) || (primaryProvider === 'gemini' ? '' : process.env.OPENAI_BASE_URL);
+
+    // 2. Fallback / Fail-Safe Configuration
+    const failsafeEnabled = (await configuracionRepo.get('llm_failsafe_enabled')) !== 'false';
+    const fallbackProvider = (await configuracionRepo.get('llm_fallback_provider')) || (primaryProvider === 'gemini' ? 'openai' : 'gemini');
+    const fallbackModel = (await configuracionRepo.get('llm_fallback_model')) || (fallbackProvider === 'gemini' ? 'gemini-1.5-flash' : 'gpt-4o-mini');
+    const fallbackApiKey = (await configuracionRepo.get('llm_fallback_api_key')) || (fallbackProvider === 'gemini' ? process.env.GEMINI_API_KEY : process.env.OPENAI_API_KEY);
+    const fallbackBaseUrl = (await configuracionRepo.get('llm_fallback_base_url')) || (fallbackProvider === 'gemini' ? '' : process.env.OPENAI_BASE_URL);
+
     const tempConfig = options.temperature !== undefined ? options.temperature : await configuracionRepo.get('llm_temperature');
     const temperature = tempConfig !== undefined && tempConfig !== null ? parseFloat(tempConfig) : 0.5;
 
     const toolContext = options.toolContext || {};
-    logger.info('generateWithTools invoked', { provider, model: selectedModel });
+    logger.info('generateWithTools invoked', {
+      primaryProvider,
+      primaryModel,
+      failsafeEnabled,
+      fallbackProvider,
+      fallbackModel,
+    });
 
     let rawReply = '';
     let toolsUsed = [];
     let createdOrder = null;
 
-    // 1. Try Gemini with Tools
-    if (provider === 'gemini' && (apiKey || process.env.GEMINI_API_KEY)) {
-      try {
-        const res = await callGeminiWithTools({
+    async function executeProvider(p, m, k, u) {
+      if (p === 'gemini') {
+        const key = k || process.env.GEMINI_API_KEY;
+        if (!key) throw new Error('GEMINI_API_KEY no disponible');
+        return await callGeminiWithTools({
           systemPrompt,
           userMessages,
-          modelName: selectedModel,
-          apiKey,
+          modelName: m || 'gemini-1.5-flash',
+          apiKey: key,
           temperature,
           toolContext,
         });
-        rawReply = res.text;
-        toolsUsed = res.toolsUsed;
-        createdOrder = res.createdOrder;
-      } catch (err) {
-        logger.warn('LLM Gemini with tools failed, trying fallback', { error: err.message });
-      }
-    }
-
-    // 2. Try OpenAI with Tools if Gemini failed or OpenAI was requested
-    if (!rawReply && (provider === 'openai' || provider === 'compatible' || process.env.OPENAI_API_KEY) && (apiKey || process.env.OPENAI_API_KEY || baseUrl)) {
-      try {
-        const res = await callOpenAIWithTools({
+      } else {
+        const key = k || process.env.OPENAI_API_KEY;
+        const targetUrl = u || process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1';
+        if (!key && !targetUrl.includes('localhost') && !targetUrl.includes('127.0.0.1')) {
+          throw new Error('OPENAI_API_KEY no disponible');
+        }
+        return await callOpenAIWithTools({
           systemPrompt,
           userMessages,
-          modelName: selectedModel,
-          apiKey,
-          baseUrl,
+          modelName: m || 'gpt-4o-mini',
+          apiKey: key,
+          baseUrl: targetUrl,
           temperature,
           toolContext,
         });
-        rawReply = res.text;
-        toolsUsed = res.toolsUsed;
-        createdOrder = res.createdOrder;
-      } catch (err) {
-        logger.warn('LLM OpenAI with tools failed', { error: err.message });
       }
     }
 
-    // 3. Fallback heuristic response if both fail or offline
+    // Step 1: Call Primary Provider
+    try {
+      const res = await executeProvider(primaryProvider, primaryModel, primaryApiKey, primaryBaseUrl);
+      rawReply = res.text;
+      toolsUsed = res.toolsUsed;
+      createdOrder = res.createdOrder;
+    } catch (primaryErr) {
+      const errDetails = primaryErr.response?.data?.error?.message || primaryErr.message;
+      logger.warn(`⚠️ [LLM Fail-Safe Activado] Proveedor primario '${primaryProvider}' (${primaryModel}) falló`, {
+        error: primaryErr.message,
+        details: errDetails,
+      });
+
+      // Step 2: Call Fallback Provider if Fail-Safe is enabled
+      if (failsafeEnabled && fallbackProvider) {
+        try {
+          logger.info(`🔄 [LLM Fail-Safe] Conmutando a proveedor de respaldo '${fallbackProvider}' (${fallbackModel})`);
+          const fallbackRes = await executeProvider(fallbackProvider, fallbackModel, fallbackApiKey, fallbackBaseUrl);
+          rawReply = fallbackRes.text;
+          toolsUsed = fallbackRes.toolsUsed;
+          createdOrder = fallbackRes.createdOrder;
+          logger.info(`✅ [LLM Fail-Safe Exitoso] Respuesta generada por respaldo '${fallbackProvider}' (${fallbackModel})`);
+        } catch (fallbackErr) {
+          const fbDetails = fallbackErr.response?.data?.error?.message || fallbackErr.message;
+          logger.error(`❌ [LLM Fail-Safe Falló] Proveedor de respaldo '${fallbackProvider}' (${fallbackModel}) también falló`, {
+            error: fallbackErr.message,
+            details: fbDetails,
+          });
+        }
+      }
+    }
+
+    // Step 3: Fallback heuristic response if both fail or offline
     if (!rawReply) {
       const lastUserMsg = userMessages[userMessages.length - 1]?.content || '';
       if (lastUserMsg.toLowerCase().includes('factura') || lastUserMsg.toLowerCase().includes('reclamo')) {
@@ -538,6 +588,15 @@ module.exports = {
         };
       }
       if (lastUserMsg.toLowerCase().includes('comprar') || lastUserMsg.toLowerCase().includes('pedido')) {
+        const pedidosConfig = await configuracionRepo.get('pedidos_enabled');
+        if (pedidosConfig === 'false') {
+          return {
+            reply: 'Por el momento la toma de pedidos por este canal de chat se encuentra temporalmente deshabilitada. Con gusto le brindamos información sobre productos, precios y sucursales, o puede adquirir sus artículos en nuestro sitio web oficial https://kroser.com.uy.',
+            toolsUsed: [],
+            createdOrder: null,
+            rawReply: '',
+          };
+        }
         return {
           reply: 'Con mucho gusto tomamos su pedido. Por favor facilítenos su nombre completo, teléfono, dirección de entrega y los artículos que precisa.',
           toolsUsed: [],
@@ -569,30 +628,57 @@ module.exports = {
    * Standard single-turn response generator (kept for backward compatibility)
    */
   async generateResponse(systemPrompt, userMessages, options = {}) {
-    const provider = options.provider || (await configuracionRepo.get('llm_provider')) || (process.env.GEMINI_API_KEY ? 'gemini' : 'openai');
-    const selectedModel = options.model || (await configuracionRepo.get('llm_model')) || (provider === 'gemini' ? 'gemini-1.5-flash' : 'gpt-4o-mini');
-    const apiKey = options.apiKey || (await configuracionRepo.get('llm_api_key')) || (provider === 'gemini' ? process.env.GEMINI_API_KEY : process.env.OPENAI_API_KEY);
-    const baseUrl = options.baseUrl || (await configuracionRepo.get('llm_base_url')) || process.env.OPENAI_BASE_URL;
+    const primaryProvider = options.provider || (await configuracionRepo.get('llm_provider')) || (process.env.GEMINI_API_KEY ? 'gemini' : 'openai');
+    const primaryModel = options.model || (await configuracionRepo.get('llm_model')) || (primaryProvider === 'gemini' ? 'gemini-1.5-flash' : 'gpt-4o-mini');
+    const primaryApiKey = options.apiKey || (await configuracionRepo.get('llm_api_key')) || (primaryProvider === 'gemini' ? process.env.GEMINI_API_KEY : process.env.OPENAI_API_KEY);
+    const primaryBaseUrl = options.baseUrl || (await configuracionRepo.get('llm_base_url')) || (primaryProvider === 'gemini' ? '' : process.env.OPENAI_BASE_URL);
+
+    const failsafeEnabled = (await configuracionRepo.get('llm_failsafe_enabled')) !== 'false';
+    const fallbackProvider = (await configuracionRepo.get('llm_fallback_provider')) || (primaryProvider === 'gemini' ? 'openai' : 'gemini');
+    const fallbackModel = (await configuracionRepo.get('llm_fallback_model')) || (fallbackProvider === 'gemini' ? 'gemini-1.5-flash' : 'gpt-4o-mini');
+    const fallbackApiKey = (await configuracionRepo.get('llm_fallback_api_key')) || (fallbackProvider === 'gemini' ? process.env.GEMINI_API_KEY : process.env.OPENAI_API_KEY);
+    const fallbackBaseUrl = (await configuracionRepo.get('llm_fallback_base_url')) || (fallbackProvider === 'gemini' ? '' : process.env.OPENAI_BASE_URL);
+
     const tempConfig = options.temperature !== undefined ? options.temperature : await configuracionRepo.get('llm_temperature');
     const temperature = tempConfig !== undefined && tempConfig !== null ? parseFloat(tempConfig) : 0.5;
 
-    logger.info('LLM connector invoked (generateResponse)', { provider, model: selectedModel, temperature });
+    logger.info('LLM connector invoked (generateResponse)', {
+      primaryProvider,
+      primaryModel,
+      failsafeEnabled,
+      fallbackProvider,
+      fallbackModel,
+      temperature,
+    });
 
     let rawReply = '';
 
-    if (provider === 'gemini' && (apiKey || process.env.GEMINI_API_KEY)) {
-      try {
-        rawReply = await callGemini(systemPrompt, userMessages, selectedModel, apiKey, temperature);
-      } catch (err) {
-        logger.warn('LLM Gemini call failed, trying fallback', { error: err.message });
+    async function executeSingleTurn(p, m, k, u) {
+      if (p === 'gemini') {
+        const key = k || process.env.GEMINI_API_KEY;
+        if (!key) throw new Error('GEMINI_API_KEY no disponible');
+        return await callGemini(systemPrompt, userMessages, m || 'gemini-1.5-flash', key, temperature);
+      } else {
+        const key = k || process.env.OPENAI_API_KEY;
+        const targetUrl = u || process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1';
+        if (!key && !targetUrl.includes('localhost') && !targetUrl.includes('127.0.0.1')) {
+          throw new Error('OPENAI_API_KEY no disponible');
+        }
+        return await callOpenAI(systemPrompt, userMessages, m || 'gpt-4o-mini', key, targetUrl, temperature);
       }
     }
 
-    if (!rawReply && (provider === 'openai' || provider === 'compatible' || process.env.OPENAI_API_KEY) && (apiKey || process.env.OPENAI_API_KEY || baseUrl)) {
-      try {
-        rawReply = await callOpenAI(systemPrompt, userMessages, selectedModel, apiKey, baseUrl, temperature);
-      } catch (err) {
-        logger.warn('LLM OpenAI/Compatible call failed', { error: err.message });
+    try {
+      rawReply = await executeSingleTurn(primaryProvider, primaryModel, primaryApiKey, primaryBaseUrl);
+    } catch (primaryErr) {
+      logger.warn(`⚠️ [LLM Fail-Safe] Primary single-turn provider '${primaryProvider}' (${primaryModel}) failed: ${primaryErr.message}`);
+      if (failsafeEnabled && fallbackProvider) {
+        try {
+          rawReply = await executeSingleTurn(fallbackProvider, fallbackModel, fallbackApiKey, fallbackBaseUrl);
+          logger.info(`✅ [LLM Fail-Safe] Single-turn fallback succeeded with '${fallbackProvider}' (${fallbackModel})`);
+        } catch (fallbackErr) {
+          logger.error(`❌ [LLM Fail-Safe] Single-turn fallback '${fallbackProvider}' (${fallbackModel}) also failed: ${fallbackErr.message}`);
+        }
       }
     }
 

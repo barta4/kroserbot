@@ -6,6 +6,17 @@ const apiLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Demasiadas solicitudes desde esta IP, por favor reintente más tarde.' },
+  skip: (req) => {
+    // Exclude webhooks from generic API rate limiter (have signature/Basic Auth + deduplication)
+    const pathname = (req.originalUrl || req.url || '').split('?')[0].replace(/\/$/, '');
+    return (
+      pathname === '/api/webhook' ||
+      pathname === '/webhook' ||
+      pathname === '/api/mercadopago/webhook' ||
+      req.path === '/webhook' ||
+      req.path === '/mercadopago/webhook'
+    );
+  },
 });
 
 module.exports = apiLimiter;

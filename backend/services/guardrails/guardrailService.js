@@ -1,6 +1,7 @@
 const redis = require('../../config/redis');
 const configuracionRepo = require('../../repositories/configuracionRepository');
 const logger = require('../../config/logger');
+const botLoopDetector = require('./botLoopDetector');
 
 // 1. Toxic, Insulting and Abusive language patterns (Uruguayan / Rioplatense / General Spanish)
 const ABUSE_PATTERNS = [
@@ -186,4 +187,5 @@ module.exports = {
 
     return text;
   },
+  botLoopDetector,
 };

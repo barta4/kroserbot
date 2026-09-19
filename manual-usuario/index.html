@@ -1,0 +1,1754 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manual de Usuario y Operación — KroserBot AI 2.0</title>
+  <link rel="shortcut icon" href="https://f.fcdn.app/assets/commerce/www.kroser.com.uy/94f6_e862/public/web/favicon.ico">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #CC0000;
+      --primary-hover: #e60000;
+      --primary-light: rgba(204, 0, 0, 0.08);
+      --primary-glow: rgba(204, 0, 0, 0.35);
+      
+      --bg-body: #0b0f19;
+      --bg-surface: #111827;
+      --bg-card: #162032;
+      --bg-card-hover: #1e293b;
+      --bg-glass: rgba(17, 24, 39, 0.85);
+      
+      --border: rgba(255, 255, 255, 0.08);
+      --border-accent: rgba(204, 0, 0, 0.3);
+      
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --text-light: #64748b;
+      
+      --success: #10b981;
+      --success-bg: rgba(16, 185, 129, 0.12);
+      --warning: #f59e0b;
+      --warning-bg: rgba(245, 158, 11, 0.12);
+      --info: #3b82f6;
+      --info-bg: rgba(59, 130, 246, 0.12);
+      --purple: #8b5cf6;
+      
+      --sidebar-width: 290px;
+      --header-height: 64px;
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 16px;
+      
+      --shadow-sm: 0 2px 4px rgba(0,0,0,0.2);
+      --shadow-md: 0 8px 24px rgba(0,0,0,0.35);
+      --shadow-glow: 0 0 25px rgba(204, 0, 0, 0.2);
+    }
+
+    [data-theme="light"] {
+      --bg-body: #f8fafc;
+      --bg-surface: #ffffff;
+      --bg-card: #ffffff;
+      --bg-card-hover: #f1f5f9;
+      --bg-glass: rgba(255, 255, 255, 0.92);
+      
+      --border: #e2e8f0;
+      --border-accent: rgba(204, 0, 0, 0.3);
+      
+      --text-main: #0f172a;
+      --text-muted: #475569;
+      --text-light: #94a3b8;
+      
+      --shadow-sm: 0 2px 4px rgba(0,0,0,0.04);
+      --shadow-md: 0 8px 20px rgba(0,0,0,0.06);
+      --shadow-glow: 0 0 20px rgba(204, 0, 0, 0.1);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    html {
+      scroll-behavior: smooth;
+      font-size: 15px;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--bg-body);
+      color: var(--text-main);
+      line-height: 1.65;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      transition: background-color 0.25s ease, color 0.25s ease;
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: var(--bg-body); }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--primary); }
+
+    /* Header */
+    .manual-header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      height: var(--header-height);
+      background: var(--bg-glass);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 1.5rem;
+    }
+
+    .brand-section {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .brand-logo-wrap {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      text-decoration: none;
+      color: inherit;
+    }
+
+    .brand-badge {
+      background: linear-gradient(135deg, #CC0000, #990000);
+      color: white;
+      font-family: 'Outfit', sans-serif;
+      font-weight: 800;
+      font-size: 0.95rem;
+      letter-spacing: 0.5px;
+      padding: 0.35rem 0.75rem;
+      border-radius: var(--radius-sm);
+      box-shadow: var(--shadow-glow);
+    }
+
+    .brand-title {
+      font-family: 'Outfit', sans-serif;
+      font-weight: 700;
+      font-size: 1.15rem;
+      letter-spacing: -0.3px;
+    }
+    .brand-title span { color: var(--primary); }
+
+    .header-controls {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    /* Live Search Box */
+    .search-box-wrap {
+      position: relative;
+      width: 280px;
+    }
+    .search-input {
+      width: 100%;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 0.45rem 1rem 0.45rem 2.2rem;
+      color: var(--text-main);
+      font-size: 0.85rem;
+      font-family: inherit;
+      outline: none;
+      transition: all 0.2s;
+    }
+    .search-input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px var(--primary-light);
+    }
+    .search-icon {
+      position: absolute;
+      left: 0.8rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      pointer-events: none;
+    }
+    .search-shortcut {
+      position: absolute;
+      right: 0.7rem;
+      top: 50%;
+      transform: translateY(-50%);
+      background: var(--border);
+      padding: 0.15rem 0.4rem;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .btn-header {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      color: var(--text-main);
+      padding: 0.45rem 0.9rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+    .btn-header:hover {
+      background: var(--bg-card-hover);
+      border-color: var(--primary);
+      color: var(--text-main);
+    }
+    .btn-primary-header {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: white;
+    }
+    .btn-primary-header:hover {
+      background: var(--primary-hover);
+      color: white;
+    }
+
+    /* Layout */
+    .app-container {
+      display: flex;
+      flex: 1;
+      width: 100%;
+      max-width: 1650px;
+      margin: 0 auto;
+    }
+
+    /* Sidebar TOC */
+    .manual-sidebar {
+      width: var(--sidebar-width);
+      position: sticky;
+      top: var(--header-height);
+      height: calc(100vh - var(--header-height));
+      overflow-y: auto;
+      border-right: 1px solid var(--border);
+      background: var(--bg-surface);
+      padding: 1.5rem 1rem 3rem;
+      flex-shrink: 0;
+    }
+
+    .sidebar-section-title {
+      font-size: 0.72rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--text-light);
+      margin: 1.25rem 0 0.5rem 0.5rem;
+    }
+    .sidebar-section-title:first-child { margin-top: 0; }
+
+    .toc-nav {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+    }
+
+    .toc-link {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      padding: 0.5rem 0.75rem;
+      border-radius: var(--radius-sm);
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.87rem;
+      font-weight: 500;
+      transition: all 0.15s;
+    }
+    .toc-link:hover {
+      background: var(--bg-card-hover);
+      color: var(--text-main);
+      transform: translateX(3px);
+    }
+    .toc-link.active {
+      background: var(--primary-light);
+      color: var(--primary);
+      font-weight: 700;
+      border-left: 3px solid var(--primary);
+    }
+    .toc-badge {
+      margin-left: auto;
+      font-size: 0.68rem;
+      padding: 0.1rem 0.4rem;
+      border-radius: 10px;
+      background: var(--border);
+      color: var(--text-light);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Main Content Area */
+    .manual-content {
+      flex: 1;
+      padding: 2.5rem 3rem 5rem;
+      max-width: 1200px;
+      overflow-x: hidden;
+    }
+
+    /* Hero Banner */
+    .hero-banner {
+      background: linear-gradient(135deg, rgba(204, 0, 0, 0.15) 0%, rgba(17, 24, 39, 0.9) 100%);
+      border: 1px solid var(--border-accent);
+      border-radius: var(--radius-lg);
+      padding: 2.5rem;
+      margin-bottom: 3rem;
+      position: relative;
+      overflow: hidden;
+      box-shadow: var(--shadow-md);
+    }
+    .hero-banner::after {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -10%;
+      width: 400px;
+      height: 400px;
+      background: radial-gradient(circle, rgba(204, 0, 0, 0.2) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .hero-badge-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: var(--primary-light);
+      border: 1px solid var(--border-accent);
+      color: #ff4d4d;
+      font-size: 0.8rem;
+      font-weight: 700;
+      padding: 0.3rem 0.8rem;
+      border-radius: 20px;
+      margin-bottom: 1rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .hero-badge-pill .dot {
+      width: 8px;
+      height: 8px;
+      background: #ff4d4d;
+      border-radius: 50%;
+      animation: pulseGlow 1.8s infinite;
+    }
+    @keyframes pulseGlow {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+    }
+
+    .hero-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 2.4rem;
+      font-weight: 800;
+      line-height: 1.2;
+      letter-spacing: -0.5px;
+      margin-bottom: 0.85rem;
+    }
+    .hero-title span {
+      background: linear-gradient(90deg, #ffffff, #ff8080);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .hero-subtitle {
+      font-size: 1.1rem;
+      color: var(--text-muted);
+      max-width: 800px;
+      line-height: 1.6;
+      margin-bottom: 1.75rem;
+    }
+
+    /* KPI Highlights */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 1rem;
+      margin-top: 1.5rem;
+    }
+    .kpi-card {
+      background: rgba(17, 24, 39, 0.6);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 1rem 1.25rem;
+      backdrop-filter: blur(8px);
+      transition: transform 0.2s;
+    }
+    .kpi-card:hover { transform: translateY(-3px); border-color: var(--border-accent); }
+    .kpi-number {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.65rem;
+      font-weight: 800;
+      color: var(--primary);
+    }
+    .kpi-label {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    /* Manual Section */
+    .manual-section {
+      margin-bottom: 4rem;
+      scroll-margin-top: calc(var(--header-height) + 1.5rem);
+    }
+
+    .section-header-wrap {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 2px solid var(--border);
+      margin-bottom: 1.75rem;
+    }
+    .section-icon-badge {
+      width: 44px;
+      height: 44px;
+      border-radius: var(--radius-sm);
+      background: var(--primary-light);
+      border: 1px solid var(--border-accent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+      color: var(--primary);
+      flex-shrink: 0;
+    }
+    .section-title-box h2 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.65rem;
+      font-weight: 800;
+      letter-spacing: -0.3px;
+    }
+    .section-title-box p {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+    }
+
+    /* Content Cards */
+    .info-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 1.75rem;
+      margin-bottom: 1.75rem;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .info-card h3 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.25rem;
+      font-weight: 700;
+      margin-bottom: 0.85rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    /* Image Display Showcases */
+    .screenshot-showcase {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      margin: 1.75rem 0;
+      box-shadow: var(--shadow-md);
+      transition: border-color 0.2s;
+    }
+    .screenshot-showcase:hover {
+      border-color: var(--border-accent);
+    }
+
+    .screenshot-toolbar {
+      background: rgba(0, 0, 0, 0.35);
+      border-bottom: 1px solid var(--border);
+      padding: 0.65rem 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .screenshot-title {
+      font-size: 0.85rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: var(--text-main);
+    }
+    .screenshot-tag {
+      background: var(--primary-light);
+      color: var(--primary);
+      border: 1px solid var(--border-accent);
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.72rem;
+      font-weight: 700;
+    }
+
+    .screenshot-img-wrap {
+      position: relative;
+      cursor: zoom-in;
+      overflow: hidden;
+      background: #000;
+      text-align: center;
+    }
+    .screenshot-img-wrap img {
+      width: 100%;
+      height: auto;
+      max-height: 520px;
+      object-fit: cover;
+      object-position: top;
+      display: block;
+      transition: transform 0.35s ease, opacity 0.2s;
+    }
+    .screenshot-img-wrap:hover img {
+      transform: scale(1.02);
+      opacity: 0.95;
+    }
+
+    .screenshot-zoom-hint {
+      position: absolute;
+      bottom: 12px;
+      right: 12px;
+      background: rgba(0,0,0,0.75);
+      backdrop-filter: blur(4px);
+      color: white;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.3rem 0.65rem;
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      pointer-events: none;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+    }
+
+    .screenshot-footer {
+      padding: 1rem 1.25rem;
+      background: var(--bg-card);
+      border-top: 1px solid var(--border);
+      font-size: 0.88rem;
+      color: var(--text-muted);
+    }
+    .screenshot-footer strong { color: var(--text-main); }
+
+    /* Callout alerts */
+    .callout {
+      border-radius: var(--radius-sm);
+      padding: 1.15rem 1.35rem;
+      margin: 1.25rem 0;
+      display: flex;
+      gap: 0.85rem;
+      align-items: flex-start;
+      border-left: 4px solid transparent;
+    }
+    .callout-icon { font-size: 1.3rem; line-height: 1; flex-shrink: 0; margin-top: 2px; }
+    .callout-content { flex: 1; font-size: 0.92rem; }
+    .callout-content strong { color: var(--text-main); }
+
+    .callout-tip { background: var(--success-bg); border-left-color: var(--success); }
+    .callout-warning { background: var(--warning-bg); border-left-color: var(--warning); }
+    .callout-info { background: var(--info-bg); border-left-color: var(--info); }
+    .callout-danger { background: var(--primary-light); border-left-color: var(--primary); }
+
+    /* Numbered steps */
+    .steps-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+      margin: 1.25rem 0;
+      counter-reset: step-counter;
+    }
+    .step-item {
+      display: flex;
+      gap: 1rem;
+      align-items: flex-start;
+    }
+    .step-badge {
+      width: 28px;
+      height: 28px;
+      background: var(--primary);
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 0.82rem;
+      flex-shrink: 0;
+      margin-top: 2px;
+      box-shadow: var(--shadow-sm);
+    }
+    .step-text { flex: 1; }
+    .step-text strong { color: var(--text-main); }
+
+    /* Data Tables */
+    .table-container {
+      overflow-x: auto;
+      margin: 1.25rem 0;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+    }
+    table.data-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--bg-surface);
+      font-size: 0.88rem;
+    }
+    table.data-table th, table.data-table td {
+      padding: 0.85rem 1.15rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    table.data-table th {
+      background: rgba(0,0,0,0.2);
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      font-size: 0.75rem;
+      letter-spacing: 0.5px;
+    }
+    table.data-table tr:last-child td { border-bottom: none; }
+    table.data-table tr:hover td { background: var(--bg-card-hover); }
+
+    /* Tags & Badges */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.2rem 0.55rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+    .badge-success { background: var(--success-bg); color: var(--success); }
+    .badge-warning { background: var(--warning-bg); color: var(--warning); }
+    .badge-danger { background: var(--primary-light); color: var(--primary); }
+    .badge-info { background: var(--info-bg); color: var(--info); }
+    .badge-dark { background: rgba(255,255,255,0.08); color: var(--text-main); }
+
+    /* Code blocks */
+    pre, code {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    code.inline-code {
+      background: rgba(255,255,255,0.08);
+      color: #ff8080;
+      padding: 0.15rem 0.4rem;
+      border-radius: 4px;
+      font-size: 0.85em;
+    }
+    .code-block-wrap {
+      position: relative;
+      background: #080c14;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      margin: 1rem 0;
+      overflow: hidden;
+    }
+    .code-block-header {
+      background: rgba(255,255,255,0.04);
+      padding: 0.4rem 0.85rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.75rem;
+      color: var(--text-light);
+      border-bottom: 1px solid var(--border);
+    }
+    .code-block-wrap pre {
+      padding: 1rem;
+      overflow-x: auto;
+      font-size: 0.85rem;
+      color: #e2e8f0;
+      line-height: 1.5;
+    }
+    .btn-copy {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      border-radius: 4px;
+      padding: 0.2rem 0.5rem;
+      font-size: 0.72rem;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn-copy:hover {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: white;
+    }
+
+    /* Interactive Lightbox Modal */
+    .lightbox-modal {
+      position: fixed;
+      top: 0; left: 0; width: 100vw; height: 100vh;
+      background: rgba(0, 0, 0, 0.92);
+      backdrop-filter: blur(8px);
+      z-index: 9999;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    }
+    .lightbox-modal.active { display: flex; animation: fadeIn 0.2s ease; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+    .lightbox-header {
+      position: absolute;
+      top: 1.5rem;
+      left: 2rem;
+      right: 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: white;
+      z-index: 10001;
+    }
+    .lightbox-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.1rem;
+      font-weight: 700;
+    }
+    .lightbox-close-btn {
+      background: rgba(255,255,255,0.15);
+      border: none;
+      color: white;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      font-size: 1.25rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s;
+    }
+    .lightbox-close-btn:hover { background: var(--primary); }
+
+    .lightbox-image-container {
+      max-width: 95vw;
+      max-height: 85vh;
+      overflow: auto;
+      border-radius: var(--radius-md);
+      box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+      border: 1px solid rgba(255,255,255,0.15);
+    }
+    .lightbox-image-container img {
+      display: block;
+      width: 100%;
+      height: auto;
+      max-height: 85vh;
+      object-fit: contain;
+    }
+
+    /* Back to Top Button */
+    .btn-back-to-top {
+      position: fixed;
+      bottom: 25px;
+      right: 25px;
+      width: 44px;
+      height: 44px;
+      background: var(--primary);
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      text-decoration: none;
+      box-shadow: var(--shadow-md);
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.25s ease;
+      z-index: 90;
+    }
+    .btn-back-to-top.visible { opacity: 1; visibility: visible; }
+    .btn-back-to-top:hover { background: var(--primary-hover); transform: translateY(-3px); }
+
+    /* Print styles */
+    @media print {
+      body { background: #ffffff !important; color: #000000 !important; }
+      .manual-header, .manual-sidebar, .btn-back-to-top, .search-shortcut, .btn-header, .screenshot-zoom-hint, .btn-copy {
+        display: none !important;
+      }
+      .manual-content { padding: 0 !important; max-width: 100% !important; }
+      .hero-banner { background: #f8fafc !important; color: #000 !important; border: 1px solid #ccc !important; }
+      .screenshot-showcase { break-inside: avoid; border: 1px solid #ccc !important; }
+      .info-card { break-inside: avoid; border: 1px solid #ccc !important; background: #fff !important; }
+    }
+
+    /* Responsive */
+    @media (max-width: 1024px) {
+      .manual-sidebar { display: none; }
+      .manual-content { padding: 1.5rem 1rem 4rem; }
+      .hero-title { font-size: 1.85rem; }
+      .search-box-wrap { width: 180px; }
+      .search-shortcut { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Header Navigation -->
+  <header class="manual-header">
+    <div class="brand-section">
+      <a href="/admin/" class="brand-logo-wrap" title="Volver al Panel Principal">
+        <span class="brand-badge">KROSERBOT</span>
+        <span class="brand-title">Manual <span>AI 2.0</span></span>
+      </a>
+    </div>
+
+    <!-- Live Fast Search & Quick Links -->
+    <div class="header-controls">
+      <div class="search-box-wrap">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="manual-search-input" class="search-input" placeholder="Buscar en el manual..." autocomplete="off">
+        <span class="search-shortcut">Ctrl K</span>
+      </div>
+
+      <a href="/admin/" class="btn-header" title="Abrir Panel Administrativo">
+        <span>🖥️</span> <span>Panel Admin</span>
+      </a>
+      <a href="/deposito" target="_blank" class="btn-header" title="Abrir Módulo de Depósito">
+        <span>📦</span> <span>Depósito</span>
+      </a>
+      <button class="btn-header" onclick="toggleTheme()" id="btn-theme" title="Alternar Modo Oscuro / Claro">
+        <span id="theme-icon">🌙</span>
+      </button>
+      <button class="btn-header btn-primary-header" onclick="window.print()" title="Imprimir o Exportar PDF">
+        <span>🖨️</span> <span>Imprimir / PDF</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Application Container -->
+  <div class="app-container">
+
+    <!-- Sidebar Sticky Navigation -->
+    <aside class="manual-sidebar">
+      <div class="sidebar-section-title">Primeros Pasos</div>
+      <ul class="toc-nav">
+        <li><a href="#vision-general" class="toc-link"><span>🌟</span> <span>Visión General</span></a></li>
+        <li><a href="#acceso-seguridad" class="toc-link"><span>🔐</span> <span>Acceso y Seguridad</span></a></li>
+        <li><a href="#arquitectura-flujo" class="toc-link"><span>🏗️</span> <span>Arquitectura & Flujo</span></a></li>
+      </ul>
+
+      <div class="sidebar-section-title">Módulos Principales</div>
+      <ul class="toc-nav">
+        <li><a href="#modulo-dashboard" class="toc-link"><span>📊</span> <span>Dashboard & Chat</span> <span class="toc-badge">Live</span></a></li>
+        <li><a href="#modulo-catalogo" class="toc-link"><span>📦</span> <span>Catálogo RAG (3.4k)</span></a></li>
+        <li><a href="#modulo-sucursales" class="toc-link"><span>🏪</span> <span>Sucursales (50+)</span></a></li>
+        <li><a href="#modulo-zonas-envio" class="toc-link"><span>🚚</span> <span>Zonas de Envío</span></a></li>
+        <li><a href="#modulo-formas-pago" class="toc-link"><span>💳</span> <span>Formas de Pago</span></a></li>
+        <li><a href="#modulo-guias-tecnicas" class="toc-link"><span>🛠️</span> <span>Guías Técnicas</span></a></li>
+        <li><a href="#modulo-pedidos" class="toc-link"><span>🛒</span> <span>Gestión de Pedidos</span></a></li>
+        <li><a href="#modulo-avisos" class="toc-link"><span>📬</span> <span>Avisos & Alertas</span></a></li>
+      </ul>
+
+      <div class="sidebar-section-title">Configuración & IA</div>
+      <ul class="toc-nav">
+        <li><a href="#modulo-prompt" class="toc-link"><span>📝</span> <span>Prompt & Mensajes</span></a></li>
+        <li><a href="#modulo-uruchat" class="toc-link"><span>🔌</span> <span>Control de Canales</span> <span class="toc-badge" style="background:var(--primary); color:white;">Importante</span></a></li>
+        <li><a href="#modulo-llm" class="toc-link"><span>🤖</span> <span>Conector Agente IA</span></a></li>
+        <li><a href="#modulo-scraper" class="toc-link"><span>🕷️</span> <span>Control del Scraper</span></a></li>
+        <li><a href="#modulo-datasource" class="toc-link"><span>🗄️</span> <span>Fuentes de Datos</span></a></li>
+      </ul>
+
+      <div class="sidebar-section-title">Operación de Depósito</div>
+      <ul class="toc-nav">
+        <li><a href="#modulo-deposito" class="toc-link"><span>🏭</span> <span>Panel de Depósito</span></a></li>
+      </ul>
+
+      <div class="sidebar-section-title">Soporte & Diagnóstico</div>
+      <ul class="toc-nav">
+        <li><a href="#troubleshooting" class="toc-link"><span>🛠️</span> <span>Solución de Problemas</span></a></li>
+        <li><a href="#protocolo-humano" class="toc-link"><span>🤝</span> <span>Atención Humana</span></a></li>
+      </ul>
+    </aside>
+
+    <!-- Content Workspace -->
+    <main class="manual-content">
+
+      <!-- Hero Header Banner -->
+      <section class="hero-banner">
+        <div class="hero-badge-pill">
+          <span class="dot"></span>
+          <span>Manual Oficial de Operación • Kroser Uruguay 2026</span>
+        </div>
+        <h1 class="hero-title">Sistema Integral de Inteligencia Artificial <span>KroserBot AI 2.0</span></h1>
+        <p class="hero-subtitle">
+          Guía técnica y operativa completa para administradores, supervisores comerciales y operarios de depósito.
+          Aprende a gestionar la atención omnicanal, catálogo RAG vectorial, pedidos, conmutación de modelos LLM y control selectivo de canales.
+        </p>
+
+        <!-- KPI Grid -->
+        <div class="kpi-grid">
+          <div class="kpi-card">
+            <div class="kpi-number">3,493+</div>
+            <div class="kpi-label">Productos Indexados (USD)</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-number">50+</div>
+            <div class="kpi-label">Sucursales en Uruguay</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-number">100%</div>
+            <div class="kpi-label">Control Omnicanal Humano/IA</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-number">Mercado Pago</div>
+            <div class="kpi-label">Checkout Pro + Webhooks HMAC</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECCIÓN 1: VISIÓN GENERAL -->
+      <section id="vision-general" class="manual-section">
+        <div class="section-header-wrap">
+          <div class="section-icon-badge">🌟</div>
+          <div class="section-title-box">
+            <h2>1. Visión General del Sistema</h2>
+            <p>Ecosistema enterprise diseñado para la operativa comercial y logística de Kroser</p>
+          </div>
+        </div>
+
+        <div class="info-card">
+          <h3>¿Qué es KroserBot AI 2.0?</h3>
+          <p>
+            <strong>KroserBot AI 2.0</strong> es una plataforma integral que combina atención conversacional inteligente mediante Modelos de Lenguaje de Gran Escala (LLM), búsqueda semántica vectorial sobre el catálogo oficial de ferretería y hogar, toma y seguimiento de pedidos, cobros automatizados con Mercado Pago, y un panel de depósito para preparación física y despacho.
+          </p>
+          
+          <div class="callout callout-info" style="margin-top:1.25rem;">
+            <div class="callout-icon">💡</div>
+            <div class="callout-content">
+              <strong>Objetivo Primario:</strong> Reducir el tiempo de respuesta a clientes a menos de 5 segundos, brindar cotizaciones y alternativas de productos con precisión técnica, y transferir suavemente a operadores humanos cuando la consulta lo amerite.
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECCIÓN 2: ACCESO Y SEGURIDAD -->
+      <section id="acceso-seguridad" class="manual-section">
+        <div class="section-header-wrap">
+          <div class="section-icon-badge">🔐</div>
+          <div class="section-title-box">
+            <h2>2. Acceso al Sistema y Credenciales</h2>
+            <p>Portales de ingreso para administradores y personal de depósito</p>
+          </div>
+        </div>
+
+        <div class="info-card">
+          <h3>Portales Oficiales</h3>
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Portal</th>
+                  <th>URL de Acceso</th>
+                  <th>Usuario Predeterminado</th>
+                  <th>Perfil de Acceso</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>Panel Administrativo General</strong></td>
+                  <td><a href="https://venta.urufile.duckdns.org/admin/" target="_blank" style="color:var(--primary); font-weight:700;">https://venta.urufile.duckdns.org/admin/</a></td>
+                  <td><code class="inline-code">administrador</code></td>
+                  <td><span class="badge badge-danger">Superadmin</span> (Control Total, Prompt, Canales, Pagos)</td>
+                </tr>
+                <tr>
+                  <td><strong>Módulo de Depósito y Picking</strong></td>
+                  <td><a href="https://venta.urufile.duckdns.org/admin/deposito.html" target="_blank" style="color:var(--primary); font-weight:700;">https://venta.urufile.duckdns.org/admin/deposito.html</a></td>
+                  <td><code class="inline-code">administrador</code> (o credencial de depósito)</td>
+                  <td><span class="badge badge-warning">Depósito</span> (Cola de pedidos, armado y remito)</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="callout callout-warning">
+            <div class="callout-icon">⚠️</div>
+            <div class="callout-content">
+              <strong>Recomendación de Seguridad:</strong> Las credenciales de producción son gestionadas mediante tokens JWT firmados con expiración segura y cookies HTTPOnly protegidas contra ataques XSS y CSRF.
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECCIÓN 3: ARQUITECTURA Y FLUJO -->
+      <section id="arquitectura-flujo" class="manual-section">
+        <div class="section-header-wrap">
+          <div class="section-icon-badge">🏗️</div>
+          <div class="section-title-box">
+            <h2>3. Arquitectura y Ciclo de Vida del Mensaje</h2>
+            <p>Cómo interactúan los componentes en tiempo real</p>
+          </div>
+        </div>
+
+        <div class="info-card">
+          <h3>Flujo de Atención Inteligente</h3>
+          <ol class="steps-list">
+            <li class="step-item">
+              <div class="step-badge">1</div>
+              <div class="step-text">
+                <strong>Recepción & Debounce (~8 segundos):</strong>
+                El webhook de Uruchat / Chatwoot recibe el mensaje del cliente (WhatsApp, Instagram o Web). El bot espera hasta 8 segundos para agrupar mensajes continuos en una única consulta lógica.
+              </div>
+            </li>
+            <li class="step-item">
+              <div class="step-badge">2</div>
+              <div class="step-text">
+                <strong>Filtro de Seguridad y Control de Canales:</strong>
+                Verifica si el canal está configurado en modo <span class="badge badge-danger">🔴 Bot Apagado (Solo Humanos)</span> o si un operador humano intervino previamente. En tal caso, el bot permanece en silencio absoluto.
+              </div>
+            </li>
+            <li class="step-item">
+              <div class="step-badge">3</div>
+              <div class="step-text">
+                <strong>Búsqueda Semántica Vectorial (RAG):</strong>
+                Genera el embedding de la consulta y busca en PostgreSQL con <code class="inline-code">pgvector</code> los 5 productos más relevantes con stock y precios actualizados en dólares.
+              </div>
+            </li>
+            <li class="step-item">
+              <div class="step-badge">4</div>
+              <div class="step-text">
+                <strong>Generación de Respuesta & Transacciones:</strong>
+                El modelo LLM (Gemini 2.0 o GPT-4o) responde amablemente con características técnicas, links a productos y opciones de sucursales. Si detecta intención de compra, inicia el flujo de toma de datos o genera el link de Mercado Pago.
+              </div>
+            </li>
+          </ol>
+        </div>
+      </section>
+
+      <!-- SECCIÓN 4: MÓDULO DASHBOARD & CHAT -->
+      <section id="modulo-dashboard" class="manual-section">
+        <div class="section-header-wrap">
+          <div class="section-icon-badge">📊</div>
+          <div class="section-title-box">
+            <h2>4. Módulo: Dashboard & Chat en Vivo</h2>
+            <p>Consola omnicanal de supervisión en tiempo real</p>
+          </div>
+        </div>
+
+        <div class="screenshot-showcase">
+          <div class="screenshot-toolbar">
+            <div class="screenshot-title">
+              <span>🖥️</span> <span>Vista en Vivo: Dashboard Omnicanal & Telemetría RAG</span>
+            </div>
+            <span class="screenshot-tag">01_dashboard_chat.png</span>
+          </div>
+          <div class="screenshot-img-wrap" onclick="openLightbox('images/01_dashboard_chat.png', 'Consola Omnicanal de Chat en Tiempo Real y Telemetría RAG')">
+            <img src="images/01_dashboard_chat.png" alt="Dashboard y Chat Uruchat Omnicanal">
+            <div class="screenshot-zoom-hint">🔍 Clic para ampliar en alta definición</div>
+          </div>
+          <div class="screenshot-footer">
+            <strong>Elementos Clave en Pantalla:</strong><br>
+            • <strong>Panel Izquierdo:</strong> Lista de conversaciones con filtros (<em>Todos</em>, <em>Abiertos</em>, <em>Míos</em>, <em>Resueltos</em>) y búsqueda por nombre o teléfono.<br>
+            • <strong>Panel Central:</strong> Historial de chat en vivo con burbujas diferenciadas (Cliente en azul marino, Bot en blanco con borde sutil), indicador de escritura y cajón para respuestas manuales.<br>
+            • <strong>Panel Derecho (Telemetría):</strong> Perfil del contacto, estado del bot (Activo / Silenciado), intenciones detectadas, análisis de sentimiento y visor RAG de productos sugeridos.
+          </div>
+        </div>
+
+        <div class="info-card">
+          <h3>Funcionalidades del Operador</h3>
+          <p>
+            Desde esta pantalla el supervisor puede ver exactamente lo que el bot responde a cada cliente en tiempo real. Si el supervisor escribe un mensaje directo en el chat, el sistema activa automáticamente el protocolo <strong>human_active</strong> y el bot se retira de la conversación para no superponerse con el operador.
+          </p>
+        </div>
+      </section>
+
+      <!-- SECCIÓN 5: CATÁLOGO DE PRODUCTOS -->
+      <section id="modulo-catalogo" class="manual-section">
+        <div class="section-header-wrap">
+          <div class="section-icon-badge">📦</div>
+          <div class="section-title-box">
+            <h2>5. Módulo: Catálogo de Productos (3,493 Prod. USD)</h2>
+            <p>Gestión de artículos, precios en dólares, stock e indexación vectorial</p>
+          </div>
+        </div>
+
+        <div class="screenshot-showcase">
+          <div class="screenshot-toolbar">
+            <div class="screenshot-title">
+              <span>📦</span> <span>Vista en Vivo: Catálogo de Productos Scrapeados & Embeddings</span>
+            </div>
+            <span class="screenshot-tag">02_catalogo_productos.png</span>
+          </div>
+          <div class="screenshot-img-wrap" onclick="openLightbox('images/02_catalogo_productos.png', 'Catálogo de Productos Scrapeados, Precios USD y Estado de Embeddings')">
+            <img src="images/02_catalogo_productos.png" alt="Catálogo de Productos Scrapeados">
+            <div class="screenshot-zoom-hint">🔍 Clic para ampliar en alta definición</div>
+          </div>
+          <div class="screenshot-footer">
+            <strong>Características del Catálogo:</strong><br>
+            • <strong>Total de Productos:</strong> Más de 3,493 artículos con título, código SKU, categoría, precio oficial en U$S y stock.<br>
+            • <strong>Estado de Vectorización:</strong> Indicador verde que confirma que el producto tiene su embedding generado en la base vectorial.<br>
+            • <strong>Edición Rápida:</strong> Posibilidad de ajustar stock manualmente o corregir información al instante.
+          </div>
+        </div>
+
+        <div class="callout callout-tip">
+          <div class="callout-icon">💡</div>
+          <div class="callout-content">
+            <strong>Búsqueda Inteligente:</strong> Los clientes no necesitan saber el nombre exacto del producto. Si un cliente escribe <em>"algo para tapar agujeros en pared de yeso"</em>, el sistema RAG busca semánticamente masilla, espátulas y cinta de fibra de vidrio.
+          </div>
+        </div>
+      </section>
+
+      <!-- SECCIÓN 6: SUCURSALES KROSER -->
+      <section id="modulo-sucursales" class="manual-section">
+        <div class="section-header-wrap">
+          <div class="section-icon-badge">🏪</div>
+          <div class="section-title-box">
+            <h2>6. Módulo: Sucursales Kroser en Uruguay (50+ Locales)</h2>
+            <p>Red nacional de ferreterías, direcciones, horarios y teléfonos</p>
+          </div>
+        </div>
+
+        <div class="screenshot-showcase">
+          <div class="screenshot-toolbar">
+            <div class="screenshot-title">
+              <span>🏪</span> <span>Vista en Vivo: Directorio de Locales y Sucursales</span>
+            </div>
+            <span class="screenshot-tag">03_sucursales_locales.png</span>
+          </div>
+          <div class="screenshot-img-wrap" onclick="openLightbox('images/03_sucursales_locales.png', 'Directorio de 50+ Sucursales Kroser en Todo el País')">
+            <img src="images/03_sucursales_locales.png" alt="Sucursales Kroser Uruguay">
+            <div class="screenshot-zoom-hint">🔍 Clic para ampliar en alta definición</div>
+          </div>
+          <div class="screenshot-footer">
+            <strong>Gestión de Locales:</strong><br>
+            • Muestra la dirección exacta, departamento (Montevideo, Canelones, Maldonado, etc.), teléfono de contacto y horario de atención al público.<br>
+            • El bot utiliza esta base de datos para responder cuando el cliente pregunta <em>"¿Dónde tienen un local cerca de Pocitos o en Las Piedras?"</em>.
+          </div>
+        </div>
+      </section>
+
+      <!-- SECCIÓN 7: ZONAS Y TARIFAS DE ENVÍO -->
+      <section id="modulo-zonas-envio" class="manual-section">
+        <div class="section-header-wrap">
+          <div class="section-icon-badge">🚚</div>
+          <div class="section-title-box">
+            <h2>7. Módulo: Zonas y Tarifas de Envío</h2>
+            <p>Configuración de fletes por departamento y calculadora de envíos</p>
+          </div>
+        </div>
+
+        <div class="screenshot-showcase">
+          <div class="screenshot-toolbar">
+            <div class="screenshot-title">
+              <span>🚚</span> <span>Vista en Vivo: Tarifas y Zonas de Entrega</span>
+            </div>
+            <span class="screenshot-tag">04_zonas_tarifas_envio.png</span>
+          </div>
+          <div class="screenshot-img-wrap" onclick="openLightbox('images/04_zonas_tarifas_envio.png', 'Zonas de Envío y Tarifas por Departamento')">
+            <img src="images/04_zonas_tarifas_envio.png" alt="Zonas y Tarifas de Envío">
+            <div class="screenshot-zoom-hint">🔍 Clic para ampliar en alta definición</div>
+          </div>
+          <div class="screenshot-footer">
+            <strong>Configuración de Envíos:</strong><br>
+            • <strong>Zonas Parametrizadas:</strong> Montevideo Urbano, Zonas Periféricas, Canelones e Interior del País (vía agencias DAC, Mirtrans, etc.).<br>
+            • <strong>Monto Mínimo para Envío Gratis:</strong> Configurable para compras que superen determinado monto en dólares o pesos.
+          </div>
+        </div>
+      </section>
+
+      <!-- SECCIÓN 8: FORMAS Y MÉTODOS DE PAGO -->
+      <section id="modulo-formas-pago" class="manual-section">
+        <div class="section-header-wrap">
+          <div class="section-icon-badge">💳</div>
+          <div class="section-title-box">
+            <h2>8. Módulo: Formas y Métodos de Pago</h2>
+            <p>Mercado Pago Checkout Pro, transferencias bancarias y redes de cobranza</p>
+          </div>
+        </div>
+
+        <div class="screenshot-showcase">
+          <div class="screenshot-toolbar">
+            <div class="screenshot-title">
+              <span>💳</span> <span>Vista en Vivo: Pasarelas y Medios de Pago Habilitados</span>
+            </div>
+            <span class="screenshot-tag">05_formas_metodos_pago.png</span>
+          </div>
+          <div class="screenshot-img-wrap" onclick="openLightbox('images/05_formas_metodos_pago.png', 'Métodos de Pago y Mercado Pago')">
+            <img src="images/05_formas_metodos_pago.png" alt="Formas y Métodos de Pago">
+            <div class="screenshot-zoom-hint">🔍 Clic para ampliar en alta definición</div>
+          </div>
+          <div class="screenshot-footer">
+            <strong>Opciones Soportadas:</strong><br>
+            • <strong>Mercado Pago:</strong> Generación de links de pago dinámicos enviados al chat con validación instantánea por webhook.<br>
+            • <strong>Transferencia Bancaria:</strong> BROU, Santander, Itaú con envío de comprobante.<br>
+            • <strong>Redes de Cobranza:</strong> Abitab y RedPagos para pago en efectivo.
+          </div>
+        </div>
+      </section>
+
+      <!-- SECCIÓN 9: GUÍAS TÉCNICAS & CÁLCULOS -->
+      <section id="modulo-guias-tecnicas" class="manual-section">
+        <div class="section-header-wrap">
+          <div class="section-icon-badge">🛠️</div>
+          <div class="section-title-box">
+            <h2>9. Módulo: Guías Técnicas & Cálculos de Rendimiento</h2>
+            <p>Calculadoras de rendimiento para pintura, masilla y fijaciones</p>
+          </div>
+        </div>
+
+        <div class="screenshot-showcase">
+          <div class="screenshot-toolbar">
+            <div class="screenshot-title">
+              <span>🛠️</span> <span>Vista en Vivo: Tablas de Rendimiento Técnico y Fórmulas</span>
+            </div>
+            <span class="screenshot-tag">06_guias_tecnicas_calculos.png</span>
+          </div>
+          <div class="screenshot-img-wrap" onclick="openLightbox('images/06_guias_tecnicas_calculos.png', 'Guías Técnicas y Calculadoras de Rendimiento')">
+            <img src="images/06_guias_tecnicas_calculos.png" alt="Guías Técnicas y Cálculos">
+            <div class="screenshot-zoom-hint">🔍 Clic para ampliar en alta definición</div>
+          </div>
+          <div class="screenshot-footer">
+            <strong>Asesoramiento Especializado:</strong><br>
+            • El bot incorpora fórmulas matemáticas para calcular cuántos litros de pintura látex o esmalte sintético requiere un cliente para cubrir determinada cantidad de metros cuadrados.<br>
+            • Incluye sugerencias automáticas de accesorios (rodillo, lija, cinta de enmascarar).
+          </div>
+        </div>
+      </section>
+
+      <!-- SECCIÓN 10: GESTIÓN DE PEDIDOS -->
+      <section id="modulo-pedidos" class="manual-section">
+        <div class="section-header-wrap">
+          <div class="section-icon-badge">🛒</div>
+          <div class="section-title-box">
+            <h2>10. Módulo: Gestión de Pedidos</h2>
+            <p>Grilla unificada de órdenes tomadas por el bot, ecommerce y mostrador</p>
+          </div>
+        </div>
+
+        <div class="screenshot-showcase">
+          <div class="screenshot-toolbar">
+            <div class="screenshot-title">
+              <span>🛒</span> <span>Vista en Vivo: Grilla de Pedidos y Estados</span>
+            </div>
+            <span class="screenshot-tag">07_gestion_pedidos.png</span>
+          </div>
+          <div class="screenshot-img-wrap" onclick="openLightbox('images/07_gestion_pedidos.png', 'Gestión de Pedidos, Canales y Estados de Pago')">
+            <img src="images/07_gestion_pedidos.png" alt="Gestión de Pedidos">
+            <div class="screenshot-zoom-hint">🔍 Clic para ampliar en alta definición</div>
+          </div>
+          <div class="screenshot-footer">
+            <strong>Columnas y Acciones:</strong><br>
+            • <strong>ID Pedido / Referencia:</strong> Identificador único del sistema y de Uruchat.<br>
+            • <strong>Canal de Origen:</strong> Badge identificando si provino de WhatsApp (Bot), Instagram, Web o Admin.<br>
+            • <strong>Estado del Pedido:</strong> <span class="badge badge-warning">Pendiente</span>, <span class="badge badge-success">Confirmado</span>, <span class="badge badge-info">En Preparación</span>, <span class="badge badge-dark">Entregado</span> o <span class="badge badge-danger">Rechazado</span>.<br>
+            • <strong>Estado de Pago:</strong> Refleja aprobación en tiempo real de Mercado Pago.
+          </div>
+        </div>
+
+        <div class="info-card">
+          <h3>Flujo de Estados de un Pedido</h3>
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Estado</th>
+                  <th>Significado</th>
+                  <th>Quién lo cambia</th>
+                  <th>Notificación al Cliente</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><span class="badge badge-warning">Pendiente</span></td>
+                  <td>El cliente solicitó los artículos por el chat o la web</td>
+                  <td>Automático por el Bot</td>
+                  <td>Recibe mensaje de recepción y pedido en revisión</td>
+                </tr>
+                <tr>
+                  <td><span class="badge badge-success">Confirmado</span></td>
+                  <td>Stock validado o pago aprobado en Mercado Pago</td>
+                  <td>Operador o Webhook MP</td>
+                  <td>Recibe confirmación y link o número de seguimiento</td>
+                </tr>
+                <tr>
+                  <td><span class="badge badge-info">En Preparación</span></td>
+                  <td>Depósito está armando el paquete</td>
+                  <td>Personal de Depósito</td>
+                  <td>Pedido en armado para despacho o retiro</td>
+                </tr>
+                <tr>
+                  <td><span class="badge badge-dark">Entregado</span></td>
+                  <td>Retirado en sucursal o entregado por cadetería</td>
+                  <td>Personal de Depósito</td>
+                  <td>Mensaje de agradecimiento y encuesta de satisfacción</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECCIÓN 11: AVISOS Y ALERTAS DE PEDIDOS -->
+      <section id="modulo-avisos" class="manual-section">
+        <div class="section-header-wrap">
+          <div class="section-icon-badge">📬</div>
+          <div class="section-title-box">
+            <h2>11. Módulo: Avisos & Alertas Automáticas de Pedido</h2>
+            <p>Plantillas de mensajes enviadas a WhatsApp y correos internos</p>
+          </div>
+        </div>
+
+        <div class="screenshot-showcase">
+          <div class="screenshot-toolbar">
+            <div class="screenshot-title">
+              <span>📬</span> <span>Vista en Vivo: Configuración de Avisos y Notificaciones</span>
+            </div>
+            <span class="screenshot-tag">08_avisos_alertas_pedidos.png</span>
+          </div>
+          <div class="screenshot-img-wrap" onclick="openLightbox('images/08_avisos_alertas_pedidos.png', 'Avisos y Alertas Automáticas de Pedido')">
+            <img src="images/08_avisos_alertas_pedidos.png" alt="Avisos y Alertas de Pedidos">
+            <div class="screenshot-zoom-hint">🔍 Clic para ampliar en alta definición</div>
+          </div>
+          <div class="screenshot-footer">
+            <strong>Notificaciones Configurables:</strong><br>
+            • Mensaje de Pedido Pendiente (recibido con éxito).<br>
+            • Mensaje de Pedido Listo para Retiro (con dirección de sucursal elegida).<br>
+            • Mensaje de Pedido Cancelado / Sin Stock.<br>
+            • Correo electrónico a supervisores ante pedidos mayores a determinado monto.
+          </div>
+        </div>
+      </section>
+
+      <!-- SECCIÓN 12: PROMPT & MENSAJES PREDETERMINADOS -->
+      <section id="modulo-prompt" class="manual-section">
+        <div class="section-header-wrap">
+          <div class="section-icon-badge">📝</div>
+          <div class="section-title-box">
+            <h2>12. Módulo: Prompt del Sistema & Mensajes</h2>
+            <p>Personalidad, reglas de negocio y respuestas enlatadas</p>
+          </div>
+        </div>
+
+        <div class="screenshot-showcase">
+          <div class="screenshot-toolbar">
+            <div class="screenshot-title">
+              <span>📝</span> <span>Vista en Vivo: Editor del System Prompt Maestro</span>
+            </div>
+            <span class="screenshot-tag">09_prompt_mensajes_sistema.png</span>
+          </div>
+          <div class="screenshot-img-wrap" onclick="openLightbox('images/09_prompt_mensajes_sistema.png', 'Editor del System Prompt y Mensajes Enlatados')">
+            <img src="images/09_prompt_mensajes_sistema.png" alt="Prompt y Mensajes del Sistema">
+            <div class="screenshot-zoom-hint">🔍 Clic para ampliar en alta definición</div>
+          </div>
+          <div class="screenshot-footer">
+            <strong>Capacidades del Editor:</strong><br>
+            • <strong>Edición en Caliente:</strong> Modifica las directivas del agente IA sin reiniciar el backend.<br>
+            • <strong>Reglas Clave:</strong> Tono uruguayo respetuoso pero cercano, no inventar precios fuera del catálogo RAG, y derivar a humano cuando se soliciten cuentas corrientes o compras mayoristas especiales.
+          </div>
+        </div>
+      </section>
+
+      <!-- SECCIÓN 13: URUCHAT & CONTROL DE CANALES -->
+      <section id="modulo-uruchat" class="manual-section">
+        <div class="section-header-wrap">
+          <div class="section-icon-badge">🔌</div>
+          <div class="section-title-box">
+            <h2>13. Módulo: Uruchat & Control de Canales (Apagado Selectivo)</h2>
+            <p>Configuración de credenciales y activación/desactivación del bot por canal</p>
+          </div>
+        </div>
+
+        <div class="callout callout-danger">
+          <div class="callout-icon">🚨</div>
+          <div class="callout-content">
+            <strong>Función Crítica — Apagar el Bot por Canal para Atención 100% Humana:</strong><br>
+            Si deseas que un canal específico (por ejemplo, <strong>Instagram</strong>) sea atendido exclusivamente por personas y que el bot nunca responda allí, basta con marcar la casilla correspondiente en este módulo y hacer clic en <strong>"💾 Guardar Control de Canales"</strong>.
+          </div>
+        </div>
+
+        <div class="screenshot-showcase">
+          <div class="screenshot-toolbar">
+            <div class="screenshot-title">
+              <span>🔌</span> <span>Vista en Vivo: Uruchat Inboxes y Switches de Canales</span>
+            </div>
+            <span class="screenshot-tag">10_uruchat_control_canales.png</span>
+          </div>
+          <div class="screenshot-img-wrap" onclick="openLightbox('images/10_uruchat_control_canales.png', 'Uruchat Integración y Control Selectivo de Canales')">
+            <img src="images/10_uruchat_control_canales.png" alt="Control de Canales Uruchat">
+            <div class="screenshot-zoom-hint">🔍 Clic para ampliar en alta definición</div>
+          </div>
+          <div class="screenshot-footer">
+            <strong>Canales Disponibles para Control Individual:</strong><br>
+            • 📸 <strong>Instagram:</strong> Mensajes directos y comentarios.<br>
+            • 💬 <strong>WhatsApp:</strong> Líneas oficiales de atención comercial.<br>
+            • 🌐 <strong>Live Chat Web:</strong> Widget integrado en sitio web.<br>
+            • ✉️ <strong>Email / Telegram:</strong> Canales de soporte alternativos.<br>
+            • <strong>Inboxes Personalizados:</strong> Campo para ingresar IDs específicos de bandejas en Uruchat.
+          </div>
+        </div>
+      </section>
+
+      <!-- SECCIÓN 14: CONECTOR AGENTE IA (LLM) -->
+      <section id="modulo-llm" class="manual-section">
+        <div class="section-header-wrap">
+          <div class="section-icon-badge">🤖</div>
+          <div class="section-title-box">
+            <h2>14. Módulo: Conector de Agente IA (Multi-Proveedor LLM)</h2>
+            <p>Conmutación en caliente entre Google Gemini, OpenAI y proxies compatibles</p>
+          </div>
+        </div>
+
+        <div class="screenshot-showcase">
+          <div class="screenshot-toolbar">
+            <div class="screenshot-title">
+              <span>🤖</span> <span>Vista en Vivo: Conector Multi-Modelo LLM</span>
+            </div>
+            <span class="screenshot-tag">11_conector_agente_ia_llm.png</span>
+          </div>
+          <div class="screenshot-img-wrap" onclick="openLightbox('images/11_conector_agente_ia_llm.png', 'Conector de Agente IA y Selección de Modelos')">
+            <img src="images/11_conector_agente_ia_llm.png" alt="Conector Agente IA">
+            <div class="screenshot-zoom-hint">🔍 Clic para ampliar en alta definición</div>
+          </div>
+          <div class="screenshot-footer">
+            <strong>Proveedores y Modelos Soportados:</strong><br>
+            • <strong>Google Gemini:</strong> <code class="inline-code">gemini-2.0-flash</code> (ultra rápido y económico), <code class="inline-code">gemini-1.5-pro</code> (máxima capacidad de razonamiento).<br>
+            • <strong>OpenAI:</strong> <code class="inline-code">gpt-4o</code>, <code class="inline-code">gpt-4o-mini</code>.<br>
+            • <strong>OpenAI-Compatible:</strong> DeepSeek, Groq, Together AI o servidores locales (Ollama).
+          </div>
+        </div>
+
+        <div class="callout callout-tip">
+          <div class="callout-icon">⚡</div>
+          <div class="callout-content">
+            <strong>Cambio sin Caídas (Zero Downtime):</strong> Al cambiar el proveedor en el desplegable y guardar, las siguientes conversaciones utilizan el nuevo modelo de inmediato sin reiniciar la aplicación ni desconectar clientes.
+          </div>
+        </div>
+      </section>
+
+      <!-- SECCIÓN 15: CONTROL DEL SCRAPER -->
+      <section id="modulo-scraper" class="manual-section">
+        <div class="section-header-wrap">
+          <div class="section-icon-badge">🕷️</div>
+          <div class="section-title-box">
+            <h2>15. Módulo: Control del Scraper y Sincronización</h2>
+            <p>Extracción automática del catálogo web y generación de embeddings</p>
+          </div>
+        </div>
+
+        <div class="screenshot-showcase">
+          <div class="screenshot-toolbar">
+            <div class="screenshot-title">
+              <span>🕷️</span> <span>Vista en Vivo: Monitor y Disparador Manual del Scraper</span>
+            </div>
+            <span class="screenshot-tag">12_control_scraper_sincronizacion.png</span>
+          </div>
+          <div class="screenshot-img-wrap" onclick="openLightbox('images/12_control_scraper_sincronizacion.png', 'Control del Scraper y Sincronización Vectorial')">
+            <img src="images/12_control_scraper_sincronizacion.png" alt="Control del Scraper">
+            <div class="screenshot-zoom-hint">🔍 Clic para ampliar en alta definición</div>
+          </div>
+          <div class="screenshot-footer">
+            <strong>Operaciones del Scraper:</strong><br>
+            • <strong>Sincronización Nocturna Automática:</strong> Escanea el sitemap oficial de <code class="inline-code">kroser.com.uy</code> todas las madrugadas.<br>
+            • <strong>Disparo Manual:</strong> Botón <em>"Iniciar Scraping Manual"</em> para actualizar precios y altas urgentes durante el día.<br>
+            • <strong>Detección de Cambios:</strong> Solo regenera embeddings vectoriales en los productos que hayan modificado precio, título o descripción para ahorrar costos de API.
+          </div>
+        </div>
+      </section>
+
+      <!-- SECCIÓN 16: FUENTES DE DATOS -->
+      <section id="modulo-datasource" class="manual-section">
+        <div class="section-header-wrap">
+          <div class="section-icon-badge">🗄️</div>
+          <div class="section-title-box">
+            <h2>16. Módulo: Estrategia de Fuente de Datos</h2>
+            <p>Conexión alternativa a ERP, base SQL directa o API REST externa</p>
+          </div>
+        </div>
+
+        <div class="screenshot-showcase">
+          <div class="screenshot-toolbar">
+            <div class="screenshot-title">
+              <span>🗄️</span> <span>Vista en Vivo: Estrategia de Ingesta del Catálogo</span>
+            </div>
+            <span class="screenshot-tag">13_fuente_datos_catalogo.png</span>
+          </div>
+          <div class="screenshot-img-wrap" onclick="openLightbox('images/13_fuente_datos_catalogo.png', 'Estrategia de Fuente de Datos')">
+            <img src="images/13_fuente_datos_catalogo.png" alt="Fuente de Datos del Catálogo">
+            <div class="screenshot-zoom-hint">🔍 Clic para ampliar en alta definición</div>
+          </div>
+          <div class="screenshot-footer">
+            <strong>3 Métodos de Ingesta:</strong><br>
+            1. <strong>Web Scraping:</strong> Modo predeterminado, extrae del sitio público sin requerir accesos internos.<br>
+            2. <strong>Conector SQL ERP:</strong> Conexión de solo lectura a la base de datos empresarial de Kroser.<br>
+            3. <strong>API REST Externa:</strong> Webhook o endpoint JSON con autenticación Bearer Token.
+          </div>
+        </div>
+      </section>
+
+      <!-- SECCIÓN 17: PORTAL DE DEPÓSITO -->
+      <section id="modulo-deposito" class="manual-section">
+        <div class="section-header-wrap">
+          <div class="section-icon-badge">🏭</div>
+          <div class="section-title-box">
+            <h2>17. Operación: Módulo de Depósito & Picking</h2>
+            <p>Portal exclusivo para operarios de bodega, armado de pedidos y remito de entrega</p>
+          </div>
+        </div>
+
+        <div class="screenshot-showcase">
+          <div class="screenshot-toolbar">
+            <div class="screenshot-title">
+              <span>🔐</span> <span>Vista de Acceso al Depósito (/admin/deposito.html)</span>
+            </div>
+            <span class="screenshot-tag">14_deposito_acceso.png</span>
+          </div>
+          <div class="screenshot-img-wrap" onclick="openLightbox('images/14_deposito_acceso.png', 'Acceso al Módulo de Depósito')">
+            <img src="images/14_deposito_acceso.png" alt="Login al Módulo de Depósito">
+            <div class="screenshot-zoom-hint">🔍 Clic para ampliar en alta definición</div>
+          </div>
+          <div class="screenshot-footer">
+            <strong>Acceso Directo:</strong> Los operarios de depósito pueden ingresar directamente a <code class="inline-code">https://venta.urufile.duckdns.org/admin/deposito.html</code> o <code class="inline-code">/deposito</code> sin necesidad de ver las opciones de configuración del bot.
+          </div>
+        </div>
+
+        <div class="screenshot-showcase">
+          <div class="screenshot-toolbar">
+            <div class="screenshot-title">
+              <span>📦</span> <span>Vista en Vivo: Panel de Preparación y Picking de Pedidos</span>
+            </div>
+            <span class="screenshot-tag">15_deposito_preparacion_pedidos.png</span>
+          </div>
+          <div class="screenshot-img-wrap" onclick="openLightbox('images/15_deposito_preparacion_pedidos.png', 'Panel de Preparación y Picking de Pedidos')">
+            <img src="images/15_deposito_preparacion_pedidos.png" alt="Panel de Depósito y Preparación">
+            <div class="screenshot-zoom-hint">🔍 Clic para ampliar en alta definición</div>
+          </div>
+          <div class="screenshot-footer">
+            <strong>Flujo de Trabajo del Operario:</strong><br>
+            • <strong>Filtro "Por Preparar":</strong> Muestra los pedidos confirmados y pendientes de despacho.<br>
+            • <strong>Botón "📦 Preparar / Editar":</strong> Abre la hoja de picking con SKUs, cantidades y ubicación.<br>
+            • <strong>Control de Stock:</strong> Si falta un producto, el operario puede ajustar la cantidad o marcar falta de stock.<br>
+            • <strong>Impresión Limpia:</strong> Presionando Imprimir se genera un remito listo para pegar en la caja del cliente.
+          </div>
+        </div>
+      </section>
+
+      <!-- SECCIÓN 18: PROTOCOLO DE INTERVENCIÓN HUMANA -->
+      <section id="protocolo-humano" class="manual-section">
+        <div class="section-header-wrap">
+          <div class="section-icon-badge">🤝</div>
+          <div class="section-title-box">
+            <h2>18. Protocolo de Intervención Humana (Handover)</h2>
+            <p>Cómo interactúan los asesores con el bot sin colisiones</p>
+          </div>
+        </div>
+
+        <div class="info-card">
+          <h3>Reglas de Silencio Automático del Bot</h3>
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Acción del Asesor en Uruchat</th>
+                  <th>Comportamiento Inmediato del Bot</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>Operador responde un mensaje en el chat</strong></td>
+                  <td>El bot detecta al operador (<code class="inline-code">sender_type: user</code>), cancela cualquier respuesta pendiente y activa el estado de silencio <code class="inline-code">human_active</code>.</td>
+                </tr>
+                <tr>
+                  <td><strong>Conversación asignada a un asesor específico</strong></td>
+                  <td>Si la conversación tiene un <code class="inline-code">assignee_id</code> asignado, el bot se inhibe y no interviene nunca en esa charla.</td>
+                </tr>
+                <tr>
+                  <td><strong>Bot detecta solicitud de asesor humano</strong></td>
+                  <td>Envía el mensaje enlatado de derivación, asigna la conversación a la cola de agentes y notifica por correo electrónico.</td>
+                </tr>
+                <tr>
+                  <td><strong>Asesor desasigna la conversación</strong></td>
+                  <td>Al liberar la conversación a estado no asignado, el bot reanuda la asistencia automática en el siguiente mensaje del cliente.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECCIÓN 19: SOLUCIÓN DE PROBLEMAS (TROUBLESHOOTING) -->
+      <section id="troubleshooting" class="manual-section">
+        <div class="section-header-wrap">
+          <div class="section-icon-badge">🛠️</div>
+          <div class="section-title-box">
+            <h2>19. Solución de Problemas Frecuentes (Troubleshooting)</h2>
+            <p>Guía de diagnóstico rápido y resolución de incidencias</p>
+          </div>
+        </div>
+
+        <div class="info-card">
+          <h3 style="color:var(--primary);">❓ El bot está respondiendo en Instagram y queremos que solo respondan humanos</h3>
+          <p>
+            1. Dirígete a la pestaña <strong>🔌 Uruchat Inboxes & Canales</strong>.<br>
+            2. Busca el bloque <strong>Instagram Direct</strong> y activa la casilla <strong>"Apagar Bot (Solo Humanos)"</strong>.<br>
+            3. Haz clic en el botón verde <strong>"💾 Guardar Control de Canales"</strong>.<br>
+            4. El cambio tiene efecto inmediato.
+          </p>
+
+          <hr style="border:none; border-top:1px solid var(--border); margin:1.5rem 0;">
+
+          <h3 style="color:var(--primary);">❓ El cliente dice que pagó pero el pedido figura como "Pendiente de Pago"</h3>
+          <p>
+            1. Ve a la pestaña <strong>🛒 Pedidos</strong> y busca el ID del pedido.<br>
+            2. Si el pago se realizó por transferencia o redes de cobranza (Abitab/RedPagos), el operador debe validar el comprobante y presionar <strong>"Confirmar Pago Manualmente"</strong>.<br>
+            3. Si el pago fue con Mercado Pago, verifica que el webhook esté apuntando a la URL pública con SSL activo.
+          </p>
+
+          <hr style="border:none; border-top:1px solid var(--border); margin:1.5rem 0;">
+
+          <h3 style="color:var(--primary);">❓ El bot dice que no encuentra un producto que recién se publicó en la web</h3>
+          <p>
+            1. Ve a la pestaña <strong>🕷️ Control del Scraper</strong>.<br>
+            2. Presiona <strong>"Iniciar Scraping Manual"</strong>.<br>
+            3. El scraper rastreará el nuevo artículo y generará automáticamente su vector RAG en la base de datos.
+          </p>
+        </div>
+      </section>
+
+      <!-- Pie de Página -->
+      <footer style="margin-top:5rem; padding-top:2rem; border-top:1px solid var(--border); text-align:center; color:var(--text-light); font-size:0.85rem;">
+        <p><strong>Kroser Uruguay — División Tecnología e Inteligencia Artificial</strong> • Año 2026</p>
+        <p style="margin-top:0.3rem;">Sistema de Atención Conversacional KroserBot AI 2.0 • Todos los derechos reservados</p>
+      </footer>
+
+    </main>
+  </div>
+
+  <!-- Lightbox Modal for HD Screenshot Inspection -->
+  <div class="lightbox-modal" id="lightbox-modal" onclick="closeLightbox(event)">
+    <div class="lightbox-header">
+      <div class="lightbox-title" id="lightbox-title">Captura en Alta Definición</div>
+      <button class="lightbox-close-btn" onclick="closeLightbox(event)">✕</button>
+    </div>
+    <div class="lightbox-image-container" onclick="event.stopPropagation()">
+      <img id="lightbox-img" src="" alt="Captura ampliada">
+    </div>
+  </div>
+
+  <!-- Back to top floating button -->
+  <a href="#" class="btn-back-to-top" id="btn-back-to-top" title="Volver al inicio">↑</a>
+
+  <script>
+    // Theme Switcher (Dark / Light)
+    function toggleTheme() {
+      const current = document.documentElement.getAttribute('data-theme') || 'dark';
+      const next = current === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', next);
+      localStorage.setItem('kroser_manual_theme', next);
+      updateThemeIcon(next);
+    }
+
+    function updateThemeIcon(theme) {
+      const icon = document.getElementById('theme-icon');
+      if (icon) icon.textContent = theme === 'dark' ? '🌙' : '☀️';
+    }
+
+    // Init theme from storage
+    const savedTheme = localStorage.getItem('kroser_manual_theme') || 'dark';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    updateThemeIcon(savedTheme);
+
+    // Lightbox Logic
+    function openLightbox(src, title) {
+      const modal = document.getElementById('lightbox-modal');
+      const img = document.getElementById('lightbox-img');
+      const t = document.getElementById('lightbox-title');
+      img.src = src;
+      t.textContent = title || 'Captura del Sistema';
+      modal.classList.add('active');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeLightbox(e) {
+      const modal = document.getElementById('lightbox-modal');
+      modal.classList.remove('active');
+      document.body.style.overflow = '';
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeLightbox();
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        const search = document.getElementById('manual-search-input');
+        if (search) search.focus();
+      }
+    });
+
+    // Back to top observer
+    window.addEventListener('scroll', () => {
+      const btn = document.getElementById('btn-back-to-top');
+      if (window.scrollY > 400) {
+        btn.classList.add('visible');
+      } else {
+        btn.classList.remove('visible');
+      }
+    });
+
+    // Active TOC link highlighting on scroll
+    const sections = document.querySelectorAll('.manual-section');
+    const navLinks = document.querySelectorAll('.toc-link');
+
+    window.addEventListener('scroll', () => {
+      let current = '';
+      sections.forEach(section => {
+        const sectionTop = section.offsetTop - 120;
+        if (pageYOffset >= sectionTop) {
+          current = section.getAttribute('id');
+        }
+      });
+
+      navLinks.forEach(link => {
+        link.classList.remove('active');
+        if (link.getAttribute('href') === '#' + current) {
+          link.classList.add('active');
+        }
+      });
+    });
+
+    // Live search filter
+    const searchInput = document.getElementById('manual-search-input');
+    searchInput.addEventListener('input', (e) => {
+      const query = e.target.value.toLowerCase().trim();
+      if (!query) {
+        sections.forEach(s => s.style.display = '');
+        return;
+      }
+      sections.forEach(s => {
+        const text = s.textContent.toLowerCase();
+        if (text.includes(query)) {
+          s.style.display = '';
+        } else {
+          s.style.display = 'none';
+        }
+      });
+    });
+
+    // Copy to clipboard helper
+    function copyCode(btn, text) {
+      navigator.clipboard.writeText(text).then(() => {
+        const original = btn.textContent;
+        btn.textContent = '¡Copiado!';
+        setTimeout(() => { btn.textContent = original; }, 2000);
+      });
+    }
+  </script>
+</body>
+</html>

@@ -75,8 +75,8 @@ module.exports = {
       }
     }
 
-    // 2. Heuristic fallback: If customer provided full order details in last messages and assistant confirms taking it
-    if (!createdOrder && history.length >= 2) {
+    // 2. Heuristic fallback: Disabled by default to prevent ghost orders in production now that Function Calling handles registration
+    if (process.env.ENABLE_HEURISTIC_ORDER_FALLBACK === 'true' && !createdOrder && history.length >= 2) {
       const lastUserMsg = (history[history.length - 1]?.content || '').toLowerCase();
       const assistantText = cleanReply.toLowerCase();
 

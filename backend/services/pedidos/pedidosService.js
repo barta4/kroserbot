@@ -91,8 +91,6 @@ module.exports = {
       throw new Error(`Pedido #${id} no encontrado`);
     }
 
-    stateMachine.assertTransition(pedidoActual.estado, targetState);
-
     const { pedido } = await pedidosRepo.updateEstado(id, targetState, cambiadoPor);
 
     logger.info('Order status updated', { pedidoId: id, from: pedidoActual.estado, to: targetState, by: cambiadoPor });
@@ -101,12 +99,20 @@ module.exports = {
       const msgListo =
         (await configuracionRepo.get('msg_pedido_listo')) ||
         '¡Tu pedido fue confirmado! Te contactamos para coordinar la entrega.';
-      await chatwootService.sendMessage(pedido.account_id, pedido.conversation_id, msgListo);
+      try {
+        await chatwootService.sendMessage(pedido.account_id, pedido.conversation_id, msgListo);
+      } catch (err) {
+        logger.error('Error enviando mensaje de Chatwoot (confirmado)', { error: err.message, pedidoId: id });
+      }
     } else if (targetState === 'rechazado') {
       const msgRechazado =
         (await configuracionRepo.get('msg_pedido_rechazado')) ||
         'Lamentamos informarte que no pudimos procesar tu pedido. Un asesor te contactará.';
-      await chatwootService.sendMessage(pedido.account_id, pedido.conversation_id, msgRechazado);
+      try {
+        await chatwootService.sendMessage(pedido.account_id, pedido.conversation_id, msgRechazado);
+      } catch (err) {
+        logger.error('Error enviando mensaje de Chatwoot (rechazado)', { error: err.message, pedidoId: id });
+      }
     } else if (targetState === 'en_preparacion') {
       await this.sendPreparationAlert(pedido);
     }
@@ -159,14 +165,22 @@ module.exports = {
           (await configuracionRepo.get('msg_pedido_listo')) ||
           '¡Tu pedido fue confirmado! Te contactamos para coordinar la entrega.';
         if (pedidoActualizado.account_id && pedidoActualizado.conversation_id) {
-          await chatwootService.sendMessage(pedidoActualizado.account_id, pedidoActualizado.conversation_id, msgListo);
+          try {
+            await chatwootService.sendMessage(pedidoActualizado.account_id, pedidoActualizado.conversation_id, msgListo);
+          } catch (err) {
+            logger.error('Error enviando mensaje de Chatwoot (updateFull confirmado)', { error: err.message, pedidoId: id });
+          }
         }
       } else if (data.estado === 'rechazado') {
         const msgRechazado =
           (await configuracionRepo.get('msg_pedido_rechazado')) ||
           'Lamentamos informarte que no pudimos procesar tu pedido. Un asesor te contactará.';
         if (pedidoActualizado.account_id && pedidoActualizado.conversation_id) {
-          await chatwootService.sendMessage(pedidoActualizado.account_id, pedidoActualizado.conversation_id, msgRechazado);
+          try {
+            await chatwootService.sendMessage(pedidoActualizado.account_id, pedidoActualizado.conversation_id, msgRechazado);
+          } catch (err) {
+            logger.error('Error enviando mensaje de Chatwoot (updateFull rechazado)', { error: err.message, pedidoId: id });
+          }
         }
       } else if (data.estado === 'en_preparacion') {
         await this.sendPreparationAlert(pedidoActualizado);

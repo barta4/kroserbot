@@ -84,6 +84,21 @@ function getTimeOfDayGreeting(customerName = '') {
  * Get natural formal farewell
  */
 function getFormalFarewell() {
+  const uruDate = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Montevideo' }));
+  const day = uruDate.getDay(); // 0 = Sunday, 5 = Friday, 6 = Saturday
+  const hour = uruDate.getHours();
+
+  const isWeekendFarewell = (day === 5 && hour >= 14) || day === 6 || day === 0;
+
+  if (isWeekendFarewell) {
+    const weekendFarewells = [
+      'Muchas gracias por comunicarse con Kroser. ¡Que pase un excelente fin de semana! Quedamos a las órdenes por cualquier otra consulta.',
+      '¡A las órdenes! Gracias por contactarse con Kroser. ¡Que disfrute su fin de semana!',
+      'Ha sido un placer atenderlo. ¡Muy buen fin de semana y a las órdenes siempre en Kroser!',
+    ];
+    return weekendFarewells[Math.floor(Math.random() * weekendFarewells.length)];
+  }
+
   const farewells = [
     'Muchas gracias por comunicarse con Kroser. ¡Que tenga un excelente día! Quedamos a las órdenes por cualquier otra consulta.',
     '¡A las órdenes! Gracias por contactarse con Kroser. Que pase muy bien.',

@@ -3,6 +3,9 @@ const router = express.Router();
 const pedidosController = require('../controllers/pedidosController');
 const { requireRole } = require('../middleware/requireAuth');
 
+router.get('/toggle-status', requireRole('admin', 'deposito'), pedidosController.getToggleStatus);
+router.post('/toggle', requireRole('admin'), pedidosController.togglePedidos);
+
 router.post('/', requireRole('admin', 'deposito'), pedidosController.createPedido);
 router.get('/', requireRole('admin', 'deposito'), pedidosController.listPedidos);
 router.get('/:id', requireRole('admin', 'deposito'), pedidosController.getPedidoById);

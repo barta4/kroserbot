@@ -2,6 +2,24 @@ require('dotenv').config();
 
 let redisClient = null;
 const memoryStore = new Map();
+const memoryTimers = new Map();
+
+function clearMemoryTimer(key) {
+  if (memoryTimers.has(key)) {
+    clearTimeout(memoryTimers.get(key));
+    memoryTimers.delete(key);
+  }
+}
+
+function setMemoryTimer(key, seconds) {
+  clearMemoryTimer(key);
+  const timer = setTimeout(() => {
+    memoryStore.delete(key);
+    memoryTimers.delete(key);
+  }, seconds * 1000);
+  if (timer.unref) timer.unref();
+  memoryTimers.set(key, timer);
+}
 
 try {
   const Redis = require('ioredis');
@@ -56,9 +74,10 @@ module.exports = {
     if (option === 'NX' && memoryStore.has(key)) {
       return null;
     }
+    clearMemoryTimer(key);
     memoryStore.set(key, value);
     if (mode === 'EX' && durationSeconds) {
-      setTimeout(() => memoryStore.delete(key), durationSeconds * 1000);
+      setMemoryTimer(key, durationSeconds);
     }
     return 'OK';
   },
@@ -69,6 +88,7 @@ module.exports = {
         return await redisClient.del(key);
       } catch (_err) {}
     }
+    clearMemoryTimer(key);
     memoryStore.delete(key);
     return 1;
   },
@@ -107,8 +127,23 @@ module.exports = {
         return await redisClient.expire(key, seconds);
       } catch (_err) {}
     }
-    setTimeout(() => memoryStore.delete(key), seconds * 1000);
-    return 1;
+    if (memoryStore.has(key)) {
+      setMemoryTimer(key, seconds);
+      return 1;
+    }
+    return 0;
+  },
+
+  async incr(key) {
+    if (redisClient && redisClient.status === 'ready') {
+      try {
+        return await redisClient.incr(key);
+      } catch (_err) {}
+    }
+    const current = parseInt(memoryStore.get(key) || '0', 10);
+    const next = current + 1;
+    memoryStore.set(key, String(next));
+    return next;
   },
 
   async publish(channel, message) {

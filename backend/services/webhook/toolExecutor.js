@@ -3,6 +3,7 @@ const productosRepo = require('../../repositories/productosRepository');
 const localesRepo = require('../../repositories/localesRepository');
 const guiasTecnicasRepo = require('../../repositories/guiasTecnicasRepository');
 const pedidosRepo = require('../../repositories/pedidosRepository');
+const configuracionRepo = require('../../repositories/configuracionRepository');
 const orderTrackingService = require('../pedidos/orderTrackingService');
 const emailService = require('../email/emailService');
 const logger = require('../../config/logger');
@@ -67,47 +68,38 @@ function formatCurrencyPrice(p) {
 const TOOL_DEFINITIONS = [
   {
     name: 'buscar_productos',
-    description: 'Busca productos, repuestos, precios y stock en el catálogo oficial de Kroser. Incluye automáticamente sugerencias de consumibles y alternativas si no hay stock.',
+    description: 'Busca productos, precios y stock en catálogo Kroser con alternativas.',
     parameters: {
       type: 'object',
       properties: {
-        consulta: {
-          type: 'string',
-          description: 'Nombre, marca, modelo o tipo de artículo a buscar (ej: "taladro percutor", "esmalte sintético 1L", "cartucho canilla")',
-        },
+        consulta: { type: 'string', description: 'Artículo, marca o modelo a buscar' },
       },
       required: ['consulta'],
     },
   },
   {
     name: 'buscar_sucursales',
-    description: 'Consulta información de sucursales Kroser (dirección, teléfonos, horarios de atención y zonas de retiro).',
+    description: 'Consulta locales Kroser, direcciones, teléfonos y horarios.',
     parameters: {
       type: 'object',
       properties: {
-        zona: {
-          type: 'string',
-          description: 'Departamento, ciudad o barrio de interés (opcional, ej: "Montevideo", "Paso Molino", "Canelones", "Punta del Este")',
-        },
+        zona: { type: 'string', description: 'Barrio, ciudad o departamento' },
       },
     },
   },
   {
     name: 'buscar_envio',
-    description: 'Consulta costos y condiciones de envío a domicilio según departamento, ciudad o barrio.',
+    description: 'Consulta costos y condiciones de envío a domicilio según zona.',
     parameters: {
       type: 'object',
       properties: {
-        zona: {
-          type: 'string',
-          description: 'Departamento, ciudad o barrio de entrega (opcional, ej: "Montevideo", "Las Piedras", "Maldonado")',
-        },
+        zona: { type: 'string', description: 'Barrio, ciudad o departamento' },
       },
     },
   },
   {
     name: 'formas_pago',
-    description: 'Consulta los medios de pago aceptados por Kroser (tarjetas, efectivo, MercadoPago, cuotas y transferencias).',
+    description: 'Medios de pago aceptados (tarjetas, cuotas, MercadoPago, transferencias).',
     parameters: {
       type: 'object',
       properties: {},
@@ -115,61 +107,53 @@ const TOOL_DEFINITIONS = [
   },
   {
     name: 'consultar_guia_tecnica',
-    description: 'Consulta guías técnicas y fórmulas de ferretería (cálculo de rendimiento de pintura por m2, diagnóstico de humedades, problemas de sanitaria, etc.).',
+    description: 'Guías técnicas de ferretería (rendimiento pintura m2, humedad, sanitaria).',
     parameters: {
       type: 'object',
       properties: {
-        tema: {
-          type: 'string',
-          description: 'Tema o problema técnico a consultar (ej: "pintura", "humedad", "sanitaria", "drywall")',
-        },
+        tema: { type: 'string', description: 'Tema técnico (ej: pintura, humedad)' },
       },
       required: ['tema'],
     },
   },
   {
     name: 'consultar_pedido',
-    description: 'Consulta el estado actual de preparación, despacho o entrega de un pedido existente.',
+    description: 'Consulta estado de preparación y despacho de una compra por número.',
     parameters: {
       type: 'object',
       properties: {
-        referencia: {
-          type: 'string',
-          description: 'Número de pedido o código de compra (ej: "#1042", "1042", "KRO-1042")',
-        },
+        referencia: { type: 'string', description: 'Número de pedido o compra' },
       },
       required: ['referencia'],
     },
   },
   {
     name: 'registrar_pedido',
-    description: 'Registra un pedido formal en el sistema de Kroser. ÚNICAMENTE debe invocarse cuando el cliente haya confirmado explícitamente la compra y haya proporcionado nombre, teléfono y dirección o sucursal de retiro.',
+    description: 'Registra un pedido formal confirmado con datos de contacto y entrega.',
     parameters: {
       type: 'object',
       properties: {
         cliente: {
           type: 'object',
-          description: 'Datos de contacto del cliente',
           properties: {
-            nombre: { type: 'string', description: 'Nombre completo del cliente' },
-            telefono: { type: 'string', description: 'Teléfono o celular de contacto' },
-            direccion: { type: 'string', description: 'Dirección completa de entrega a domicilio (si es con envío)' },
-            sucursal_retiro: { type: 'string', description: 'Sucursal de retiro (si el cliente retira en local)' },
-            forma_pago: { type: 'string', description: 'Forma de pago elegida (opcional)' },
-            notas: { type: 'string', description: 'Notas adicionales para el despacho' },
+            nombre: { type: 'string' },
+            telefono: { type: 'string' },
+            direccion: { type: 'string' },
+            sucursal_retiro: { type: 'string' },
+            forma_pago: { type: 'string' },
+            notas: { type: 'string' },
           },
           required: ['nombre', 'telefono'],
         },
         items: {
           type: 'array',
-          description: 'Lista de productos a comprar',
           items: {
             type: 'object',
             properties: {
-              sku: { type: 'string', description: 'SKU del producto (si está disponible)' },
-              nombre: { type: 'string', description: 'Nombre del producto' },
-              cantidad: { type: 'number', description: 'Cantidad solicitada' },
-              precio: { type: 'number', description: 'Precio unitario' },
+              sku: { type: 'string' },
+              nombre: { type: 'string' },
+              cantidad: { type: 'number' },
+              precio: { type: 'number' },
             },
             required: ['nombre', 'cantidad'],
           },
@@ -183,10 +167,14 @@ const TOOL_DEFINITIONS = [
 /**
  * Returns declarations formatted for Gemini API
  */
-function getGeminiTools() {
+function getGeminiTools({ enableOrders = true } = {}) {
+  const filteredTools = enableOrders
+    ? TOOL_DEFINITIONS
+    : TOOL_DEFINITIONS.filter((t) => t.name !== 'registrar_pedido');
+
   return [
     {
-      functionDeclarations: TOOL_DEFINITIONS.map((t) => ({
+      functionDeclarations: filteredTools.map((t) => ({
         name: t.name,
         description: t.description,
         parameters: t.parameters,
@@ -198,8 +186,12 @@ function getGeminiTools() {
 /**
  * Returns tools formatted for OpenAI API
  */
-function getOpenAITools() {
-  return TOOL_DEFINITIONS.map((t) => ({
+function getOpenAITools({ enableOrders = true } = {}) {
+  const filteredTools = enableOrders
+    ? TOOL_DEFINITIONS
+    : TOOL_DEFINITIONS.filter((t) => t.name !== 'registrar_pedido');
+
+  return filteredTools.map((t) => ({
     type: 'function',
     function: {
       name: t.name,
@@ -283,31 +275,49 @@ async function executeBuscarProductos({ consulta = '' }) {
     logger.warn('Error in getComplementaryItems tool', { error: cErr.message });
   }
 
-  return {
-    productos: productos.map((p) => ({
-      sku: p.sku,
-      nombre: p.nombre,
-      marca: p.marca || 'N/A',
-      precio: formatCurrencyPrice(p),
-      stock_status: p.stock_status,
-      enlace_web: p.producto_url || null,
-      descripcion_corta: (p.descripcion || '').substring(0, 120),
-    })),
-    alternativas: alternativas.map((p) => ({
-      sku: p.sku,
-      nombre: p.nombre,
-      marca: p.marca || 'N/A',
-      precio: formatCurrencyPrice(p),
-      stock_status: p.stock_status,
-      enlace_web: p.producto_url || null,
-    })),
-    complementarios_sugeridos: complementarios.map((p) => ({
-      sku: p.sku,
-      nombre: p.nombre,
-      precio: formatCurrencyPrice(p),
-      enlace_web: p.producto_url || null,
-    })),
+  const res = {
+    productos: productos.map((p) => {
+      const item = {
+        sku: p.sku,
+        nombre: p.nombre,
+        precio: formatCurrencyPrice(p),
+        stock_status: p.stock_status,
+      };
+      if (p.marca && p.marca !== 'N/A') item.marca = p.marca;
+      if (p.producto_url) item.enlace_web = p.producto_url;
+      if (p.descripcion && p.descripcion.trim().length > 0) {
+        item.detalles = p.descripcion.trim().substring(0, 60);
+      }
+      return item;
+    }),
   };
+
+  if (alternativas.length > 0) {
+    res.alternativas = alternativas.map((p) => {
+      const item = {
+        sku: p.sku,
+        nombre: p.nombre,
+        precio: formatCurrencyPrice(p),
+        stock_status: p.stock_status,
+      };
+      if (p.producto_url) item.enlace_web = p.producto_url;
+      return item;
+    });
+  }
+
+  if (complementarios.length > 0) {
+    res.complementarios_sugeridos = complementarios.map((p) => {
+      const item = {
+        sku: p.sku,
+        nombre: p.nombre,
+        precio: formatCurrencyPrice(p),
+      };
+      if (p.producto_url) item.enlace_web = p.producto_url;
+      return item;
+    });
+  }
+
+  return res;
 }
 
 async function executeBuscarSucursales({ zona = '' } = {}) {
@@ -319,14 +329,16 @@ async function executeBuscarSucursales({ zona = '' } = {}) {
     if (!locales || locales.length === 0) {
       locales = await localesRepo.getAll();
     }
+    const safeLocales = (locales || []).slice(0, 15);
     return {
-      sucursales: (locales || []).map((l) => ({
+      sucursales: safeLocales.map((l) => ({
         nombre: l.nombre,
         zona: l.zona,
         direccion: l.direccion,
         telefono: l.telefono,
         horario: l.horario,
       })),
+      total_encontradas: (locales || []).length,
     };
   } catch (err) {
     logger.error('Error in executeBuscarSucursales', { error: err.message });
@@ -345,12 +357,14 @@ async function executeBuscarEnvio({ zona = '' } = {}) {
       );
       if (filtered.length > 0) rows = filtered;
     }
+    const safeRows = rows.slice(0, 15);
     return {
-      zonas_envio: rows.map((z) => ({
+      zonas_envio: safeRows.map((z) => ({
         departamento_ciudad: z.departamento_ciudad,
         barrio_zona: z.barrio_zona,
         costo_envio: parseFloat(z.costo_envio) === 0 ? 'ENVÍO GRATIS' : `$ ${z.costo_envio} UYU`,
       })),
+      total_encontradas: rows.length,
     };
   } catch (err) {
     logger.error('Error in executeBuscarEnvio', { error: err.message });
@@ -413,6 +427,16 @@ async function executeConsultarPedido({ referencia = '' }) {
 }
 
 async function executeRegistrarPedido({ cliente = {}, items = [] }, context = {}) {
+  const pedidosConfig = await configuracionRepo.get('pedidos_enabled');
+  if (pedidosConfig === 'false') {
+    logger.warn('Attempt to register order while orders are disabled');
+    return {
+      status: 'disabled',
+      mensaje: 'La toma y registro de pedidos por este canal de chat está temporalmente deshabilitada en el sistema. Por favor indique al cliente que puede realizar su compra a través del sitio web oficial https://kroser.com.uy o acercándose a cualquiera de nuestras sucursales.',
+      createdOrder: null,
+    };
+  }
+
   // Strict Validation to prevent premature/incomplete order creation
   const nombre = (cliente.nombre || '').trim();
   const telefono = (cliente.telefono || '').trim();

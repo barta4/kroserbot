@@ -1199,6 +1199,9 @@
         </div>
 
         <div class="header-actions">
+          <a href="/manual" target="_blank" class="btn-header-link" title="Abrir Manual de Usuario Oficial">
+            📘 Manual
+          </a>
           <a href="/deposito" target="_blank" class="btn-header-link" title="Abrir Panel de Depósito">
             🏭 Depósito
           </a>
@@ -1275,6 +1278,10 @@
       <button class="mobile-nav-link" id="mob-btn-scraper" onclick="switchTab('scraper', event)">
         <span>🕷️</span> <span>Control del Scraper</span>
       </button>
+      <div class="mobile-section-header">📚 Documentación</div>
+      <a href="/manual" target="_blank" class="mobile-nav-link" style="text-decoration:none;">
+        <span>📘</span> <span>Manual de Usuario</span>
+      </a>
     </div>
   </aside>
 
@@ -1482,6 +1489,83 @@
           </div>
         </div>
       </div>
+
+      <!-- Horarios Comerciales y Control de Fines de Semana (Meta 24h Window) -->
+      <div class="card-box" style="margin-top:1.5rem;">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem; margin-bottom:0.75rem;">
+          <div>
+            <h3>⏰ Horario Comercial y Atención Fuera de Horario (WhatsApp & Instagram)</h3>
+            <p style="color:var(--text-muted); font-size:0.85rem; margin-top:0.25rem;">
+              Control de horarios de atención humana para cumplir con la <strong>ventana de 24 horas de Meta</strong> en WhatsApp e Instagram. Fuera de este horario, el bot avisa al cliente que debe volver a comunicarse el próximo día hábil y ofrece correo alternativo, manteniendo el catálogo y consultas generales activos.
+            </p>
+          </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap:1rem; margin-top:1rem;">
+          <div>
+            <label style="font-weight:700;">Lunes a Viernes — Hora Apertura</label>
+            <input type="time" id="bh-weekday-start" value="09:00" style="width:100%; padding:0.55rem; border-radius:4px; border:1px solid var(--border-subtle);">
+          </div>
+          <div>
+            <label style="font-weight:700;">Lunes a Viernes — Hora Cierre</label>
+            <input type="time" id="bh-weekday-end" value="18:00" style="width:100%; padding:0.55rem; border-radius:4px; border:1px solid var(--border-subtle);">
+          </div>
+          <div>
+            <label style="font-weight:700;">Atención Sábados</label>
+            <select id="bh-sat-enabled" style="width:100%; padding:0.55rem; border-radius:4px; border:1px solid var(--border-subtle);" onchange="toggleSaturdayHoursFields()">
+              <option value="true">Habilitada (Mañana) 🟢</option>
+              <option value="false">Cerrado (Sin atención humana) 🔴</option>
+            </select>
+          </div>
+          <div id="bh-sat-hours-group" style="display:flex; gap:0.5rem;">
+            <div style="flex:1;">
+              <label style="font-weight:700;">Sábado Desde</label>
+              <input type="time" id="bh-sat-start" value="09:00" style="width:100%; padding:0.55rem; border-radius:4px; border:1px solid var(--border-subtle);">
+            </div>
+            <div style="flex:1;">
+              <label style="font-weight:700;">Sábado Hasta</label>
+              <input type="time" id="bh-sat-end" value="13:00" style="width:100%; padding:0.55rem; border-radius:4px; border:1px solid var(--border-subtle);">
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top:1rem;">
+          <label style="font-weight:700;">Correo Electrónico de Contacto Alternativo</label>
+          <input type="email" id="bh-alt-email" placeholder="atencion@kroser.com.uy" value="atencion@kroser.com.uy" style="max-width:400px; padding:0.55rem; border-radius:4px; border:1px solid var(--border-subtle);">
+          <small style="color:var(--text-muted); display:block; margin-top:0.25rem;">
+            Canal alternativo ofrecido a los clientes en WhatsApp e Instagram para evitar bloqueos por expiración de la ventana de 24h durante el fin de semana.
+          </small>
+        </div>
+
+        <div style="margin-top:1rem;">
+          <label style="font-weight:700;">Mensaje Personalizado de Fuera de Horario / Fin de Semana (Opcional)</label>
+          <textarea id="bh-custom-msg" rows="3" placeholder="Dejar en blanco para usar la plantilla inteligente del sistema con cálculo dinámico del próximo día hábil y advertencia de 24h..."></textarea>
+          <small style="color:var(--text-muted); display:block; margin-top:0.25rem;">
+            Puede usar <code>{nextBusinessDay}</code> y <code>{alternativeEmail}</code> como comodines automáticos.
+          </small>
+        </div>
+
+        <div style="margin-top:1.25rem;">
+          <button class="btn-action btn-success" onclick="saveBusinessHoursConfig()">💾 Guardar Horarios Comerciales y Mensajes</button>
+        </div>
+      </div>
+
+      <div class="card-box" style="margin-top:1.5rem;">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
+          <div>
+            <h3>🛒 Estado de Toma y Registro de Pedidos (IA)</h3>
+            <p style="color:var(--text-muted); font-size:0.85rem; margin-top:0.25rem;">
+              Permite pausar o habilitar la toma de pedidos en el chat. Al pausarla, el bot asesora sobre productos y precios pero deriva compras a la web oficial o sucursales físicas.
+            </p>
+          </div>
+          <div style="display:flex; align-items:center; gap:0.75rem;">
+            <select id="config-pedidos-enabled-select" style="width:auto; padding:0.45rem 0.85rem; font-weight:600;" onchange="savePedidosToggleFromSelect()">
+              <option value="true">Habilitada 🟢</option>
+              <option value="false">Pausada / Deshabilitada 🔴</option>
+            </select>
+          </div>
+        </div>
+      </div>
     </section>
 
     <!-- ========================================================
@@ -1498,6 +1582,36 @@
 
         <label>API Access Token de Uruchat</label>
         <input type="password" id="chatwoot-token-input" placeholder="API Access Token de la cuenta / usuario">
+
+        <div style="margin-top:1.5rem; border-top:1px solid var(--border-subtle); padding-top:1.25rem;">
+          <h4 style="margin:0 0 0.25rem; font-size:1.05rem;">🧹 Resolución Automática y Limpieza de Bandeja</h4>
+          <p style="color:var(--text-muted); font-size:0.83rem; margin-top:0.25rem; margin-bottom:1rem;">
+            Mantiene limpia la bandeja de entrada de los asesores resolviendo automáticamente las conversaciones que el bot solucionó con éxito.
+          </p>
+
+          <div style="display:flex; flex-direction:column; gap:0.9rem;">
+            <label style="display:flex; align-items:center; gap:0.6rem; cursor:pointer; font-weight:normal; text-transform:none; margin:0;">
+              <input type="checkbox" id="auto-resolve-farewell-check" style="width:18px; height:18px; margin:0;" checked>
+              <span><strong>Cierre Inmediato en Despedidas:</strong> Resolver la conversación en el instante exacto en que el cliente se despide o agradece (ej. <em>"muchas gracias"</em>, <em>"chau"</em>).</span>
+            </label>
+
+            <div>
+              <label style="font-weight:600; font-size:0.85rem;">Minutos de Inactividad para Auto-Cierre tras Respuesta del Bot (0 para desactivar)</label>
+              <input type="number" id="auto-resolve-timeout-input" min="0" max="1440" value="15" placeholder="15" style="max-width:180px; margin-top:0.25rem;">
+              <small style="color:var(--text-muted); display:block; margin-top:0.25rem; font-size:0.78rem;">
+                Si el cliente recibe la información del bot y no responde más, la conversación se resolverá automáticamente tras este lapso.
+              </small>
+            </div>
+
+            <div>
+              <label style="font-weight:600; font-size:0.85rem;">Etiqueta al Resolver Conversación</label>
+              <input type="text" id="auto-resolve-label-input" value="resuelto-bot" placeholder="resuelto-bot" style="max-width:280px; margin-top:0.25rem;">
+              <small style="color:var(--text-muted); display:block; margin-top:0.25rem; font-size:0.78rem;">
+                Etiqueta asignada a la conversación en Uruchat para filtrar métricas y reportes de atención automática.
+              </small>
+            </div>
+          </div>
+        </div>
 
         <div style="margin-top:1.25rem;">
           <button class="btn-action btn-success" onclick="saveUruchatConfig()">💾 Guardar Configuración Uruchat</button>
@@ -1571,32 +1685,79 @@
          TAB 5: LLM (CONFIGURACIÓN)
          ======================================================== -->
     <section id="tab-llm" class="tab-view-section">
+      <!-- BLOQUE 1: MODELO PRINCIPAL -->
       <div class="card-box">
-        <h3>Conector Dinámico de Agente IA (Multi-Proveedor / Multi-Modelo)</h3>
-        <label>Proveedor de IA</label>
+        <h3>🎯 Modelo Principal de Inteligencia Artificial</h3>
+        <p style="color:var(--text-muted); font-size:0.85rem; margin-top:0.25rem;">
+          Este es el modelo que responderá en primera instancia todas las consultas de los clientes en WhatsApp, Web e Instagram.
+        </p>
+
+        <label>Proveedor Primario de IA</label>
         <select id="llm-provider-select" onchange="fetchAvailableModels()">
           <option value="gemini">Google Gemini (Gemini 1.5 Flash, 2.0 Flash, Gemini Pro)</option>
           <option value="openai">OpenAI (GPT-4o, GPT-4o-mini)</option>
           <option value="compatible">OpenAI-Compatible (Groq, Together, DeepSeek, Ollama, LocalAI)</option>
         </select>
 
-        <label>API Key del Proveedor</label>
+        <label>API Key del Proveedor Primario</label>
         <input type="password" id="llm-apikey-input" placeholder="Clave API (AIza... / sk-...)">
 
         <label>Base URL Personalizado (opcional)</label>
         <input type="text" id="llm-baseurl-input" placeholder="https://api.openai.com/v1 (o https://api.groq.com/openai/v1)">
 
         <div style="margin-top:1rem;">
-          <button class="btn-action" onclick="fetchAvailableModels()">🔍 Cargar Catálogo de Modelos Disponibles</button>
+          <button class="btn-action" onclick="fetchAvailableModels()">🔍 Cargar Catálogo de Modelos Primarios</button>
         </div>
 
-        <label style="margin-top:1.25rem;">Modelo Seleccionado</label>
+        <label style="margin-top:1.25rem;">Modelo Primario Seleccionado</label>
         <select id="llm-model-select">
           <option value="">Cargando modelos...</option>
         </select>
+      </div>
+
+      <!-- BLOQUE 2: FAIL-SAFE Y MODELO DE RESPALDO -->
+      <div class="card-box" style="margin-top:1.5rem;">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;">
+          <div>
+            <h3>🛡️ Conmutación por Fallo / Fail-Safe Automático</h3>
+            <p style="color:var(--text-muted); font-size:0.85rem; margin-top:0.25rem;">
+              Si el modelo primario sufre una caída, saturación de cuota (429) o timeout, el bot conmutará instantáneamente al modelo de respaldo elegido.
+            </p>
+          </div>
+          <div>
+            <label style="display:flex; align-items:center; gap:0.5rem; cursor:pointer; margin:0; font-weight:700;">
+              <input type="checkbox" id="llm-failsafe-enabled-check" style="width:18px; height:18px; margin:0;" checked>
+              <span>Activar Fail-Safe 🟢</span>
+            </label>
+          </div>
+        </div>
 
         <div style="margin-top:1.25rem;">
-          <button class="btn-action btn-success" onclick="saveLLMConfig()">💾 Guardar Agente IA</button>
+          <label>Proveedor de Respaldo</label>
+          <select id="llm-fallback-provider-select" onchange="fetchAvailableFallbackModels()">
+            <option value="openai">OpenAI (GPT-4o-mini, GPT-4o)</option>
+            <option value="gemini">Google Gemini (Gemini 1.5 Flash, 2.0 Flash)</option>
+            <option value="compatible">OpenAI-Compatible (Groq, DeepSeek, LocalAI)</option>
+          </select>
+
+          <label>API Key del Proveedor de Respaldo</label>
+          <input type="password" id="llm-fallback-apikey-input" placeholder="Clave API del proveedor de respaldo">
+
+          <label>Base URL de Respaldo (opcional)</label>
+          <input type="text" id="llm-fallback-baseurl-input" placeholder="https://api.openai.com/v1">
+
+          <div style="margin-top:1rem;">
+            <button class="btn-action" onclick="fetchAvailableFallbackModels()">🔍 Cargar Catálogo de Modelos de Respaldo</button>
+          </div>
+
+          <label style="margin-top:1.25rem;">Modelo de Respaldo Seleccionado</label>
+          <select id="llm-fallback-model-select">
+            <option value="">Cargando modelos de respaldo...</option>
+          </select>
+        </div>
+
+        <div style="margin-top:1.75rem; border-top:1px solid var(--border-subtle); padding-top:1.25rem;">
+          <button class="btn-action btn-success" onclick="saveLLMConfig()">💾 Guardar Configuración de IA y Fail-Safe</button>
         </div>
       </div>
     </section>
@@ -1796,6 +1957,24 @@
          TAB 11: PEDIDOS & DEPOSITO (PEDIDOS)
          ======================================================== -->
     <section id="tab-pedidos" class="tab-view-section">
+      <!-- Switch de Control de Toma de Pedidos -->
+      <div class="card-box" style="margin-bottom:1.25rem; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem; background:linear-gradient(to right, #ffffff, #f8fafc); border-left:4px solid var(--primary);">
+        <div>
+          <div style="display:flex; align-items:center; gap:0.6rem;">
+            <h3 style="margin:0; font-size:1.1rem;">🛒 Toma y Registro de Pedidos por IA</h3>
+            <span id="pedidos-global-badge" class="badge confirmado" style="font-size:0.8rem; padding:0.25rem 0.65rem;">Habilitada 🟢</span>
+          </div>
+          <p style="margin:0.25rem 0 0; color:var(--text-muted); font-size:0.85rem;">
+            Cuando está <strong>habilitada</strong>, el bot toma pedidos y los registra en base de datos. Al <strong>pausar</strong>, orienta al cliente a comprar en <a href="https://kroser.com.uy" target="_blank" style="color:var(--primary); font-weight:600;">kroser.com.uy</a> o sucursales.
+          </p>
+        </div>
+        <div style="display:flex; align-items:center; gap:0.75rem;">
+          <button id="pedidos-toggle-action-btn" class="btn-action btn-danger" onclick="togglePedidosGlobal()" style="padding:0.55rem 1.15rem; font-weight:700;">
+            ⏸️ Pausar Toma de Pedidos
+          </button>
+        </div>
+      </div>
+
       <div class="filter-bar">
         <button class="filter-btn active" onclick="filterPedidos('todos', event)">Todos</button>
         <button class="filter-btn" onclick="filterPedidos('pendiente', event)">⏳ Pendientes</button>
@@ -2258,7 +2437,7 @@
       if (tabName === 'prompt') loadConfig();
       if (tabName === 'chatwoot') loadUruchatConfig();
       if (tabName === 'datasource') loadDataSourceConfig();
-      if (tabName === 'llm') fetchAvailableModels();
+      if (tabName === 'llm') loadLLMConfig();
       if (tabName === 'pedidos') loadPedidos();
       if (tabName === 'catalogo') loadProducts();
       if (tabName === 'locales') loadLocales();
@@ -2554,7 +2733,86 @@
         document.getElementById('msg-listo').value = cfg.msg_pedido_listo || '';
         document.getElementById('msg-rechazado').value = cfg.msg_pedido_rechazado || '';
         document.getElementById('msg-derivacion').value = cfg.msg_derivacion || '';
+        const select = document.getElementById('config-pedidos-enabled-select');
+        if (select) {
+          select.value = cfg.pedidos_enabled !== 'false' ? 'true' : 'false';
+        }
+
+        // Business hours & out-of-hours (Meta 24h window)
+        const elWStart = document.getElementById('bh-weekday-start');
+        if (elWStart) elWStart.value = cfg.business_hours_weekday_start || '09:00';
+        const elWEnd = document.getElementById('bh-weekday-end');
+        if (elWEnd) elWEnd.value = cfg.business_hours_weekday_end || '18:00';
+        const elSatEn = document.getElementById('bh-sat-enabled');
+        if (elSatEn) {
+          elSatEn.value = cfg.business_hours_saturday_enabled !== 'false' ? 'true' : 'false';
+          toggleSaturdayHoursFields();
+        }
+        const elSatStart = document.getElementById('bh-sat-start');
+        if (elSatStart) elSatStart.value = cfg.business_hours_saturday_start || '09:00';
+        const elSatEnd = document.getElementById('bh-sat-end');
+        if (elSatEnd) elSatEnd.value = cfg.business_hours_saturday_end || '13:00';
+        const elAltMail = document.getElementById('bh-alt-email');
+        if (elAltMail) elAltMail.value = cfg.contact_alternative_email || 'atencion@kroser.com.uy';
+        const elCustomMsg = document.getElementById('bh-custom-msg');
+        if (elCustomMsg) elCustomMsg.value = cfg.msg_fuera_de_horario || '';
       } catch (err) { console.error(err); }
+    }
+
+    function toggleSaturdayHoursFields() {
+      const enabled = document.getElementById('bh-sat-enabled')?.value === 'true';
+      const group = document.getElementById('bh-sat-hours-group');
+      if (group) group.style.opacity = enabled ? '1' : '0.4';
+    }
+
+    async function saveBusinessHoursConfig() {
+      const wStart = document.getElementById('bh-weekday-start').value;
+      const wEnd = document.getElementById('bh-weekday-end').value;
+      const satEnabled = document.getElementById('bh-sat-enabled').value;
+      const satStart = document.getElementById('bh-sat-start').value;
+      const satEnd = document.getElementById('bh-sat-end').value;
+      const altEmail = document.getElementById('bh-alt-email').value.trim();
+      const customMsg = document.getElementById('bh-custom-msg').value.trim();
+
+      await Promise.all([
+        apiFetch(`${API_BASE}/configuracion`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ key: 'business_hours_weekday_start', value: wStart }),
+        }),
+        apiFetch(`${API_BASE}/configuracion`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ key: 'business_hours_weekday_end', value: wEnd }),
+        }),
+        apiFetch(`${API_BASE}/configuracion`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ key: 'business_hours_saturday_enabled', value: satEnabled }),
+        }),
+        apiFetch(`${API_BASE}/configuracion`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ key: 'business_hours_saturday_start', value: satStart }),
+        }),
+        apiFetch(`${API_BASE}/configuracion`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ key: 'business_hours_saturday_end', value: satEnd }),
+        }),
+        apiFetch(`${API_BASE}/configuracion`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ key: 'contact_alternative_email', value: altEmail || 'atencion@kroser.com.uy' }),
+        }),
+        apiFetch(`${API_BASE}/configuracion`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ key: 'msg_fuera_de_horario', value: customMsg }),
+        }),
+      ]);
+
+      alert('Horarios comerciales y mensajes de fuera de horario guardados exitosamente.');
     }
 
     async function saveConfig(key, elementId) {
@@ -2601,6 +2859,16 @@
         const cfg = await res.json();
         document.getElementById('chatwoot-url-input').value = cfg.chatwoot_base_url || '';
         document.getElementById('chatwoot-token-input').value = cfg.chatwoot_api_token || '';
+
+        const autoFarewell = cfg.auto_resolve_on_farewell !== 'false';
+        const elFarewell = document.getElementById('auto-resolve-farewell-check');
+        if (elFarewell) elFarewell.checked = autoFarewell;
+
+        const elTimeout = document.getElementById('auto-resolve-timeout-input');
+        if (elTimeout) elTimeout.value = cfg.auto_resolve_timeout_minutes ?? '15';
+
+        const elLabel = document.getElementById('auto-resolve-label-input');
+        if (elLabel) elLabel.value = cfg.auto_resolve_label || 'resuelto-bot';
 
         let disabledList = [];
         if (cfg.canales_desactivados) {
@@ -2722,6 +2990,10 @@
     async function saveUruchatConfig() {
       const url = document.getElementById('chatwoot-url-input').value;
       const token = document.getElementById('chatwoot-token-input').value;
+      const autoFarewell = document.getElementById('auto-resolve-farewell-check')?.checked ? 'true' : 'false';
+      const timeoutMins = document.getElementById('auto-resolve-timeout-input')?.value || '15';
+      const label = document.getElementById('auto-resolve-label-input')?.value || 'resuelto-bot';
+
       await apiFetch(`${API_BASE}/configuracion`, {
         method: 'PUT', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ key: 'chatwoot_base_url', value: url })
@@ -2730,7 +3002,19 @@
         method: 'PUT', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ key: 'chatwoot_api_token', value: token })
       });
-      alert('Configuración de Uruchat guardada exitosamente.');
+      await apiFetch(`${API_BASE}/configuracion`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: 'auto_resolve_on_farewell', value: autoFarewell })
+      });
+      await apiFetch(`${API_BASE}/configuracion`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: 'auto_resolve_timeout_minutes', value: timeoutMins })
+      });
+      await apiFetch(`${API_BASE}/configuracion`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: 'auto_resolve_label', value: label })
+      });
+      alert('Configuración de Uruchat y Resolución Automática guardada exitosamente.');
       await refreshUruchatInboxes();
     }
 
@@ -2788,12 +3072,43 @@
       alert('Estrategia de Ingestión guardada.');
     }
 
-    // --- LLM ---
-    async function fetchAvailableModels() {
+    // --- LLM & FAIL-SAFE ---
+    async function loadLLMConfig() {
+      try {
+        const res = await apiFetch(`${API_BASE}/configuracion`);
+        const cfg = await res.json();
+
+        // Primary
+        const prov = cfg.llm_provider || 'gemini';
+        document.getElementById('llm-provider-select').value = prov;
+        document.getElementById('llm-apikey-input').value = cfg.llm_api_key || '';
+        document.getElementById('llm-baseurl-input').value = cfg.llm_base_url || '';
+
+        // Fallback
+        const failsafeActive = cfg.llm_failsafe_enabled !== 'false';
+        const elFailsafe = document.getElementById('llm-failsafe-enabled-check');
+        if (elFailsafe) elFailsafe.checked = failsafeActive;
+
+        const fbProv = cfg.llm_fallback_provider || (prov === 'gemini' ? 'openai' : 'gemini');
+        document.getElementById('llm-fallback-provider-select').value = fbProv;
+        document.getElementById('llm-fallback-apikey-input').value = cfg.llm_fallback_api_key || '';
+        document.getElementById('llm-fallback-baseurl-input').value = cfg.llm_fallback_base_url || '';
+
+        await Promise.all([
+          fetchAvailableModels(cfg.llm_model),
+          fetchAvailableFallbackModels(cfg.llm_fallback_model),
+        ]);
+      } catch (err) {
+        console.error('Error cargando configuración LLM:', err);
+      }
+    }
+
+    async function fetchAvailableModels(selectedModelToPreserve = null) {
       const provider = document.getElementById('llm-provider-select').value;
       const apiKey = document.getElementById('llm-apikey-input').value;
       const baseUrl = document.getElementById('llm-baseurl-input').value;
       const modelSelect = document.getElementById('llm-model-select');
+      const curVal = selectedModelToPreserve || modelSelect.value;
       modelSelect.innerHTML = '<option value="">Consultando modelos...</option>';
       try {
         const res = await apiFetch(`${API_BASE}/llm/models`, {
@@ -2802,12 +3117,41 @@
         });
         const data = await res.json();
         if (data.models && data.models.length > 0) {
-          modelSelect.innerHTML = data.models.map(m => `<option value="${m.id}">${m.name} (${m.id})</option>`).join('');
+          modelSelect.innerHTML = data.models.map(m => `<option value="${m.id}" ${m.id === curVal ? 'selected' : ''}>${m.name} (${m.id})</option>`).join('');
+          if (curVal && !data.models.some(m => m.id === curVal)) {
+            modelSelect.insertAdjacentHTML('afterbegin', `<option value="${curVal}" selected>${curVal} (Actual)</option>`);
+          }
         } else {
-          modelSelect.innerHTML = '<option value="gemini-1.5-flash">Gemini 1.5 Flash</option>';
+          modelSelect.innerHTML = `<option value="${curVal || (provider === 'gemini' ? 'gemini-1.5-flash' : 'gpt-4o-mini')}" selected>${curVal || (provider === 'gemini' ? 'Gemini 1.5 Flash' : 'GPT-4o Mini')}</option>`;
         }
       } catch (err) {
-        modelSelect.innerHTML = '<option value="gemini-1.5-flash">Gemini 1.5 Flash</option>';
+        modelSelect.innerHTML = `<option value="${curVal || 'gemini-1.5-flash'}" selected>${curVal || 'Gemini 1.5 Flash'}</option>`;
+      }
+    }
+
+    async function fetchAvailableFallbackModels(selectedModelToPreserve = null) {
+      const provider = document.getElementById('llm-fallback-provider-select').value;
+      const apiKey = document.getElementById('llm-fallback-apikey-input').value;
+      const baseUrl = document.getElementById('llm-fallback-baseurl-input').value;
+      const modelSelect = document.getElementById('llm-fallback-model-select');
+      const curVal = selectedModelToPreserve || modelSelect.value;
+      modelSelect.innerHTML = '<option value="">Consultando modelos de respaldo...</option>';
+      try {
+        const res = await apiFetch(`${API_BASE}/llm/models`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ provider, apiKey, baseUrl })
+        });
+        const data = await res.json();
+        if (data.models && data.models.length > 0) {
+          modelSelect.innerHTML = data.models.map(m => `<option value="${m.id}" ${m.id === curVal ? 'selected' : ''}>${m.name} (${m.id})</option>`).join('');
+          if (curVal && !data.models.some(m => m.id === curVal)) {
+            modelSelect.insertAdjacentHTML('afterbegin', `<option value="${curVal}" selected>${curVal} (Actual)</option>`);
+          }
+        } else {
+          modelSelect.innerHTML = `<option value="${curVal || (provider === 'gemini' ? 'gemini-1.5-flash' : 'gpt-4o-mini')}" selected>${curVal || (provider === 'gemini' ? 'Gemini 1.5 Flash' : 'GPT-4o Mini')}</option>`;
+        }
+      } catch (err) {
+        modelSelect.innerHTML = `<option value="${curVal || 'gpt-4o-mini'}" selected>${curVal || 'GPT-4o Mini'}</option>`;
       }
     }
 
@@ -2816,18 +3160,108 @@
       const apiKey = document.getElementById('llm-apikey-input').value;
       const baseUrl = document.getElementById('llm-baseurl-input').value;
       const model = document.getElementById('llm-model-select').value;
+
+      const fallbackEnabled = document.getElementById('llm-failsafe-enabled-check')?.checked ? 'true' : 'false';
+      const fallbackProvider = document.getElementById('llm-fallback-provider-select').value;
+      const fallbackApiKey = document.getElementById('llm-fallback-apikey-input').value;
+      const fallbackBaseUrl = document.getElementById('llm-fallback-baseurl-input').value;
+      const fallbackModel = document.getElementById('llm-fallback-model-select').value;
+
       await apiFetch(`${API_BASE}/llm/config`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ provider, model, apiKey, baseUrl })
+        body: JSON.stringify({
+          provider,
+          model,
+          apiKey,
+          baseUrl,
+          fallbackProvider,
+          fallbackModel,
+          fallbackApiKey,
+          fallbackBaseUrl,
+          fallbackEnabled,
+        })
       });
-      alert(`Agente IA guardado: ${provider} - ${model}`);
+      alert(`Configuración de IA y Fail-Safe guardada exitosamente:\n• Principal: ${provider} (${model})\n• Respaldo: ${fallbackProvider} (${fallbackModel}) [${fallbackEnabled === 'true' ? 'Activo 🟢' : 'Inactivo 🔴'}]`);
     }
 
     // --- PEDIDOS & DEPOSITO ---
+    let pedidosTakingEnabled = true;
+
     async function loadPedidos() {
+      await loadPedidosToggleStatus();
       const res = await apiFetch(`${API_BASE}/pedidos`);
       currentPedidosList = await res.json();
       renderPedidos();
+    }
+
+    async function loadPedidosToggleStatus() {
+      try {
+        const res = await apiFetch(`${API_BASE}/pedidos/toggle-status`);
+        const data = await res.json();
+        pedidosTakingEnabled = data.enabled !== false;
+        renderPedidosToggleUI();
+      } catch (err) {
+        console.error('Error cargando estado de toma de pedidos:', err);
+      }
+    }
+
+    function renderPedidosToggleUI() {
+      const badge = document.getElementById('pedidos-global-badge');
+      const btn = document.getElementById('pedidos-toggle-action-btn');
+      const select = document.getElementById('config-pedidos-enabled-select');
+
+      if (badge) {
+        badge.className = `badge ${pedidosTakingEnabled ? 'confirmado' : 'rechazado'}`;
+        badge.innerHTML = pedidosTakingEnabled ? 'Habilitada 🟢' : 'Pausada 🔴';
+      }
+      if (btn) {
+        btn.className = `btn-action ${pedidosTakingEnabled ? 'btn-danger' : 'btn-success'}`;
+        btn.innerHTML = pedidosTakingEnabled ? '⏸️ Pausar Toma de Pedidos' : '▶️ Habilitar Toma de Pedidos';
+      }
+      if (select) {
+        select.value = pedidosTakingEnabled ? 'true' : 'false';
+      }
+    }
+
+    async function togglePedidosGlobal() {
+      const targetState = !pedidosTakingEnabled;
+      const confirmMsg = targetState
+        ? '¿Deseas HABILITAR la toma de pedidos por IA en el chat?'
+        : '¿Deseas PAUSAR la toma de pedidos por IA en el chat?\n(El bot orientará cordialmente a los clientes a comprar en kroser.com.uy o sucursales físicas)';
+      if (!confirm(confirmMsg)) return;
+
+      try {
+        const res = await apiFetch(`${API_BASE}/pedidos/toggle`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ enabled: targetState }),
+        });
+        const data = await res.json();
+        pedidosTakingEnabled = data.enabled;
+        renderPedidosToggleUI();
+        alert(`Toma de pedidos ${pedidosTakingEnabled ? 'HABILITADA 🟢' : 'PAUSADA 🔴'}`);
+      } catch (err) {
+        alert('Error cambiando estado: ' + err.message);
+      }
+    }
+
+    async function savePedidosToggleFromSelect() {
+      const select = document.getElementById('config-pedidos-enabled-select');
+      if (!select) return;
+      const targetState = select.value === 'true';
+      try {
+        const res = await apiFetch(`${API_BASE}/pedidos/toggle`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ enabled: targetState }),
+        });
+        const data = await res.json();
+        pedidosTakingEnabled = data.enabled;
+        renderPedidosToggleUI();
+        alert(`Toma de pedidos ${pedidosTakingEnabled ? 'HABILITADA 🟢' : 'PAUSADA 🔴'}`);
+      } catch (err) {
+        alert('Error cambiando estado: ' + err.message);
+      }
     }
 
     function filterPedidos(filter, event) {

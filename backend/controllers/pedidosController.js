@@ -1,5 +1,6 @@
 const pedidosService = require('../services/pedidos/pedidosService');
 const pedidosRepo = require('../repositories/pedidosRepository');
+const configuracionRepo = require('../repositories/configuracionRepository');
 const { pedidoCreateSchema, pedidoEstadoSchema, pedidoUpdateSchema } = require('../schemas');
 const { validate } = require('../schemas/validate');
 
@@ -95,6 +96,30 @@ module.exports = {
       );
 
       res.json(pedidoActualizado);
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  async getToggleStatus(req, res, next) {
+    try {
+      const pedidosConfig = await configuracionRepo.get('pedidos_enabled');
+      const enabled = pedidosConfig !== 'false';
+      res.json({ enabled });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  async togglePedidos(req, res, next) {
+    try {
+      const { enabled } = req.body;
+      if (typeof enabled !== 'boolean') {
+        return res.status(400).json({ error: 'El campo enabled debe ser un booleano (true o false)' });
+      }
+      const val = enabled ? 'true' : 'false';
+      await configuracionRepo.set('pedidos_enabled', val);
+      res.json({ success: true, enabled });
     } catch (err) {
       next(err);
     }

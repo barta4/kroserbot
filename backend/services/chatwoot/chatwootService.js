@@ -145,5 +145,45 @@ module.exports = {
       ];
     }
   },
+
+  async resolveConversation(accountId, conversationId, status = 'resolved') {
+    const client = await getChatwootClient();
+    if (!client) {
+      logger.info('Chatwoot resolve conversation mock', { conversationId, status });
+      return { success: true, mock: true, status };
+    }
+
+    try {
+      const response = await client.post(
+        `/api/v1/accounts/${accountId}/conversations/${conversationId}/toggle_status`,
+        { status }
+      );
+      logger.info('Chatwoot conversation resolved', { conversationId, status });
+      return { success: true, data: response.data };
+    } catch (err) {
+      logger.error('Chatwoot resolve conversation error', { conversationId, status, error: err.message });
+      return { success: false, error: err.message };
+    }
+  },
+
+  async addLabels(accountId, conversationId, labels = []) {
+    if (!labels || labels.length === 0) return { success: true, ignored: true };
+    const client = await getChatwootClient();
+    if (!client) {
+      logger.info('Chatwoot add labels mock', { conversationId, labels });
+      return { success: true, mock: true, labels };
+    }
+
+    try {
+      const response = await client.post(
+        `/api/v1/accounts/${accountId}/conversations/${conversationId}/labels`,
+        { labels }
+      );
+      return { success: true, data: response.data };
+    } catch (err) {
+      logger.warn('Chatwoot add labels error', { conversationId, labels, error: err.message });
+      return { success: false, error: err.message };
+    }
+  },
 };
 
