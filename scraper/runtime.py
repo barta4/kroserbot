@@ -172,12 +172,8 @@ class ScraperRuntime:
                     log_event("stop_requested", {"run_id": run_id, "pos": i})
                     return 0
 
-                # Human-like micro-pause every 35 items to evade pattern detection
-                if i > start and i % 35 == 0 and not self.no_sleep:
-                    import random
-                    pause_s = random.uniform(10.0, 18.0)
-                    logger.info("[Anti-Block Intel] Micro-pausa natural de %.1fs tras 35 productos...", pause_s)
-                    time.sleep(pause_s)
+
+                # NOTE: Micro-pausas humanas ahora gestionadas por IntelligentPacer en site.py
 
                 url = urls[i]
                 self.db.update_checkpoint(run_id, i, url, contadores)
