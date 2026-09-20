@@ -5,6 +5,10 @@ const apiLimiter = rateLimit({
   max: 100, // Limit each IP to 100 requests per windowMs
   standardHeaders: true,
   legacyHeaders: false,
+  validate: {
+    xForwardedForHeader: false,
+    default: false,
+  },
   message: { error: 'Demasiadas solicitudes desde esta IP, por favor reintente más tarde.' },
   skip: (req) => {
     // Exclude webhooks from generic API rate limiter (have signature/Basic Auth + deduplication)

@@ -164,6 +164,7 @@ class ScraperRuntime:
                 print("[scraper] Caída a fallback (scraping web)...")
 
         # Standard Scraping Flow
+        consecutive_errors = 0
         try:
             for i in range(start, len(urls)):
                 if self.db.need_stop(run_id):
@@ -171,18 +172,40 @@ class ScraperRuntime:
                     log_event("stop_requested", {"run_id": run_id, "pos": i})
                     return 0
 
+                # Human-like micro-pause every 35 items to evade pattern detection
+                if i > start and i % 35 == 0 and not self.no_sleep:
+                    import random
+                    pause_s = random.uniform(10.0, 18.0)
+                    logger.info("[Anti-Block Intel] Micro-pausa natural de %.1fs tras 35 productos...", pause_s)
+                    time.sleep(pause_s)
+
                 url = urls[i]
                 self.db.update_checkpoint(run_id, i, url, contadores)
 
                 try:
                     html = self.site.get_html(url)
+                    consecutive_errors = 0
                 except BlockedError as exc:
-                    log_event("blocked", {"url": url, "exc": str(exc)})
-                    self.db.finish_run(run_id, "failed", contadores)
-                    return 2
+                    log_event("blocked_warning", {"url": url, "exc": str(exc)})
+                    logger.warning("[Anti-Block Intel] Detección de estrangulamiento en %s. Enfriando 45s y rotando perfil...", url)
+                    time.sleep(45.0)
+                    self.site._reset_session()
+                    try:
+                        html = self.site.get_html(url)
+                        consecutive_errors = 0
+                    except BlockedError as exc_final:
+                        log_event("blocked", {"url": url, "exc": str(exc_final)})
+                        self.db.finish_run(run_id, "failed", contadores)
+                        return 2
                 except Exception as exc:
                     contadores["errores"] += 1
+                    consecutive_errors += 1
                     log_event("error_fetch", {"url": url, "exc": str(exc)})
+                    if consecutive_errors >= 3 and not self.no_sleep:
+                        logger.warning("[Anti-Block Intel] 3 errores seguidos de conexión. Enfriando 20s y renovando socket...")
+                        time.sleep(20.0)
+                        self.site._reset_session()
+                        consecutive_errors = 0
                     continue
 
                 product = parse_product(html, url)

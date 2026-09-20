@@ -329,10 +329,10 @@ async function callOpenAIWithTools({
     };
   }
 
-  // Append assistant message with tool calls cleanly
+  // Append assistant message with tool calls cleanly (content must be a string for OpenAI-compatible proxies)
   messages.push({
     role: 'assistant',
-    content: message1.content || null,
+    content: message1.content || '',
     tool_calls: message1.tool_calls,
   });
 
@@ -356,21 +356,44 @@ async function callOpenAIWithTools({
 
     messages.push({
       role: 'tool',
-      tool_call_id: tc.id,
-      content: JSON.stringify(result),
+      tool_call_id: tc.id || `call_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+      content: typeof result === 'string' ? result : JSON.stringify(result),
     });
   }
 
   // Second call to generate final response
+  // OpenAI and compatible proxies (Groq, OpenRouter, Mistral, Ollama, Gemini-OpenAI)
+  // REQUIRE tools to be provided in the request body whenever role: 'tool' messages are in history
   const round2Body = {
     model: modelName,
     messages,
+    tools,
     temperature,
   };
 
-  const res2 = await postWithRetry(url, round2Body, { headers });
-  const choice2 = res2.data?.choices?.[0];
-  const finalReplyText = choice2?.message?.content || '';
+  let finalReplyText = '';
+  try {
+    const res2 = await postWithRetry(url, round2Body, { headers });
+    const choice2 = res2.data?.choices?.[0];
+    finalReplyText = choice2?.message?.content || '';
+  } catch (err2) {
+    logger.warn('LLM round 2 with tools failed, attempting fallback payload without tools parameter...', {
+      status: err2.response?.status,
+      error: err2.response?.data?.error?.message || err2.response?.data || err2.message,
+    });
+    // In case an unusual proxy rejects tools on round 2, retry once without tools
+    try {
+      const res2Fallback = await postWithRetry(
+        url,
+        { model: modelName, messages, temperature },
+        { headers }
+      );
+      const choice2Fallback = res2Fallback.data?.choices?.[0];
+      finalReplyText = choice2Fallback?.message?.content || '';
+    } catch (_fallbackErr) {
+      throw err2;
+    }
+  }
 
   return {
     text: finalReplyText,
@@ -551,9 +574,12 @@ module.exports = {
       toolsUsed = res.toolsUsed;
       createdOrder = res.createdOrder;
     } catch (primaryErr) {
-      const errDetails = primaryErr.response?.data?.error?.message || primaryErr.message;
-      logger.warn(`⚠️ [LLM Fail-Safe Activado] Proveedor primario '${primaryProvider}' (${primaryModel}) falló`, {
+      const errDetails = primaryErr.response?.data?.error?.message ||
+        (typeof primaryErr.response?.data === 'object' ? JSON.stringify(primaryErr.response?.data) : primaryErr.response?.data) ||
+        primaryErr.message;
+      logger.error(`⚠️ [LLM Fail-Safe Activado] Proveedor primario '${primaryProvider}' (${primaryModel}) falló`, {
         error: primaryErr.message,
+        status: primaryErr.response?.status,
         details: errDetails,
       });
 
@@ -567,17 +593,68 @@ module.exports = {
           createdOrder = fallbackRes.createdOrder;
           logger.info(`✅ [LLM Fail-Safe Exitoso] Respuesta generada por respaldo '${fallbackProvider}' (${fallbackModel})`);
         } catch (fallbackErr) {
-          const fbDetails = fallbackErr.response?.data?.error?.message || fallbackErr.message;
+          const fbDetails = fallbackErr.response?.data?.error?.message ||
+            (typeof fallbackErr.response?.data === 'object' ? JSON.stringify(fallbackErr.response?.data) : fallbackErr.response?.data) ||
+            fallbackErr.message;
           logger.error(`❌ [LLM Fail-Safe Falló] Proveedor de respaldo '${fallbackProvider}' (${fallbackModel}) también falló`, {
             error: fallbackErr.message,
+            status: fallbackErr.response?.status,
             details: fbDetails,
           });
         }
       }
     }
 
-    // Step 3: Fallback heuristic response if both fail or offline
+    // Step 3: Intelligent heuristic response if LLM failed or returned empty
     if (!rawReply) {
+      // 3a. If tools were executed (e.g. buscar_productos or buscar_sucursales), synthesize directly from tool results
+      if (toolsUsed && toolsUsed.length > 0) {
+        const prodTool = toolsUsed.find((t) => t.name === 'buscar_productos');
+        if (prodTool && prodTool.result) {
+          const prods = prodTool.result.productos || [];
+          if (prods.length > 0) {
+            const listText = prods
+              .slice(0, 5)
+              .map((p) => `• *${p.nombre}* - ${p.moneda || '$'} ${p.precio} (SKU: ${p.sku})`)
+              .join('\n');
+            const synReply = `Contamos con las siguientes opciones disponibles en Kroser:\n\n${listText}\n\n¿Desea consultar stock en alguna sucursal específica o coordinar el retiro/envío?`;
+            return {
+              reply: synReply,
+              toolsUsed,
+              createdOrder,
+              rawReply: synReply,
+            };
+          } else {
+            const noStockReply = 'No encontramos artículos disponibles con esa descripción exacta en el catálogo en este momento. ¿Desea consultar por otra marca, modelo o categoría de ferretería?';
+            return {
+              reply: noStockReply,
+              toolsUsed,
+              createdOrder,
+              rawReply: noStockReply,
+            };
+          }
+        }
+
+        const sucursalesTool = toolsUsed.find((t) => t.name === 'buscar_sucursales');
+        if (sucursalesTool && sucursalesTool.result) {
+          const sucs = sucursalesTool.result.sucursales || sucursalesTool.result.locales || [];
+          if (sucs.length > 0) {
+            const listText = sucs
+              .slice(0, 4)
+              .map((s) => `• *${s.nombre}* (${s.direccion || ''}, ${s.ciudad || s.departamento || ''}) - Tel: ${s.telefono || 'Central'}`)
+              .join('\n');
+            const sucReply = `Nuestras principales sucursales a su disposición son:\n\n${listText}\n\n¿En cuál de ellas le gustaría realizar su retiro o visita?`;
+            return {
+              reply: sucReply,
+              toolsUsed,
+              createdOrder,
+              rawReply: sucReply,
+            };
+          }
+        }
+      }
+
+      // 3b. Intent checks
       const lastUserMsg = userMessages[userMessages.length - 1]?.content || '';
       if (lastUserMsg.toLowerCase().includes('factura') || lastUserMsg.toLowerCase().includes('reclamo')) {
         return {
@@ -604,14 +681,20 @@ module.exports = {
           rawReply: '',
         };
       }
-      const hour = new Date().getHours();
-      let greeting = '¡Buenas tardes!';
-      if (hour >= 6 && hour < 12) {
-        greeting = '¡Buenos días!';
-      } else if (hour >= 20 || hour < 6) {
-        greeting = '¡Buenas noches!';
+
+      // 3c. If conversation already in progress, NEVER reset with a generic welcome greeting!
+      if (userMessages.length > 1) {
+        rawReply = 'Disculpe, ¿podría reiterarme qué producto o artículo está buscando para verificarle disponibilidad y precio en Kroser?';
+      } else {
+        const hour = new Date().getHours();
+        let greeting = '¡Buenas tardes!';
+        if (hour >= 6 && hour < 12) {
+          greeting = '¡Buenos días!';
+        } else if (hour >= 20 || hour < 6) {
+          greeting = '¡Buenas noches!';
+        }
+        rawReply = `${greeting} Bienvenido a Kroser Uruguay. ¿En qué producto o consulta le podemos colaborar hoy?`;
       }
-      rawReply = `${greeting} Bienvenido a Kroser Uruguay. ¿En qué producto o consulta le podemos colaborar hoy?`;
     }
 
     const cleanReply = cleanAndHumanizeReply(rawReply, userMessages.length);
@@ -690,14 +773,18 @@ module.exports = {
       if (lastUserMsg.toLowerCase().includes('comprar') || lastUserMsg.toLowerCase().includes('pedido')) {
         return 'Con mucho gusto tomamos su pedido. Por favor facilítenos su nombre completo, teléfono, dirección de entrega y los artículos que precisa.';
       }
-      const hour = new Date().getHours();
-      let greeting = '¡Buenas tardes!';
-      if (hour >= 6 && hour < 12) {
-        greeting = '¡Buenos días!';
-      } else if (hour >= 20 || hour < 6) {
-        greeting = '¡Buenas noches!';
+      if (userMessages.length > 1) {
+        rawReply = 'Disculpe, ¿podría reiterarme qué producto o artículo está buscando para verificarle disponibilidad y precio en Kroser?';
+      } else {
+        const hour = new Date().getHours();
+        let greeting = '¡Buenas tardes!';
+        if (hour >= 6 && hour < 12) {
+          greeting = '¡Buenos días!';
+        } else if (hour >= 20 || hour < 6) {
+          greeting = '¡Buenas noches!';
+        }
+        rawReply = `${greeting} Bienvenido a Kroser Uruguay. ¿En qué producto o consulta le podemos colaborar hoy?`;
       }
-      rawReply = `${greeting} Bienvenido a Kroser Uruguay. ¿En qué producto o consulta le podemos colaborar hoy?`;
     }
 
     return cleanAndHumanizeReply(rawReply, userMessages.length);

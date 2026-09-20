@@ -37,6 +37,8 @@ function generateMockEmbedding(text) {
   return vector;
 }
 
+const configuracionRepo = require('../../repositories/configuracionRepository');
+
 module.exports = {
   async generateSingleEmbedding(text) {
     const batchResult = await this.generateBatchEmbeddings([text]);
@@ -46,11 +48,27 @@ module.exports = {
   async generateBatchEmbeddings(textArray) {
     if (!textArray || textArray.length === 0) return [];
 
-    // 1. Try OpenAI API
-    if (openai && process.env.OPENAI_API_KEY) {
+    let oaiKey = process.env.OPENAI_API_KEY;
+    let gemKey = process.env.GEMINI_API_KEY;
+
+    if (!oaiKey && !gemKey) {
       try {
+        const dbKey = (await configuracionRepo.get('llm_api_key')) || (await configuracionRepo.get('openai_api_key'));
+        if (dbKey?.startsWith('sk-')) {
+          oaiKey = dbKey;
+        } else if (dbKey?.startsWith('AIza')) {
+          gemKey = dbKey;
+        }
+      } catch (_e) {}
+    }
+
+    // 1. Try OpenAI API
+    if (oaiKey) {
+      try {
+        const OpenAI = require('openai');
+        const client = openai || new OpenAI({ apiKey: oaiKey });
         logger.info(`[EmbeddingProvider] Generating ${textArray.length} embeddings via OpenAI API...`);
-        const response = await openai.embeddings.create({
+        const response = await client.embeddings.create({
           model: 'text-embedding-3-small',
           dimensions: 768,
           input: textArray,
@@ -62,11 +80,14 @@ module.exports = {
     }
 
     // 2. Try Gemini API
-    if (gemini && process.env.GEMINI_API_KEY) {
+    if (gemKey) {
       try {
+        const { GoogleGenerativeAI } = require('@google/generative-ai');
+        const genAI = new GoogleGenerativeAI(gemKey);
+        const model = gemini || genAI.getGenerativeModel({ model: 'text-embedding-004' });
         logger.info(`[EmbeddingProvider] Generating ${textArray.length} embeddings via Gemini API...`);
-        if (typeof gemini.batchEmbedContents === 'function') {
-          const batchRes = await gemini.batchEmbedContents({
+        if (typeof model.batchEmbedContents === 'function') {
+          const batchRes = await model.batchEmbedContents({
             requests: textArray.map((text) => ({
               content: { parts: [{ text }] },
             })),
@@ -77,7 +98,7 @@ module.exports = {
         }
         const results = await Promise.all(
           textArray.map(async (text) => {
-            const res = await gemini.embedContent(text);
+            const res = await model.embedContent(text);
             return res.embedding.values;
           })
         );

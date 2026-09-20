@@ -165,10 +165,16 @@ SITEMAP_NS = {"s": "http://www.sitemaps.org/schemas/sitemap/0.9"}
 def parse_sitemap_index(xml_text: str) -> list[str]:
     """Devuelve las URL de los sitemaps hijos del índice."""
     root = ET.fromstring(xml_text)
-    return [el.text for el in root.findall(".//s:loc", SITEMAP_NS)]
+    urls = [el.text.strip() for el in root.findall(".//s:loc", SITEMAP_NS) if el.text]
+    if not urls:
+        urls = [el.text.strip() for el in root.iter() if el.tag.endswith("loc") and el.text]
+    return urls
 
 
 def parse_product_sitemap(xml_text: str) -> list[str]:
     """Devuelve la lista de URLs de producto del sitemap-child (catalogo-articulos.xml)."""
     root = ET.fromstring(xml_text)
-    return [el.text for el in root.findall(".//s:loc", SITEMAP_NS)]
+    urls = [el.text.strip() for el in root.findall(".//s:loc", SITEMAP_NS) if el.text]
+    if not urls:
+        urls = [el.text.strip() for el in root.iter() if el.tag.endswith("loc") and el.text]
+    return urls

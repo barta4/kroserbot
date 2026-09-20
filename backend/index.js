@@ -13,6 +13,9 @@ const logger = require('./config/logger');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Trust reverse proxy (Traefik / Dokploy / Nginx) for accurate client IP in rateLimiter
+app.set('trust proxy', 1);
+
 // HTTP Security Headers (Helmet)
 app.use(helmet({
   contentSecurityPolicy: {

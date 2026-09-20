@@ -202,4 +202,96 @@ describe('LLM Fail-Safe & Multi-Model Selection System', () => {
     expect(reply).toContain('Respuesta OpenAI fallback en single-turn');
     expect(mockPost).toHaveBeenCalledTimes(2);
   });
+
+  test('6. En llamadas OpenAI / compatible con herramientas, el round 2 incluye tools y content no es null', async () => {
+    jest.spyOn(configuracionRepo, 'get').mockImplementation(async (key) => {
+      if (key === 'llm_provider') return 'compatible';
+      if (key === 'llm_model') return 'Flash';
+      if (key === 'llm_api_key') return 'mock_key';
+      if (key === 'llm_failsafe_enabled') return 'false';
+      return null;
+    });
+
+    const mockPost = jest.fn()
+      // Round 1: Model requests buscar_productos tool call
+      .mockResolvedValueOnce({
+        data: {
+          choices: [
+            {
+              message: {
+                role: 'assistant',
+                content: null,
+                tool_calls: [
+                  {
+                    id: 'call_123',
+                    type: 'function',
+                    function: {
+                      name: 'buscar_productos',
+                      arguments: JSON.stringify({ consulta: 'bota de goma' }),
+                    },
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      })
+      // Round 2: Model outputs final answer
+      .mockResolvedValueOnce({
+        data: {
+          choices: [
+            {
+              message: {
+                role: 'assistant',
+                content: 'Tenemos botas de goma disponibles desde $890.',
+              },
+            },
+          ],
+        },
+      });
+    axios.post.mockImplementation(mockPost);
+
+    const res = await llmService.generateWithTools(
+      'Instrucción',
+      [{ role: 'user', content: '¿Tienen botas de goma?' }],
+      {}
+    );
+
+    expect(mockPost).toHaveBeenCalledTimes(2);
+    // Verify Round 2 payload contains tools array
+    const round2Payload = mockPost.mock.calls[1][1];
+    expect(round2Payload.tools).toBeDefined();
+    expect(Array.isArray(round2Payload.tools)).toBe(true);
+
+    // Verify assistant message content in history is string, not null
+    const assistantMsg = round2Payload.messages.find((m) => m.role === 'assistant');
+    expect(typeof assistantMsg.content).toBe('string');
+
+    // Verify response
+    expect(res.reply).toContain('botas de goma');
+  });
+
+  test('7. Si el LLM falla en un turno subsiguiente, NO repite el saludo de bienvenida inicial', async () => {
+    jest.spyOn(configuracionRepo, 'get').mockImplementation(async (key) => {
+      if (key === 'llm_provider') return 'gemini';
+      if (key === 'llm_failsafe_enabled') return 'false';
+      return null;
+    });
+
+    axios.post.mockRejectedValue(new Error('LLM Service Unavailable'));
+
+    const res = await llmService.generateWithTools(
+      'Instrucción',
+      [
+        { role: 'user', content: 'Hola' },
+        { role: 'assistant', content: 'Hola, ¿en qué podemos ayudarle?' },
+        { role: 'user', content: 'Tienen martillos?' },
+      ],
+      {}
+    );
+
+    expect(res.reply).not.toContain('Bienvenido a Kroser Uruguay');
+    expect(res.reply).toContain('Disculpe');
+  });
 });
+

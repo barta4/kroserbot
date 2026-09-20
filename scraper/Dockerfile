@@ -16,7 +16,7 @@ WORKDIR /app
 LABEL org.opencontainers.image.title="KroserBot Scraper" \
       org.opencontainers.image.description="Scraper e Ingestión de Catálogo para Kroser Uruguay" \
       org.opencontainers.image.authors="alfredobartaburu" \
-      org.opencontainers.image.version="1.0.0"
+      org.opencontainers.image.version="1.4.0"
 
 ENV PYTHONUNBUFFERED=1
 

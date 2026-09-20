@@ -29,3 +29,5 @@ Thumbs.db
 # Docker volumes / scratch
 data/
 scratch/
+scraper/.sitemap_cache.json
+*.sitemap_cache.json
