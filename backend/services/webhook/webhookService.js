@@ -1,7 +1,6 @@
 const redis = require('../../config/redis');
 const configuracionRepo = require('../../repositories/configuracionRepository');
 const conversacionesRepo = require('../../repositories/conversacionesRepository');
-const ragService = require('../embeddings/ragService');
 const llmService = require('../llm/llmService');
 const chatwootService = require('../chatwoot/chatwootService');
 const emailService = require('../email/emailService');
@@ -380,15 +379,15 @@ module.exports = {
           'whatsapp'
         ).toLowerCase();
 
-        const bConfig = {
-          business_hours_weekday_start: await configuracionRepo.get('business_hours_weekday_start'),
-          business_hours_weekday_end: await configuracionRepo.get('business_hours_weekday_end'),
-          business_hours_saturday_enabled: await configuracionRepo.get('business_hours_saturday_enabled'),
-          business_hours_saturday_start: await configuracionRepo.get('business_hours_saturday_start'),
-          business_hours_saturday_end: await configuracionRepo.get('business_hours_saturday_end'),
-          contact_alternative_email: await configuracionRepo.get('contact_alternative_email'),
-          msg_fuera_de_horario: await configuracionRepo.get('msg_fuera_de_horario'),
-        };
+        const bConfig = await configuracionRepo.getMultiple([
+          'business_hours_weekday_start',
+          'business_hours_weekday_end',
+          'business_hours_saturday_enabled',
+          'business_hours_saturday_start',
+          'business_hours_saturday_end',
+          'contact_alternative_email',
+          'msg_fuera_de_horario',
+        ]);
 
         const hoursStatus = businessHours.isWithinBusinessHours(new Date(), bConfig);
         const nextBusinessDay = businessHours.getNextBusinessDayString(new Date(), bConfig);
@@ -709,15 +708,15 @@ module.exports = {
         'whatsapp'
       ).toLowerCase();
 
-      const bConfig = {
-        business_hours_weekday_start: await configuracionRepo.get('business_hours_weekday_start'),
-        business_hours_weekday_end: await configuracionRepo.get('business_hours_weekday_end'),
-        business_hours_saturday_enabled: await configuracionRepo.get('business_hours_saturday_enabled'),
-        business_hours_saturday_start: await configuracionRepo.get('business_hours_saturday_start'),
-        business_hours_saturday_end: await configuracionRepo.get('business_hours_saturday_end'),
-        contact_alternative_email: await configuracionRepo.get('contact_alternative_email'),
-        msg_fuera_de_horario: await configuracionRepo.get('msg_fuera_de_horario'),
-      };
+      const bConfig = await configuracionRepo.getMultiple([
+        'business_hours_weekday_start',
+        'business_hours_weekday_end',
+        'business_hours_saturday_enabled',
+        'business_hours_saturday_start',
+        'business_hours_saturday_end',
+        'contact_alternative_email',
+        'msg_fuera_de_horario',
+      ]);
 
       const hoursStatus = businessHours.isWithinBusinessHours(new Date(), bConfig);
       const nextBusinessDay = businessHours.getNextBusinessDayString(new Date(), bConfig);
@@ -831,7 +830,7 @@ module.exports = {
       });
     }
 
-    // 22. Human Typing Delay: calculate natural pacing based on response length
+    // 21. Human Typing Delay: calculate natural pacing based on response length
     // (e.g., ~15-20ms per character, bounded between 1s and 3.5s total typing illusion)
     const targetTypingDelay = Math.min(Math.max(safeReply.length * 15, 800), 3000) + Math.floor(Math.random() * 300);
     const remainingDelay = targetTypingDelay - llmElapsed;

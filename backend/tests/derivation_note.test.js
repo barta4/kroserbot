@@ -168,6 +168,13 @@ describe('Derivation Private Note System', () => {
     test('Envía nota privada con resumen y plan cuando el LLM responde DERIVAR: ventas', async () => {
       const spyGenerateNote = jest.spyOn(derivationNoteService, 'generateAndSendDerivationNote')
         .mockResolvedValue({ success: true });
+      const spyLlmTools = jest.spyOn(llmService, 'generateWithTools')
+        .mockResolvedValue({
+          reply: 'DERIVAR: ventas',
+          rawReply: 'DERIVAR: ventas',
+          toolsUsed: [],
+          createdOrder: null,
+        });
       const spyLlm = jest.spyOn(llmService, 'generateResponse')
         .mockResolvedValue('DERIVAR: ventas');
 
@@ -193,6 +200,7 @@ describe('Derivation Private Note System', () => {
       } finally {
         spyGenerateNote.mockRestore();
         spyLlm.mockRestore();
+        spyLlmTools.mockRestore();
       }
     });
   });

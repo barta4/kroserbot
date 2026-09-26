@@ -14,6 +14,8 @@ const TEST_ENV = {
   DEBOUNCE_WAIT_MS: '200',
 };
 
+const debounceService = require('../services/webhook/debounceService');
+
 let app;
 
 beforeAll(() => {
@@ -22,6 +24,7 @@ beforeAll(() => {
 });
 
 afterAll(() => {
+  debounceService.cancel(88888);
   process.removeAllListeners('uncaughtException');
   process.removeAllListeners('unhandledRejection');
 });

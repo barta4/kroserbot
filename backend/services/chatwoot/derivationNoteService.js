@@ -72,7 +72,7 @@ ${ragContextStr ? `\nContexto de productos de catálogo consultados:\n${ragConte
       });
 
       // Ensure the AI response actually looks like a summary and not a generic greeting
-      if (aiReply && aiReply.includes('RESUMEN') || aiReply.includes('PLAN DE ACCIÓN') || aiReply.includes('•')) {
+      if (aiReply && (aiReply.includes('RESUMEN') || aiReply.includes('PLAN DE ACCIÓN') || aiReply.includes('•'))) {
         noteBody = aiReply.trim();
       }
     } catch (err) {

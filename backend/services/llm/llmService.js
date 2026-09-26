@@ -487,27 +487,38 @@ async function callOpenAI(systemPrompt, userMessages, modelName, apiKey, baseUrl
   return completion.choices[0].message.content;
 }
 
+function buildHeuristicFallback(userMessages = []) {
+  const lastUserMsg = userMessages[userMessages.length - 1]?.content || '';
+  if (lastUserMsg.toLowerCase().includes('factura') || lastUserMsg.toLowerCase().includes('reclamo')) {
+    return 'DERIVAR: administracion';
+  }
+  if (lastUserMsg.toLowerCase().includes('comprar') || lastUserMsg.toLowerCase().includes('pedido')) {
+    return 'Con mucho gusto tomamos su pedido. Por favor facilítenos su nombre completo, teléfono, dirección de entrega y los artículos que precisa.';
+  }
+  if (userMessages.length > 1) {
+    return 'Disculpe, ¿podría reiterarme qué producto o artículo está buscando para verificarle disponibilidad y precio en Kroser?';
+  }
+  const hour = new Date().getHours();
+  let greeting = '¡Buenas tardes!';
+  if (hour >= 6 && hour < 12) {
+    greeting = '¡Buenos días!';
+  } else if (hour >= 20 || hour < 6) {
+    greeting = '¡Buenas noches!';
+  }
+  return `${greeting} Bienvenido a Kroser Uruguay. ¿En qué producto o consulta le podemos colaborar hoy?`;
+}
+
 module.exports = {
   listAvailableModels,
   cleanAndHumanizeReply,
   buildGeminiContents,
   buildOpenAIMessages,
+  buildHeuristicFallback,
 
   /**
    * Generates a response using Agentic Function Calling.
    */
   async generateWithTools(systemPrompt, userMessages, options = {}) {
-    // If generateResponse is spied/mocked (e.g. in Jest unit tests), honor the mock!
-    if (module.exports.generateResponse && module.exports.generateResponse.mock) {
-      const mocked = await module.exports.generateResponse(systemPrompt, userMessages, options);
-      return {
-        reply: cleanAndHumanizeReply(mocked, userMessages.length),
-        rawReply: mocked,
-        toolsUsed: [],
-        createdOrder: null,
-      };
-    }
-
     // 1. Primary Model Configuration
     const primaryProvider = options.provider || (await configuracionRepo.get('llm_provider')) || (process.env.GEMINI_API_KEY ? 'gemini' : 'openai');
     const primaryModel = options.model || (await configuracionRepo.get('llm_model')) || (primaryProvider === 'gemini' ? 'gemini-1.5-flash' : 'gpt-4o-mini');
@@ -615,7 +626,10 @@ module.exports = {
           if (prods.length > 0) {
             const listText = prods
               .slice(0, 5)
-              .map((p) => `• *${p.nombre}* - ${p.moneda || '$'} ${p.precio} (SKU: ${p.sku})`)
+              .map((p) => {
+                const formattedPrice = p.precio ? (String(p.precio).startsWith('$') || String(p.precio).startsWith('U$S') ? p.precio : `${p.moneda || '$'} ${p.precio}`) : 'Consultar';
+                return `• *${p.nombre}* - ${formattedPrice} (SKU: ${p.sku})`;
+              })
               .join('\n');
             const synReply = `Contamos con las siguientes opciones disponibles en Kroser:\n\n${listText}\n\n¿Desea consultar stock en alguna sucursal específica o coordinar el retiro/envío?`;
             return {
@@ -682,19 +696,8 @@ module.exports = {
         };
       }
 
-      // 3c. If conversation already in progress, NEVER reset with a generic welcome greeting!
-      if (userMessages.length > 1) {
-        rawReply = 'Disculpe, ¿podría reiterarme qué producto o artículo está buscando para verificarle disponibilidad y precio en Kroser?';
-      } else {
-        const hour = new Date().getHours();
-        let greeting = '¡Buenas tardes!';
-        if (hour >= 6 && hour < 12) {
-          greeting = '¡Buenos días!';
-        } else if (hour >= 20 || hour < 6) {
-          greeting = '¡Buenas noches!';
-        }
-        rawReply = `${greeting} Bienvenido a Kroser Uruguay. ¿En qué producto o consulta le podemos colaborar hoy?`;
-      }
+      // 3c. Heuristic fallback (greeting or re-ask)
+      rawReply = buildHeuristicFallback(userMessages);
     }
 
     const cleanReply = cleanAndHumanizeReply(rawReply, userMessages.length);
@@ -766,25 +769,7 @@ module.exports = {
     }
 
     if (!rawReply) {
-      const lastUserMsg = userMessages[userMessages.length - 1]?.content || '';
-      if (lastUserMsg.toLowerCase().includes('factura') || lastUserMsg.toLowerCase().includes('reclamo')) {
-        return 'DERIVAR: administracion';
-      }
-      if (lastUserMsg.toLowerCase().includes('comprar') || lastUserMsg.toLowerCase().includes('pedido')) {
-        return 'Con mucho gusto tomamos su pedido. Por favor facilítenos su nombre completo, teléfono, dirección de entrega y los artículos que precisa.';
-      }
-      if (userMessages.length > 1) {
-        rawReply = 'Disculpe, ¿podría reiterarme qué producto o artículo está buscando para verificarle disponibilidad y precio en Kroser?';
-      } else {
-        const hour = new Date().getHours();
-        let greeting = '¡Buenas tardes!';
-        if (hour >= 6 && hour < 12) {
-          greeting = '¡Buenos días!';
-        } else if (hour >= 20 || hour < 6) {
-          greeting = '¡Buenas noches!';
-        }
-        rawReply = `${greeting} Bienvenido a Kroser Uruguay. ¿En qué producto o consulta le podemos colaborar hoy?`;
-      }
+      rawReply = buildHeuristicFallback(userMessages);
     }
 
     return cleanAndHumanizeReply(rawReply, userMessages.length);

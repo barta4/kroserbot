@@ -35,7 +35,7 @@ services:
 
   # ─── Backend Node.js (API + RAG + Panel Admin) ────────────
   backend:
-    image: alfredobartaburu/kroserbot:v1.6
+    image: alfredobartaburu/kroserbot:v1.7
     container_name: kroserbot-backend
     restart: unless-stopped
     dns:
@@ -59,6 +59,7 @@ services:
       # Redis
       - REDIS_HOST=redis
       - REDIS_PORT=6379
+      - REDIS_URL=redis://redis:6379
       # Seguridad / Panel Admin
       - ADMIN_USER=${ADMIN_USER:-administrador}
       - ADMIN_PASSWORD=${ADMIN_PASSWORD:-Kroser.2026}

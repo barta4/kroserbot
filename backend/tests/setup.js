@@ -4,6 +4,7 @@ process.env.ADMIN_PASSWORD = 'TestAdminPass123!';
 process.env.DEPOSITO_USER = 'testdep';
 process.env.DEPOSITO_PASSWORD = 'TestDepotPass123!';
 process.env.JWT_SECRET = 'test_jwt_secret_at_least_32_characters_1234567890';
+process.env.ENCRYPTION_KEY = 'test_encryption_key_32_characters_long_12345';
 process.env.WEBHOOK_BASIC_AUTH = 'testuser:testpass';
 process.env.CORS_ORIGINS = '';
 process.env.DATABASE_URL = 'postgres://fake:fake@localhost:0/fake';

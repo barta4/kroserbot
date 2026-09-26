@@ -3,6 +3,8 @@ const embeddingProvider = require('./embeddingProvider');
 const productosRepo = require('../../repositories/productosRepository');
 const localesRepo = require('../../repositories/localesRepository');
 const guiasTecnicasRepo = require('../../repositories/guiasTecnicasRepository');
+const CROSS_SELLING_MAP = require('../../utils/crossSellingMap');
+const { formatCurrencyPrice } = require('../../utils/formatCurrency');
 
 const SIMILARITY_THRESHOLD = 0.52; // Calibrated cosine similarity threshold for pgvector
 
@@ -42,58 +44,6 @@ async function getCachedFormasPago() {
   cachedPagos = { data, expiresAt: now + CACHE_TTL_MS };
   return data;
 }
-
-// Expanded Cross-Selling & Hardware Work Bundles Map
-const CROSS_SELLING_MAP = {
-  // Pintura & Revestimientos
-  pintura: ['pincel', 'rodillo', 'cinta', 'lija', 'bandeja', 'aguarras', 'fijador', 'enduido', 'plastico'],
-  latex: ['rodillo', 'pincel', 'cinta', 'bandeja', 'fijador', 'enduido', 'lija'],
-  esmalte: ['pincel', 'aguarras', 'diluyente', 'lija', 'antioxido', 'cinta'],
-  barniz: ['pincel', 'aguarras', 'lija fina', 'cinta'],
-  cetol: ['pincel', 'aguarras', 'lija', 'cinta'],
-  membrana: ['malla', 'venda', 'rodillo', 'sellador', 'fijador', 'pincel'],
-  impermeabilizante: ['malla', 'venda', 'rodillo', 'sellador', 'fijador'],
-
-  // Herramientas Eléctricas & EPP Obligatorio
-  amoladora: ['disco corte', 'disco desbaste', 'disco flap', 'gafas', 'guante', 'protector auditivo'],
-  taladro: ['mecha widia', 'mecha acero', 'broca', 'tarugo', 'gafas', 'prolongador'],
-  atornillador: ['punta atornillar', 'set puntas', 'tornillo', 'tarugo', 'gafas'],
-  sierra: ['hoja sierra', 'disco sierra', 'prensa', 'gafas', 'guante'],
-
-  // Construcción en Seco (Yeso / Drywall)
-  yeso: ['solera', 'montante', 'tornillo t1', 'tornillo t2', 'masilla', 'cinta junta', 'lija'],
-  placa: ['solera', 'montante', 'tornillo t1', 'tornillo t2', 'masilla', 'cinta junta'],
-  drywall: ['solera', 'montante', 'tornillo', 'masilla', 'cinta'],
-
-  // Pisos & Revestimientos
-  porcelanato: ['adhesivo', 'pegamento', 'pastina', 'cruceta', 'llana', 'nivelador'],
-  ceramica: ['adhesivo', 'pastina', 'cruceta', 'llana', 'esponja'],
-  adhesivo: ['llana', 'pastina', 'esponja', 'cruceta'],
-
-  // Sanitaria & Plomería
-  sanitaria: ['teflon', 'flexible', 'adhesivo pvc', 'llave francesa'],
-  canilla: ['teflon', 'flexible', 'llave francesa', 'cartucho ceramico'],
-  griferia: ['flexible', 'teflon', 'llave francesa', 'sellador silicona'],
-  inodoro: ['flexible', 'fuelle', 'tornillo fijacion', 'sellador silicona'],
-  mochila: ['flexible', 'flotante', 'obturador', 'teflon'],
-
-  // Adhesivos & Selladores
-  silicona: ['pistola silicona', 'pistola calafateo', 'cinta papel', 'espatula'],
-  poliuretano: ['pistola silicona', 'guante', 'espatula'],
-  sellador: ['pistola silicona', 'cinta papel', 'espatula'],
-
-  // Metales & Maderas
-  oxido: ['desoxidante', 'antioxido', 'convertidor', 'cepillo alambre', 'lija', 'pincel'],
-  reja: ['cepillo alambre', 'esmalte 3 en 1', 'antioxido', 'pincel'],
-
-  // Electricidad
-  electricidad: ['cinta aisladora', 'buscapolo', 'cable', 'termica', 'disyuntor', 'pinza'],
-  termica: ['cinta aisladora', 'buscapolo', 'cable', 'tablero'],
-
-  // Fijaciones
-  tarugo: ['tornillo', 'mecha widia', 'taladro', 'nivel'],
-  tornillo: ['tarugo', 'punta atornillar', 'destornillador'],
-};
 
 module.exports = {
   async getRelevantContext(queryText) {
@@ -231,16 +181,6 @@ module.exports = {
 
     // 8. Format Prompt Context
     let contextStr = '';
-
-    const formatCurrencyPrice = (p) => {
-      const isUyu = (p.moneda || '').toUpperCase() === 'UYU' || (parseFloat(p.precio) >= 200 && (p.moneda || '').toUpperCase() !== 'USD');
-      const symbol = isUyu ? '$' : 'U$S';
-      const suffix = isUyu ? ' UYU' : '';
-      if (p.precio_oferta) {
-        return `${symbol} ${p.precio_oferta}${suffix} (Oferta, Normal: ${symbol} ${p.precio}${suffix})`;
-      }
-      return `${symbol} ${p.precio}${suffix}`;
-    };
 
     if (productos.length > 0) {
       contextStr += 'PRODUCTOS RELEVANTES ENCONTRADOS EN CATÁLOGO:\n';

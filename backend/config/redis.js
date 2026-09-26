@@ -158,4 +158,14 @@ module.exports = {
   isReady() {
     return redisClient && redisClient.status === 'ready';
   },
+
+  async disconnect() {
+    if (redisClient && typeof redisClient.quit === 'function') {
+      try {
+        await redisClient.quit();
+      } catch (_err) {
+        // Ignore errors during shutdown
+      }
+    }
+  },
 };

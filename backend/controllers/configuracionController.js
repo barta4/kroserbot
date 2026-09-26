@@ -1,21 +1,6 @@
 const configuracionRepo = require('../repositories/configuracionRepository');
 const promptHistoryRepo = require('../repositories/promptHistoryRepository');
-
-const SECRET_KEYS = new Set([
-  'GEMINI_API_KEY',
-  'OPENAI_API_KEY',
-  'llm_api_key',
-  'llm_fallback_api_key',
-  'chatwoot_api_token',
-  'chatwoot_base_url',
-  'mercadopago_access_token',
-  'mercadopago_public_key',
-  'mercadopago_webhook_secret',
-  'SMTP_PASS',
-  'smtp_pass',
-  'sql_directo_url',
-  'api_productos_key',
-]);
+const SECRET_KEYS = require('../config/secretKeys');
 
 const ALLOWED_EXACT_KEYS = new Set([
   'system_prompt',
@@ -91,7 +76,7 @@ module.exports = {
         return res.status(400).json({ error: 'key y value deben ser strings' });
       }
       if (!isAllowedConfigKey(key)) {
-        return res.status(400).json({ error: `Clave de configuración '${key}' no permitida` });
+        return res.status(400).json({ error: 'Clave de configuración no permitida' });
       }
       const updated = await configuracionRepo.set(key, value);
 

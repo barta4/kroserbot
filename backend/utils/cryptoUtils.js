@@ -1,10 +1,14 @@
+require('dotenv').config();
 const crypto = require('crypto');
 
 const ALGORITHM = 'aes-256-gcm';
 const PREFIX = 'enc:v1:';
 
 function getEncryptionKey() {
-  const secret = process.env.ENCRYPTION_KEY || process.env.JWT_SECRET || 'kroserbot_default_secure_key_2026';
+  const secret = process.env.ENCRYPTION_KEY || process.env.JWT_SECRET;
+  if (!secret) {
+    throw new Error('[FATAL] Se requiere ENCRYPTION_KEY o JWT_SECRET para cifrado de datos sensibles');
+  }
   return crypto.createHash('sha256').update(secret).digest();
 }
 

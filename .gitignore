@@ -9,6 +9,8 @@ __pycache__/
 .env
 .env.local
 .env.production
+docker-compose.override.yml
+*.override.yml
 *.pem
 
 # Build & Cache

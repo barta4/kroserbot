@@ -10,6 +10,12 @@ import argparse
 import os
 import sys
 
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
 
 def _conn_string() -> str:
     url = os.environ.get("DATABASE_URL")

@@ -81,8 +81,8 @@ if (require.main === module) {
         const db = require('./config/db');
         const redis = require('./config/redis');
         if (db.pool) await db.pool.end();
-        if (redis.redisClient && typeof redis.redisClient.quit === 'function') {
-          await redis.redisClient.quit();
+        if (typeof redis.disconnect === 'function') {
+          await redis.disconnect();
         }
         logger.info('[Shutdown] All connections closed cleanly. Exiting.');
         process.exit(0);

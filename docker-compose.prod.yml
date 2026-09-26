@@ -37,7 +37,7 @@ services:
       retries: 5
 
   backend:
-    image: alfredobartaburu/kroserbot:${TAG:-v1.6}
+    image: alfredobartaburu/kroserbot:${TAG:-v1.7}
     container_name: kroserbot-backend
     restart: always
     env_file:
@@ -49,6 +49,7 @@ services:
       - POSTGRES_PORT=5432
       - REDIS_HOST=redis
       - REDIS_PORT=6379
+      - REDIS_URL=redis://redis:6379
     ports:
       - "${PORT:-3000}:3000"
     depends_on:

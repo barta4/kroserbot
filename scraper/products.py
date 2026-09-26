@@ -24,7 +24,7 @@ class Product:
     )
 
     def __init__(self, sku, nombre, precio, precio_oferta, marca, categoria,
-                 descripcion, imagen_url, producto_url, stock_status, moneda: str = "USD"):
+                 descripcion, imagen_url, producto_url, stock_status, moneda: str = "UYU"):
         self.sku = str(sku)
         self.nombre = (nombre or "").strip()
         self.precio = _to_monto(precio)
@@ -105,15 +105,16 @@ def _product_from_json(data: dict, url: str) -> Product | None:
     if not nombre or not sku:
         return None
 
-    # Detect currency (Fenicio moneda object: {"cod":"USD"|"UYU", "sim":"USD"|"$"})
+    # Detect currency (Fenicio moneda object: {"cod":"USD"|"UYU", "sim":"USD"|"$", "nro":858|840})
     moneda_obj = data.get("moneda") or variante.get("moneda") or {}
     moneda_cod = str(moneda_obj.get("cod") or moneda_obj.get("sim") or "").upper().strip()
-    if moneda_cod in ("UYU", "$", "PESOS"):
+    nro = str(moneda_obj.get("nro") or "").strip()
+    if moneda_cod in ("UYU", "$", "PESOS") or nro == "858":
         moneda = "UYU"
-    elif moneda_cod in ("USD", "US$", "U$S", "DOLARES"):
+    elif moneda_cod in ("USD", "US$", "U$S", "DOLARES") or nro == "840":
         moneda = "USD"
     else:
-        moneda = "UYU" if (precio or 0) >= 300 else "USD"
+        moneda = "UYU"
 
     return Product(
         sku=sku,

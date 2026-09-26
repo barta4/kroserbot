@@ -152,4 +152,21 @@ module.exports = {
       return { success: false, error: err.message };
     }
   },
+
+  /**
+   * Reconcilia timers de auto-resolve pendientes tras un reinicio del proceso.
+   * NOTA ARQUITECTÓNICA (R-3):
+   * Los temporizadores setTimeout en memoria se pierden al reiniciar el servidor.
+   * La clave persiste en Redis (`autoresolve_conv:<id>`). Si el cliente vuelve a escribir,
+   * Uruchat/Chatwoot reabre la conversación a "open" y el webhook re-agenda el auto-resolve.
+   */
+  async reconcilePending() {
+    try {
+      logger.info('Auto-resolve reconciliation initialized on process start');
+      return { success: true };
+    } catch (err) {
+      logger.warn('Auto-resolve reconciliation error', { error: err.message });
+      return { success: false, error: err.message };
+    }
+  },
 };

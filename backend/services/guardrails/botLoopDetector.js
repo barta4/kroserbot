@@ -2,6 +2,7 @@ const crypto = require('crypto');
 const redis = require('../../config/redis');
 const configuracionRepo = require('../../repositories/configuracionRepository');
 const logger = require('../../config/logger');
+const { normalize } = require('../../utils/textNormalizer');
 
 // Patrones típicos de auto-respondedores y mensajes de ausencia / fuera de horario
 const AUTO_RESPONDER_PATTERNS = [
@@ -98,18 +99,7 @@ const ASSISTANT_FAREWELL_SIGNALS = [
   'a las ordenes',
 ];
 
-/**
- * Normaliza un texto para búsqueda de patrones fonéticos/textuales sin diacríticos ni puntuación
- */
-function normalize(str = '') {
-  return str
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9\s]/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
+
 
 /**
  * Genera un hash SHA256 corto del texto normalizado

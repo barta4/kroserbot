@@ -85,3 +85,27 @@ def test_parse_product_list_escaped_json():
     items = parse_product_list(html)
     assert len(items) == 1
     assert items[0].sku == "7303371"
+
+
+def test_currency_detection_uyu():
+    # Fenicio standard UYU
+    p = parse_product(_sample_html(), "http://x")
+    assert p is not None
+    assert p.moneda == "UYU"
+
+    # ISO numeric 858
+    p2 = parse_product(_sample_html({**SAMPLE, "moneda": {"nro": 858}}), "http://x")
+    assert p2 is not None
+    assert p2.moneda == "UYU"
+
+
+def test_currency_detection_usd():
+    # Fenicio USD
+    p = parse_product(_sample_html({**SAMPLE, "moneda": {"cod": "USD", "sim": "U$S"}}), "http://x")
+    assert p is not None
+    assert p.moneda == "USD"
+
+    # ISO numeric 840
+    p2 = parse_product(_sample_html({**SAMPLE, "moneda": {"nro": 840}}), "http://x")
+    assert p2 is not None
+    assert p2.moneda == "USD"

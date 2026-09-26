@@ -17,50 +17,9 @@ try {
 
 const SIMILARITY_THRESHOLD = 0.52;
 
-// Expanded Cross-Selling & Hardware Work Bundles Map
-const CROSS_SELLING_MAP = {
-  pintura: ['pincel', 'rodillo', 'cinta', 'lija', 'bandeja', 'aguarras', 'fijador', 'enduido'],
-  latex: ['rodillo', 'pincel', 'cinta', 'bandeja', 'fijador', 'enduido', 'lija'],
-  esmalte: ['pincel', 'aguarras', 'diluyente', 'lija', 'antioxido', 'cinta'],
-  barniz: ['pincel', 'aguarras', 'lija fina', 'cinta'],
-  cetol: ['pincel', 'aguarras', 'lija', 'cinta'],
-  membrana: ['malla', 'venda', 'rodillo', 'sellador', 'fijador', 'pincel'],
-  impermeabilizante: ['malla', 'venda', 'rodillo', 'sellador', 'fijador'],
-  amoladora: ['disco corte', 'disco desbaste', 'disco flap', 'gafas', 'guante', 'protector auditivo'],
-  taladro: ['mecha widia', 'mecha acero', 'broca', 'tarugo', 'gafas', 'prolongador'],
-  atornillador: ['punta atornillar', 'set puntas', 'tornillo', 'tarugo', 'gafas'],
-  sierra: ['hoja sierra', 'disco sierra', 'prensa', 'gafas', 'guante'],
-  yeso: ['solera', 'montante', 'tornillo t1', 'tornillo t2', 'masilla', 'cinta junta', 'lija'],
-  placa: ['solera', 'montante', 'tornillo t1', 'tornillo t2', 'masilla', 'cinta junta'],
-  drywall: ['solera', 'montante', 'tornillo', 'masilla', 'cinta'],
-  porcelanato: ['adhesivo', 'pegamento', 'pastina', 'cruceta', 'llana', 'nivelador'],
-  ceramica: ['adhesivo', 'pastina', 'cruceta', 'llana', 'esponja'],
-  adhesivo: ['llana', 'pastina', 'esponja', 'cruceta'],
-  sanitaria: ['teflon', 'flexible', 'adhesivo pvc', 'llave francesa'],
-  canilla: ['teflon', 'flexible', 'llave francesa', 'cartucho ceramico'],
-  griferia: ['flexible', 'teflon', 'llave francesa', 'sellador silicona'],
-  inodoro: ['flexible', 'fuelle', 'tornillo fijacion', 'sellador silicona'],
-  mochila: ['flexible', 'flotante', 'obturador', 'teflon'],
-  silicona: ['pistola silicona', 'pistola calafateo', 'cinta papel', 'espatula'],
-  poliuretano: ['pistola silicona', 'guante', 'espatula'],
-  sellador: ['pistola silicona', 'cinta papel', 'espatula'],
-  oxido: ['desoxidante', 'antioxido', 'convertidor', 'cepillo alambre', 'lija', 'pincel'],
-  reja: ['cepillo alambre', 'esmalte 3 en 1', 'antioxido', 'pincel'],
-  electricidad: ['cinta aisladora', 'buscapolo', 'cable', 'termica', 'disyuntor', 'pinza'],
-  termica: ['cinta aisladora', 'buscapolo', 'cable', 'tablero'],
-  tarugo: ['tornillo', 'mecha widia', 'taladro', 'nivel'],
-  tornillo: ['tarugo', 'punta atornillar', 'destornillador'],
-};
-
-function formatCurrencyPrice(p) {
-  const isUyu = (p.moneda || '').toUpperCase() === 'UYU' || (parseFloat(p.precio) >= 200 && (p.moneda || '').toUpperCase() !== 'USD');
-  const symbol = isUyu ? '$' : 'U$S';
-  const suffix = isUyu ? ' UYU' : '';
-  if (p.precio_oferta) {
-    return `${symbol} ${p.precio_oferta}${suffix} (Oferta, Normal: ${symbol} ${p.precio}${suffix})`;
-  }
-  return `${symbol} ${p.precio}${suffix}`;
-}
+const CROSS_SELLING_MAP = require('../../utils/crossSellingMap');
+const { formatCurrencyPrice } = require('../../utils/formatCurrency');
+const { normalize } = require('../../utils/textNormalizer');
 
 /**
  * Standard definitions of available tools (JSON Schema)
@@ -351,9 +310,9 @@ async function executeBuscarEnvio({ zona = '' } = {}) {
     const res = await db.query('SELECT * FROM zonas_envio WHERE activo = true ORDER BY departamento_ciudad, barrio_zona');
     let rows = res.rows || [];
     if (zona && zona.trim()) {
-      const q = zona.trim().toLowerCase();
+      const q = normalize(zona);
       const filtered = rows.filter(
-        (z) => (z.departamento_ciudad || '').toLowerCase().includes(q) || (z.barrio_zona || '').toLowerCase().includes(q)
+        (z) => normalize(z.departamento_ciudad || '').includes(q) || normalize(z.barrio_zona || '').includes(q)
       );
       if (filtered.length > 0) rows = filtered;
     }

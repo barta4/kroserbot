@@ -30,21 +30,7 @@ const DEFAULTS = Object.freeze({
   msg_fuera_de_horario: '',
 });
 
-const ENCRYPTED_KEYS = new Set([
-  'GEMINI_API_KEY',
-  'OPENAI_API_KEY',
-  'llm_api_key',
-  'llm_fallback_api_key',
-  'chatwoot_api_token',
-  'chatwoot_base_url',
-  'mercadopago_access_token',
-  'mercadopago_public_key',
-  'mercadopago_webhook_secret',
-  'SMTP_PASS',
-  'smtp_pass',
-  'sql_directo_url',
-  'api_productos_key',
-]);
+const ENCRYPTED_KEYS = require('../config/secretKeys');
 
 const inMemoryConfig = new Map();
 
@@ -60,6 +46,34 @@ module.exports = {
     } catch (_err) {
       logger.warn('ConfiguracionRepository get query failed, returning fallback', { key, error: _err.message });
       return inMemoryConfig.has(key) ? inMemoryConfig.get(key) : (DEFAULTS[key] || null);
+    }
+  },
+
+  async getMultiple(keys = []) {
+    if (!keys || keys.length === 0) return {};
+    try {
+      const placeholders = keys.map((_, i) => `$${i + 1}`).join(', ');
+      const res = await db.query(
+        `SELECT key, value FROM configuracion WHERE key IN (${placeholders})`,
+        keys
+      );
+      const result = {};
+      for (const key of keys) {
+        const row = res.rows ? res.rows.find(r => r.key === key) : null;
+        if (row) {
+          result[key] = ENCRYPTED_KEYS.has(key) ? decrypt(row.value) : row.value;
+        } else {
+          result[key] = inMemoryConfig.has(key) ? inMemoryConfig.get(key) : (DEFAULTS[key] || null);
+        }
+      }
+      return result;
+    } catch (_err) {
+      logger.warn('ConfiguracionRepository getMultiple query failed, returning fallback', { keys, error: _err.message });
+      const result = {};
+      for (const key of keys) {
+        result[key] = inMemoryConfig.has(key) ? inMemoryConfig.get(key) : (DEFAULTS[key] || null);
+      }
+      return result;
     }
   },
 

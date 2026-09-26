@@ -64,13 +64,13 @@ module.exports = {
       : `6. TOMA Y REGISTRO DE PEDIDOS (PAUSADA TEMPORALMENTE): Pedidos por chat deshabilitados. Dirija a https://kroser.com.uy o sucursales físicas. NO solicite datos de envío ni intente registrar pedidos.`;
 
     // 5b. Business hours and temporal awareness in Uruguay
-    const bConfig = {
-      business_hours_weekday_start: await configuracionRepo.get('business_hours_weekday_start'),
-      business_hours_weekday_end: await configuracionRepo.get('business_hours_weekday_end'),
-      business_hours_saturday_enabled: await configuracionRepo.get('business_hours_saturday_enabled'),
-      business_hours_saturday_start: await configuracionRepo.get('business_hours_saturday_start'),
-      business_hours_saturday_end: await configuracionRepo.get('business_hours_saturday_end'),
-    };
+    const bConfig = await configuracionRepo.getMultiple([
+      'business_hours_weekday_start',
+      'business_hours_weekday_end',
+      'business_hours_saturday_enabled',
+      'business_hours_saturday_start',
+      'business_hours_saturday_end',
+    ]);
     const temporalContext = businessHours.getTemporalContextPrompt(new Date(), bConfig);
 
     // 6. Assemble compact, lightweight, agentic system prompt
