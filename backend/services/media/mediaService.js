@@ -10,14 +10,56 @@ try {
 }
 
 /**
+ * Resolves API keys cleanly according to provider and fallback settings
+ */
+async function getApiKeys() {
+  const configs = (await configuracionRepo.getMultiple([
+    'llm_provider',
+    'llm_fallback_provider',
+    'llm_api_key',
+    'llm_fallback_api_key',
+  ])) || {};
+
+  const provider = configs.llm_provider || 'gemini';
+  const fallbackProvider = configs.llm_fallback_provider || (provider === 'gemini' ? 'openai' : 'gemini');
+
+  const primaryKey = configs.llm_api_key;
+  const fallbackKey = configs.llm_fallback_api_key;
+
+  let geminiKey = process.env.GEMINI_API_KEY || '';
+  let openaiKey = process.env.OPENAI_API_KEY || '';
+
+  if (provider === 'gemini' && primaryKey && primaryKey.trim()) {
+    geminiKey = primaryKey.trim();
+  } else if (fallbackProvider === 'gemini' && fallbackKey && fallbackKey.trim()) {
+    geminiKey = fallbackKey.trim();
+  }
+
+  if (provider === 'openai' && primaryKey && primaryKey.trim()) {
+    openaiKey = primaryKey.trim();
+  } else if (fallbackProvider === 'openai' && fallbackKey && fallbackKey.trim()) {
+    openaiKey = fallbackKey.trim();
+  }
+
+  return { geminiKey, openaiKey, provider };
+}
+
+/**
  * Downloads media from URL as base64 and determines mimeType
  */
 async function fetchMediaAsBase64(url) {
   if (!axios || !url) return null;
   try {
-    const response = await axios.get(url, {
+    let targetUrl = url;
+    if (targetUrl.startsWith('/') && !targetUrl.startsWith('//')) {
+      const dbUrl = await configuracionRepo.get('chatwoot_base_url');
+      const baseUrl = (dbUrl && dbUrl.trim()) || process.env.CHATWOOT_BASE_URL || process.env.CHATWOOT_API_URL || 'https://omnicanal.kroser.uy';
+      targetUrl = `${baseUrl.replace(/\/+$/, '')}${targetUrl}`;
+    }
+    const response = await axios.get(targetUrl, {
       responseType: 'arraybuffer',
       timeout: 15000,
+      maxRedirects: 5,
     });
     const contentType = response.headers['content-type'] || 'application/octet-stream';
     const buffer = Buffer.from(response.data);
@@ -36,27 +78,38 @@ async function transcribeAudio({ url, data_url, mime_type, extension }) {
   const mediaUrl = url || data_url;
   if (!mediaUrl) return '[Audio recibido - no se pudo descargar]';
 
-  const provider = (await configuracionRepo.get('llm_provider')) || (process.env.GEMINI_API_KEY ? 'gemini' : 'openai');
-  const geminiKey = (await configuracionRepo.get('llm_api_key')) || process.env.GEMINI_API_KEY;
-  const openaiKey = (await configuracionRepo.get('llm_api_key')) || process.env.OPENAI_API_KEY;
+  const { geminiKey, openaiKey } = await getApiKeys();
 
   // 1. Try Gemini Multimodal for Audio
-  if (provider === 'gemini' && geminiKey) {
+  if (geminiKey) {
     try {
       const mediaData = await fetchMediaAsBase64(mediaUrl);
       if (mediaData) {
-        let mime = mime_type || mediaData.mimeType;
+        let mime = (mime_type || mediaData.mimeType || '').split(';')[0].trim().toLowerCase();
         if (mime === 'application/octet-stream' || !mime) {
-          if (extension?.includes('ogg') || mediaUrl.includes('.ogg')) mime = 'audio/ogg';
-          else if (extension?.includes('mp3') || mediaUrl.includes('.mp3')) mime = 'audio/mp3';
-          else if (extension?.includes('wav') || mediaUrl.includes('.wav')) mime = 'audio/wav';
-          else mime = 'audio/mp3';
+          if (extension?.includes('ogg') || mediaUrl.includes('.ogg') || extension?.includes('opus') || mediaUrl.includes('.opus') || extension?.includes('oga')) {
+            mime = 'audio/ogg';
+          } else if (extension?.includes('mp3') || mediaUrl.includes('.mp3')) {
+            mime = 'audio/mp3';
+          } else if (extension?.includes('wav') || mediaUrl.includes('.wav')) {
+            mime = 'audio/wav';
+          } else if (extension?.includes('m4a') || mediaUrl.includes('.m4a') || extension?.includes('aac')) {
+            mime = 'audio/mp4';
+          } else if (extension?.includes('webm') || mediaUrl.includes('.webm')) {
+            mime = 'audio/webm';
+          } else {
+            mime = 'audio/ogg';
+          }
         }
 
         const promptText = 'Transcribe exactamente el mensaje de voz o audio del cliente en español rioplatense/uruguayo. Devuelve únicamente el texto transcripto, sin explicaciones ni comentarios adicionales.';
         
         if (axios) {
-          const geminiModel = (await configuracionRepo.get('llm_model')) || 'gemini-1.5-flash';
+          let geminiModel = (await configuracionRepo.get('llm_model')) || 'gemini-1.5-flash';
+          if (!geminiModel.toLowerCase().startsWith('gemini')) {
+            const fbModel = await configuracionRepo.get('llm_fallback_model');
+            geminiModel = (fbModel && fbModel.toLowerCase().startsWith('gemini')) ? fbModel : 'gemini-1.5-flash';
+          }
           const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${geminiKey}`;
           const res = await axios.post(apiUrl, {
             contents: [
@@ -95,7 +148,15 @@ async function transcribeAudio({ url, data_url, mime_type, extension }) {
         const openai = new OpenAI({ apiKey: openaiKey });
         
         const { toFile } = require('openai');
-        const fileName = `audio_${Date.now()}.${extension?.replace('.', '') || 'mp3'}`;
+        let ext = (extension?.replace('.', '') || '').toLowerCase();
+        if (!ext || ext === 'octet-stream') {
+          if (mediaUrl.includes('.ogg') || mediaUrl.includes('.opus') || (mime_type && mime_type.includes('ogg'))) ext = 'ogg';
+          else if (mediaUrl.includes('.mp3') || (mime_type && mime_type.includes('mp3'))) ext = 'mp3';
+          else if (mediaUrl.includes('.wav') || (mime_type && mime_type.includes('wav'))) ext = 'wav';
+          else if (mediaUrl.includes('.m4a') || (mime_type && mime_type.includes('m4a'))) ext = 'm4a';
+          else ext = 'ogg';
+        }
+        const fileName = `voice_${Date.now()}.${ext}`;
         const fileObj = await toFile(mediaData.buffer, fileName);
 
         const transcription = await openai.audio.transcriptions.create({
@@ -124,8 +185,7 @@ async function analyzeImage({ url, data_url, mime_type }) {
   const mediaUrl = url || data_url;
   if (!mediaUrl) return { description: '[Imagen adjunta recibida]', searchTerms: '', partName: '' };
 
-  const geminiKey = (await configuracionRepo.get('llm_api_key')) || process.env.GEMINI_API_KEY;
-  const openaiKey = (await configuracionRepo.get('llm_api_key')) || process.env.OPENAI_API_KEY;
+  const { geminiKey, openaiKey, provider } = await getApiKeys();
 
   const hardwareVisionPrompt = `Sos el Asistente Técnico y Maestro Ferretero de Ferreterías Kroser Uruguay.
 Analizá minuciosamente la foto enviada por el cliente (puede ser una pieza rota, repuesto sanitario, tornillo, cerradura, herramienta, canilla, perfil, pintura o problema del hogar).
@@ -142,72 +202,102 @@ DETALLE: <Explicación breve de 1 o 2 oraciones para el cliente sobre qué pieza
 
   let rawAnalysis = '';
 
-  // 1. Try Gemini Vision
-  if (geminiKey) {
-    try {
-      const mediaData = await fetchMediaAsBase64(mediaUrl);
-      if (mediaData) {
-        const mime = mime_type || mediaData.mimeType || 'image/jpeg';
-        const geminiModel = (await configuracionRepo.get('llm_model')) || 'gemini-1.5-flash';
-        
-        if (axios) {
-          const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${geminiKey}`;
-          const res = await axios.post(apiUrl, {
-            contents: [
-              {
-                parts: [
-                  { text: hardwareVisionPrompt },
-                  {
-                    inlineData: {
-                      mimeType: mime,
-                      data: mediaData.base64,
-                    },
-                  },
-                ],
-              },
-            ],
-          }, { timeout: 20000 });
-
-          const text = res.data?.candidates?.[0]?.content?.parts?.[0]?.text;
-          if (text && text.trim()) {
-            rawAnalysis = text.trim();
-          }
-        }
-      }
-    } catch (err) {
-      logger.warn('Gemini hardware vision analysis failed', { error: err.message });
-    }
+  // Download media as base64 so bytes are available locally for both Gemini and OpenAI
+  const mediaData = await fetchMediaAsBase64(mediaUrl);
+  if (!mediaData || !mediaData.base64) {
+    logger.warn('Could not download image attachment for vision analysis', { mediaUrl });
+    return {
+      description: '[Imagen enviada por el cliente: producto o consulta visual de ferretería]',
+      searchTerms: '',
+      partName: '',
+    };
   }
 
-  // 2. Try OpenAI GPT-4o-mini Vision
-  if (!rawAnalysis && openaiKey) {
-    try {
-      const OpenAI = require('openai');
-      const openai = new OpenAI({ apiKey: openaiKey });
+  let mime = (mime_type || mediaData.mimeType || 'image/jpeg').split(';')[0].trim().toLowerCase();
+  if (mime === 'application/octet-stream' || !mime) {
+    if (mediaUrl.includes('.png')) mime = 'image/png';
+    else if (mediaUrl.includes('.webp')) mime = 'image/webp';
+    else if (mediaUrl.includes('.gif')) mime = 'image/gif';
+    else mime = 'image/jpeg';
+  }
 
-      const response = await openai.chat.completions.create({
-        model: 'gpt-4o-mini',
-        messages: [
-          {
-            role: 'user',
-            content: [
-              { type: 'text', text: hardwareVisionPrompt },
-              {
-                type: 'image_url',
-                image_url: { url: mediaUrl },
+  const runGeminiVision = async () => {
+    if (!geminiKey || !axios) return null;
+    let geminiModel = (await configuracionRepo.get('llm_model')) || 'gemini-1.5-flash';
+    if (!geminiModel.toLowerCase().startsWith('gemini')) {
+      const fbModel = await configuracionRepo.get('llm_fallback_model');
+      geminiModel = (fbModel && fbModel.toLowerCase().startsWith('gemini')) ? fbModel : 'gemini-1.5-flash';
+    }
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${geminiKey}`;
+    const res = await axios.post(apiUrl, {
+      contents: [
+        {
+          parts: [
+            { text: hardwareVisionPrompt },
+            {
+              inlineData: {
+                mimeType: mime,
+                data: mediaData.base64,
               },
-            ],
-          },
-        ],
-        max_tokens: 300,
-      });
+            },
+          ],
+        },
+      ],
+    }, { timeout: 20000 });
+    return res.data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || null;
+  };
 
-      const text = response.choices?.[0]?.message?.content;
-      if (text && text.trim()) {
-        rawAnalysis = text.trim();
-      }
+  const runOpenAIVision = async () => {
+    if (!openaiKey) return null;
+    const OpenAI = require('openai');
+    const openai = new OpenAI({ apiKey: openaiKey });
+    const dataUrl = `data:${mime};base64,${mediaData.base64}`;
+
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: [
+        {
+          role: 'user',
+          content: [
+            { type: 'text', text: hardwareVisionPrompt },
+            {
+              type: 'image_url',
+              image_url: { url: dataUrl },
+            },
+          ],
+        },
+      ],
+      max_tokens: 300,
+    });
+    return response.choices?.[0]?.message?.content?.trim() || null;
+  };
+
+  // Provider preference with automatic fail-safe
+  if (provider === 'openai') {
+    try {
+      rawAnalysis = await runOpenAIVision();
     } catch (err) {
-      logger.warn('OpenAI hardware vision analysis failed', { error: err.message });
+      logger.warn('OpenAI hardware vision analysis failed, trying Gemini fallback', { error: err.message });
+    }
+    if (!rawAnalysis) {
+      try {
+        rawAnalysis = await runGeminiVision();
+      } catch (err) {
+        logger.warn('Gemini hardware vision fallback failed', { error: err.message });
+      }
+    }
+  } else {
+    try {
+      rawAnalysis = await runGeminiVision();
+    } catch (err) {
+      logger.warn('Gemini hardware vision analysis failed, trying OpenAI fallback', { error: err.message });
+    }
+    if (!rawAnalysis) {
+      try {
+        rawAnalysis = await runOpenAIVision();
+      } catch (err) {
+        logger.warn('OpenAI hardware vision fallback failed', { error: err.message });
+      }
     }
   }
 
@@ -229,7 +319,7 @@ DETALLE: <Explicación breve de 1 o 2 oraciones para el cliente sobre qué pieza
   const detalle = detalleMatch ? detalleMatch[1].trim() : rawAnalysis;
 
   const description = partName
-    ? `[Foto del cliente identificada: ${partName}. ${detalle}]`
+    ? `[Foto del cliente identificada: ${partName}. ${detalle}${searchTerms ? ` | Términos de búsqueda sugeridos: ${searchTerms}` : ''}]`
     : `[Análisis visual de ferretería: ${rawAnalysis}]`;
 
   logger.info('Visual Part Identified', { partName, searchTerms });
@@ -257,10 +347,46 @@ async function processMessageAttachments(attachments = []) {
 
   for (const att of attachments) {
     const fileType = (att.file_type || '').toLowerCase();
+    const contentType = (att.content_type || '').toLowerCase();
     const extension = (att.extension || '').toLowerCase();
-    const url = att.data_url || att.url || att.thumb_url;
+    const url = att.data_url || att.url || att.thumb_url || '';
 
-    if (fileType === 'audio' || extension.includes('ogg') || extension.includes('mp3') || extension.includes('wav') || extension.includes('m4a') || url?.includes('.ogg') || url?.includes('.mp3')) {
+    const isAudio = (
+      fileType === 'audio' ||
+      fileType === 'voice' ||
+      contentType.startsWith('audio/') ||
+      extension.includes('ogg') ||
+      extension.includes('oga') ||
+      extension.includes('opus') ||
+      extension.includes('mp3') ||
+      extension.includes('wav') ||
+      extension.includes('m4a') ||
+      extension.includes('aac') ||
+      extension.includes('weba') ||
+      url.includes('.ogg') ||
+      url.includes('.opus') ||
+      url.includes('.mp3')
+    );
+
+    const isImage = (
+      fileType === 'image' ||
+      contentType.startsWith('image/') ||
+      extension.includes('jpg') ||
+      extension.includes('jpeg') ||
+      extension.includes('png') ||
+      extension.includes('webp') ||
+      extension.includes('gif') ||
+      extension.includes('bmp') ||
+      extension.includes('heic') ||
+      extension.includes('heif') ||
+      url.includes('.jpg') ||
+      url.includes('.jpeg') ||
+      url.includes('.png') ||
+      url.includes('.webp') ||
+      url.includes('.gif')
+    );
+
+    if (isAudio) {
       logger.info('Processing audio attachment in message', { url });
       const transcription = await transcribeAudio({
         url,
@@ -270,7 +396,7 @@ async function processMessageAttachments(attachments = []) {
       });
       transcribedTexts.push(transcription);
       mediaSummaries.push(`[Audio transcripto: "${transcription}"]`);
-    } else if (fileType === 'image' || extension.includes('jpg') || extension.includes('jpeg') || extension.includes('png') || extension.includes('webp') || url?.includes('.jpg') || url?.includes('.png')) {
+    } else if (isImage) {
       logger.info('Processing image attachment in message (Visual Parts Finder)', { url });
       const imageResult = await analyzeImage({
         url,

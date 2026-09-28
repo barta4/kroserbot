@@ -1578,7 +1578,10 @@
           Permite configurar el servidor y token de Uruchat. Si un campo queda en blanco, se utilizará el valor predeterminado de <code>.env</code>.
         </p>
         <label>URL Base de Uruchat</label>
-        <input type="text" id="chatwoot-url-input" placeholder="https://app.uruchat.com (o servidor propio)">
+        <input type="text" id="chatwoot-url-input" placeholder="https://omnicanal.kroser.uy (o servidor propio)">
+
+        <label>ID de Cuenta Uruchat (Account ID)</label>
+        <input type="number" id="chatwoot-account-input" min="1" placeholder="2">
 
         <label>API Access Token de Uruchat</label>
         <input type="password" id="chatwoot-token-input" placeholder="API Access Token de la cuenta / usuario">
@@ -2859,6 +2862,9 @@
         const cfg = await res.json();
         document.getElementById('chatwoot-url-input').value = cfg.chatwoot_base_url || '';
         document.getElementById('chatwoot-token-input').value = cfg.chatwoot_api_token || '';
+        if (document.getElementById('chatwoot-account-input')) {
+          document.getElementById('chatwoot-account-input').value = cfg.chatwoot_account_id || '2';
+        }
 
         const autoFarewell = cfg.auto_resolve_on_farewell !== 'false';
         const elFarewell = document.getElementById('auto-resolve-farewell-check');
@@ -2989,19 +2995,28 @@
 
     async function saveUruchatConfig() {
       const url = document.getElementById('chatwoot-url-input').value;
+      const accountId = document.getElementById('chatwoot-account-input')?.value || '2';
       const token = document.getElementById('chatwoot-token-input').value;
       const autoFarewell = document.getElementById('auto-resolve-farewell-check')?.checked ? 'true' : 'false';
       const timeoutMins = document.getElementById('auto-resolve-timeout-input')?.value || '15';
       const label = document.getElementById('auto-resolve-label-input')?.value || 'resuelto-bot';
 
+      if (url && url.trim()) {
+        await apiFetch(`${API_BASE}/configuracion`, {
+          method: 'PUT', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ key: 'chatwoot_base_url', value: url.trim() })
+        });
+      }
       await apiFetch(`${API_BASE}/configuracion`, {
         method: 'PUT', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ key: 'chatwoot_base_url', value: url })
+        body: JSON.stringify({ key: 'chatwoot_account_id', value: String(accountId).trim() })
       });
-      await apiFetch(`${API_BASE}/configuracion`, {
-        method: 'PUT', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ key: 'chatwoot_api_token', value: token })
-      });
+      if (token && token.trim()) {
+        await apiFetch(`${API_BASE}/configuracion`, {
+          method: 'PUT', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ key: 'chatwoot_api_token', value: token.trim() })
+        });
+      }
       await apiFetch(`${API_BASE}/configuracion`, {
         method: 'PUT', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ key: 'auto_resolve_on_farewell', value: autoFarewell })

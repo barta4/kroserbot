@@ -227,10 +227,19 @@ module.exports = {
       logger.info('Processing message attachments', { correlationId, count: attachments.length });
       try {
         const { mediaSummaries, transcribedTexts, visualSearchTerms } = await mediaService.processMessageAttachments(attachments);
+        const partsToAdd = [];
         if (transcribedTexts.length > 0) {
-          content = content ? `${content}\n${transcribedTexts.join('\n')}` : transcribedTexts.join('\n');
-        } else if (mediaSummaries.length > 0) {
-          content = content ? `${content}\n${mediaSummaries.join('\n')}` : mediaSummaries.join('\n');
+          partsToAdd.push(transcribedTexts.join('\n'));
+        }
+        // Preserve non-audio media summaries (visual parts identification, documents) so images are never dropped
+        const nonAudioSummaries = mediaSummaries.filter(s => !s.startsWith('[Audio transcripto:'));
+        if (nonAudioSummaries.length > 0) {
+          partsToAdd.push(nonAudioSummaries.join('\n'));
+        } else if (transcribedTexts.length === 0 && mediaSummaries.length > 0) {
+          partsToAdd.push(mediaSummaries.join('\n'));
+        }
+        if (partsToAdd.length > 0) {
+          content = content ? `${content}\n${partsToAdd.join('\n')}` : partsToAdd.join('\n');
         }
         if (visualSearchTerms && visualSearchTerms.length > 0) {
           visualKeywords = visualSearchTerms;

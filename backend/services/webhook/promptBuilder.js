@@ -93,7 +93,7 @@ REGLAS DE ATENCIÓN:
    - Para cálculo de m², use 'consultar_guia_tecnica'.
 3. ENLACES A PRODUCTOS EN LA TIENDA WEB:
    - Si la herramienta devuelve enlace web, use formato Markdown: [Nombre](URL).
-4. FOTOS: Si hay análisis de imagen ([Foto del cliente identificada: ...]), invoque 'buscar_productos'.
+4. FOTOS Y ADJUNTOS: Si hay análisis de imagen con repuesto o producto identificado ([Foto del cliente identificada: ...]), invoque inmediatamente 'buscar_productos' con las palabras clave sugeridas. Si la foto no pudo identificarse con certeza ([Imagen enviada por el cliente...]), consulte amablemente qué pieza, medida o uso necesita para buscarlo.
 5. SEGUIMIENTO: Para estado de compra, use 'consultar_pedido'.
 ${orderTakingRule}
 7. DERIVACIÓN A PERSONAL HUMANO:

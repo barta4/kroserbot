@@ -16,7 +16,8 @@ async function getChatwootClient() {
   const dbUrl = await configuracionRepo.get('chatwoot_base_url');
   const dbToken = await configuracionRepo.get('chatwoot_api_token');
 
-  const baseURL = (dbUrl && dbUrl.trim()) || process.env.CHATWOOT_BASE_URL || process.env.CHATWOOT_API_URL || 'https://app.chatwoot.com';
+  const rawURL = (dbUrl && dbUrl.trim()) || process.env.CHATWOOT_BASE_URL || process.env.CHATWOOT_API_URL || 'https://omnicanal.kroser.uy';
+  const baseURL = rawURL.replace(/\/+$/, '');
   const token = (dbToken && dbToken.trim()) || process.env.CHATWOOT_API_ACCESS_TOKEN || process.env.CHATWOOT_API_TOKEN || '';
 
   if (!token) return null;
@@ -108,7 +109,7 @@ module.exports = {
 
   async getInboxes(accountId = null) {
     const client = await getChatwootClient();
-    const accId = accountId || (await configuracionRepo.get('chatwoot_account_id')) || process.env.CHATWOOT_ACCOUNT_ID || 1;
+    const accId = accountId || (await configuracionRepo.get('chatwoot_account_id')) || process.env.CHATWOOT_ACCOUNT_ID || 2;
 
     if (!client) {
       // Fallback inboxes if Chatwoot is not connected or running in local dev
@@ -136,7 +137,11 @@ module.exports = {
         is_mock: false,
       }));
     } catch (err) {
-      logger.error('Chatwoot getInboxes error', { error: err.message });
+      logger.error('Chatwoot getInboxes error', {
+        error: err.response?.data?.error || err.message,
+        accountId: accId,
+        status: err.response?.status,
+      });
       // Return fallback gracefully
       return [
         { id: 1, name: 'WhatsApp Ventas Central (Offline)', channel_type: 'Channel::Whatsapp', is_mock: true },
