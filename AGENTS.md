@@ -55,6 +55,21 @@ Kroserbot es la plataforma omnicanal de atención inteligente, recomendación t�
    - Asignar agente en Uruchat, publicar nota interna privada (`derivationNoteService.js`) y enviar alerta por email.
 6. **Auto-cierre**: Se ejecuta inmediatamente ante despedidas (`isPureFarewell`) o tras 15 minutos de inactividad (`autoResolveService.js`).
 
+### 2.6 Multimodal: Notas de Voz y Visual Parts Finder (`mediaService.js`)
+* **Audios WhatsApp**: Soporte para `.opus`, `.oga` y códec `codecs=opus`. Mime type sanitizado antes de enviar a Gemini o Whisper. Resuelve URLs relativas de ActiveStorage (`/rails/active_storage/...`) con el dominio base oficial (`https://omnicanal.kroser.uy`).
+* **Visión de Repuestos y Ferretería**: Reconocimiento estructurado (`IDENTIFICACIÓN`, `KEYWORDS`, `DETALLE`). Soporte para `.heic`, `.heif`, `.webp`, `.png`, `.jpg`, `.jpeg`.
+* **Regla Crítica de OpenAI Vision**: Siempre enviar la imagen como Data URI Base64 (`data:${mime};base64,...`) descargada localmente, NUNCA la URL cruda de ActiveStorage (OpenAI fallaría al requerir sesión o firmas privadas).
+* **Conmutación Fail-Safe de Visión**: Redundancia bidireccional Gemini Vision (`gemini-1.5-flash`) $\leftrightarrow$ OpenAI Vision (`gpt-4o-mini`).
+* **Concurrencia en Webhook**: Si el mensaje incluye audio + foto, se preservan ambos en el prompt para que el bot conozca la voz y el repuesto fotografiado.
+
+### 2.7 Ciclo de Vida del Scraper y Cron Nocturno
+* **Contenedor**: `alfredobartaburu/kroserbot-scraper:v1.4` con `restart: "no"`. Al terminar el catálogo sale con código 0 y se apaga solo (liberando memoria).
+* **Ejecución Manual**: Desde el botón "Iniciar Scraping" en el panel admin o ejecutando `docker start kroserbot-scraper`.
+* **Ejecución Programada**: En Easypanel / Linux Crontab a las 03:00 AM mediante la expresión:
+  ```bash
+  0 3 * * * docker start kroserbot-scraper
+  ```
+
 ---
 
 ## 🤖 3. Motor LLM y Sistema Fail-Safe
@@ -72,11 +87,17 @@ El servicio [`backend/services/llm/llmService.js`](backend/services/llm/llmServi
 Antes de dar por finalizada cualquier tarea o cambio, **todos** los tests deben pasar en verde:
 
 ```bash
-# Ejecutar suite completa de backend (15 suites, 202 tests)
+# Ejecutar suite completa de backend (17 suites, 212 tests)
 npm test
 
 # Ejecutar tests del Scraper en Python (22 tests)
 npm run test:python
+
+# Ejecutar tests de audio WhatsApp y notas de voz
+npx jest backend/tests/audio_reception.test.js
+
+# Ejecutar tests de recepción de fotos y Visual Parts Finder
+npx jest backend/tests/image_reception.test.js
 
 # Ejecutar auditoría estricta de Uruchat y migraciones
 npx jest backend/tests/system_audit_improvements.test.js
@@ -95,10 +116,10 @@ npx jest backend/tests/llm_failsafe.test.js
 * **Usuario Docker Hub**: `alfredobartaburu`
 * **Imagen Backend**: `alfredobartaburu/kroserbot:<VERSION>` y `alfredobartaburu/kroserbot:latest`
 * **Arquitectura obligatoria**: `--platform linux/amd64`
-* **Regla de Etiquetado Incremental**: Dokploy y Easypanel cachean imágenes localmente en el servidor. **Siempre incrementa la versión semántica** (ej. `v1.6` ➔ `v1.7`) al compilar nuevas imágenes.
+* **Regla de Etiquetado Incremental**: Dokploy y Easypanel cachean imágenes localmente en el servidor. **Siempre incrementa la versión semántica** (ej. `v1.7` ➔ `v1.8`) al compilar nuevas imágenes.
 * **Comando de Build y Push**:
   ```bash
-  docker buildx build --platform linux/amd64 -t alfredobartaburu/kroserbot:v1.7 -t alfredobartaburu/kroserbot:latest . --push
+  docker buildx build --platform linux/amd64 -t alfredobartaburu/kroserbot:v1.8 -t alfredobartaburu/kroserbot:v1.7.1 -t alfredobartaburu/kroserbot:latest . --push
   ```
 * **Git**: Sincronizar siempre a la rama `main` en `https://github.com/barta4/kroserbot.git`.
 * **Desarrollo local**: Mantener bind-mounts y claves dummy en `docker-compose.override.yml` (ignorado en `.gitignore` para no sobreescribir producción).

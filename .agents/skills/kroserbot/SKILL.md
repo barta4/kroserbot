@@ -108,32 +108,68 @@ Todas las variables dinámicas del sistema se administran mediante [`backend/rep
 
 ---
 
-## 🧪 7. Guía de Ejecución de Tests
+## 🎙️ 7. Pipeline Multimodal: Audios e Imágenes (`mediaService.js`)
+
+Kroserbot procesa notas de voz de WhatsApp y fotos de piezas/repuestos en el mostrador:
+* **Notas de Voz / Audios**:
+  * Formatos: Soporte para `.opus`, `.oga` y códec `codecs=opus`. Mime type sanitizado antes de enviar a Gemini o Whisper.
+  * Resuelve URLs relativas de ActiveStorage (`/rails/active_storage/...`) con el dominio base oficial (`https://omnicanal.kroser.uy`).
+  * Conmutación automática: Gemini Multimodal para audio $\rightarrow$ OpenAI Whisper (`toFile`).
+* **Visual Parts Finder (Fotos de Repuestos)**:
+  * Formatos: Soporte para `.heic`, `.heif`, `.webp`, `.png`, `.jpg`, `.jpeg`, `.gif`, `.bmp`.
+  * **Regla Crítica de OpenAI Vision**: Siempre descargar la imagen en base64 localmente y enviarla como Data URI (`data:${mime};base64,...`) a `gpt-4o-mini`, NUNCA la URL cruda de ActiveStorage (OpenAI fallaría por requerir sesión o firmas privadas).
+  * Salida estructurada: `IDENTIFICACIÓN`, `KEYWORDS`, `DETALLE`. La regla 4 del prompt instruye al LLM a invocar directamente `buscar_productos` con las palabras clave sugeridas.
+  * Conmutación Fail-Safe bidireccional Gemini Vision $\leftrightarrow$ OpenAI Vision.
+  * Concurrencia en Webhook: Si un mensaje incluye audio + foto, se preservan ambos análisis en el prompt.
+
+---
+
+## ⏰ 8. Ciclo de Vida del Scraper y Cron en Easypanel
+
+* **Contenedor**: `alfredobartaburu/kroserbot-scraper:v1.4` con `restart: "no"`. Al terminar el catálogo sale con código 0 y se apaga solo (liberando memoria).
+* **Ejecución Manual**: Desde el botón "Iniciar Scraping" en el panel admin o ejecutando `docker start kroserbot-scraper`.
+* **Programación Nocturna (Easypanel / Crontab)**:
+  ```bash
+  0 3 * * * docker start kroserbot-scraper
+  ```
+
+---
+
+## 🧪 9. Guía de Ejecución de Tests
 
 Antes de dar por finalizada cualquier tarea o cambio, ejecuta los tests automatizados:
 
 ```bash
+# Probar recepción de audios WhatsApp
+npx jest backend/tests/audio_reception.test.js
+
+# Probar recepción de imágenes y Visual Parts Finder
+npx jest backend/tests/image_reception.test.js
+
 # Probar Fail-Safe de LLM y modelos
 npx jest backend/tests/llm_failsafe.test.js
 
 # Probar resolución de conversaciones en Uruchat / Chatwoot
 npx jest backend/tests/chatwoot_auto_resolve.test.js
 
-# Probar notas privadas de derivación
-npx jest backend/tests/derivation_note.test.js
-
 # Probar reglas de auditoría y no-regresión de rebranding (Uruchat)
 npx jest backend/tests/system_audit_improvements.test.js
 
-# Probar suite completa
+# Probar suite completa (17 suites, 212 tests)
 npm test
+
+# Probar suite de Python (22 tests)
+npm run test:python
 ```
 
 ---
 
-## 🚢 8. Reglas de Despliegue (Docker Hub & Dokploy)
+## 🚢 10. Reglas de Despliegue (Docker Hub & Dokploy)
 
 Si el usuario solicita compilar o desplegar nuevas imágenes:
 1. Usar siempre el skill `docker-hub-automation` para usuario **`alfredobartaburu`**.
-2. **Incrementar la versión semántica** (ej. `v2.4` $\rightarrow$ `v2.5`) para evitar que Dokploy / Easypanel use capas en caché.
-3. Compilar con `--platform linux/amd64` y dual-taggear con `:latest`.
+2. **Incrementar la versión semántica** (ej. `v1.7` $\rightarrow$ `v1.8`) para evitar que Dokploy / Easypanel use capas en caché.
+3. Compilar con `--platform linux/amd64` y dual-taggear con `:latest`:
+   ```bash
+   docker buildx build --platform linux/amd64 -t alfredobartaburu/kroserbot:v1.8 -t alfredobartaburu/kroserbot:v1.7.1 -t alfredobartaburu/kroserbot:latest . --push
+   ```
