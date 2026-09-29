@@ -2,31 +2,43 @@ const { z } = require('zod');
 
 const webhookPayloadSchema = z.object({
   event: z.string().min(1),
+  id: z.union([z.number(), z.string()]).nullable().optional(),
   message: z.object({
-    id: z.union([z.number(), z.string()]).optional(),
-    content: z.string().optional().default(''),
-    message_type: z.string().optional(),
+    id: z.union([z.number(), z.string()]).nullable().optional(),
+    content: z.string().nullable().optional().transform(v => v || ''),
+    message_type: z.union([z.string(), z.number()]).nullable().optional(),
     sender: z.object({
-      type: z.string().optional(),
-      name: z.string().optional(),
-      email: z.string().optional(),
-      phone_number: z.string().optional(),
-    }).passthrough().optional(),
-  }).passthrough().optional(),
+      id: z.union([z.number(), z.string()]).nullable().optional(),
+      type: z.string().nullable().optional(),
+      name: z.string().nullable().optional(),
+      email: z.string().nullable().optional(),
+      phone_number: z.string().nullable().optional(),
+    }).passthrough().nullable().optional(),
+    attachments: z.array(z.any()).nullable().optional(),
+  }).passthrough().nullable().optional(),
   conversation: z.object({
-    id: z.union([z.number(), z.string()]).optional(),
-    account_id: z.union([z.number(), z.string()]).optional(),
+    id: z.union([z.number(), z.string()]).nullable().optional(),
+    account_id: z.union([z.number(), z.string()]).nullable().optional(),
     inbox: z.object({
-      id: z.union([z.number(), z.string()]).optional(),
-      name: z.string().optional(),
-    }).passthrough().optional(),
-  }).passthrough().optional(),
+      id: z.union([z.number(), z.string()]).nullable().optional(),
+      name: z.string().nullable().optional(),
+    }).passthrough().nullable().optional(),
+  }).passthrough().nullable().optional(),
   account: z.object({
-    id: z.union([z.number(), z.string()]).optional(),
-  }).passthrough().optional(),
-  conversation_id: z.union([z.number(), z.string()]).optional(),
-  content: z.string().optional(),
-  inbox: z.object({}).passthrough().optional(),
+    id: z.union([z.number(), z.string()]).nullable().optional(),
+  }).passthrough().nullable().optional(),
+  sender: z.object({
+    id: z.union([z.number(), z.string()]).nullable().optional(),
+    type: z.string().nullable().optional(),
+    name: z.string().nullable().optional(),
+    email: z.string().nullable().optional(),
+    phone_number: z.string().nullable().optional(),
+  }).passthrough().nullable().optional(),
+  conversation_id: z.union([z.number(), z.string()]).nullable().optional(),
+  content: z.string().nullable().optional().transform(v => v || ''),
+  attachments: z.array(z.any()).nullable().optional(),
+  message_type: z.union([z.string(), z.number()]).nullable().optional(),
+  inbox: z.object({}).passthrough().nullable().optional(),
 }).passthrough();
 
 const pedidoCreateSchema = z.object({

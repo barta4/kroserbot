@@ -144,7 +144,11 @@ module.exports = {
     }
 
     const message = payload.message || payload;
-    const attachments = message.attachments || payload.attachments || [];
+    const attachments = (Array.isArray(message.attachments) && message.attachments.length > 0)
+      ? message.attachments
+      : (Array.isArray(payload.attachments) && payload.attachments.length > 0)
+        ? payload.attachments
+        : [];
     const isMessageEvent =
       payload.event === 'message_created' ||
       (payload.event === 'message_updated' && Array.isArray(attachments) && attachments.length > 0);
@@ -155,9 +159,9 @@ module.exports = {
       return { status: 'ignored', reason: 'event_type_not_handled' };
     }
 
-    const messageId = message.id;
+    const messageId = message.id || payload.id;
     const sender = message.sender || payload.sender || {};
-    let content = (message.content || '').trim();
+    let content = (message.content || payload.content || '').trim();
     const senderType = (sender.type || message.sender_type || payload.sender_type || '').toLowerCase();
     const messageType = String(message.message_type || payload.message_type || '').toLowerCase();
     const isPrivate = Boolean(message.private || payload.private);

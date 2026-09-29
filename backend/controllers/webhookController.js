@@ -17,20 +17,49 @@ module.exports = {
 
       const payload = validation.data;
       const conversationId = payload.conversation?.id || payload.conversation_id;
-      const content = (payload.message?.content || payload.content || '').trim();
+      let content = (payload.message?.content || payload.content || '').trim();
 
-      // Send 200 OK immediately to Chatwoot after successful contract validation
+      // Send 200 OK immediately to Chatwoot/Uruchat after successful contract validation
       res.status(200).json({ status: 'received' });
 
-      const sender = payload.message?.sender || payload.sender || {};
-      const isOutgoing = payload.message?.message_type === 'outgoing' || payload.message_type === 'outgoing';
+      const sender = (payload.message?.sender && typeof payload.message.sender === 'object')
+        ? payload.message.sender
+        : (payload.sender && typeof payload.sender === 'object')
+          ? payload.sender
+          : {};
+      const rawMsgType = String(payload.message?.message_type || payload.message_type || '').toLowerCase();
+      const isOutgoing = rawMsgType === 'outgoing' || rawMsgType === '1';
       const isAgentOrOutgoing =
         isOutgoing ||
         sender.type === 'agent' ||
         sender.type === 'bot' ||
         (sender.type === 'user' && isOutgoing);
 
-      if (conversationId && content && payload.event === 'message_created' && !isAgentOrOutgoing) {
+      const attachments = (Array.isArray(payload.message?.attachments) && payload.message.attachments.length > 0)
+        ? payload.message.attachments
+        : (Array.isArray(payload.attachments) && payload.attachments.length > 0)
+          ? payload.attachments
+          : [];
+      const hasAttachments = attachments.length > 0;
+
+      // If incoming customer message has attachments (audio note, photo, document), flush any pending debounce text
+      // and process immediately so media is never delayed, dropped, or desynchronized.
+      if (hasAttachments && conversationId && !isAgentOrOutgoing) {
+        const pendingText = debounceService.getAndClear(conversationId);
+        if (pendingText) {
+          content = content ? `${pendingText}\n${content}` : pendingText;
+        }
+        const mediaPayload = {
+          ...payload,
+          message: {
+            ...(payload.message || {}),
+            content,
+            attachments,
+          },
+          attachments,
+        };
+        await webhookService.processWebhookEvent(mediaPayload);
+      } else if (conversationId && content && payload.event === 'message_created' && !isAgentOrOutgoing) {
         // Use debounce to aggregate user messages sent within ~8s
         debounceService.addMessage(conversationId, content, async (fullContent) => {
           try {
@@ -40,6 +69,7 @@ module.exports = {
               message: {
                 ...(payload.message || {}),
                 content: fullContent,
+                attachments,
               },
             };
             await webhookService.processWebhookEvent(customPayload);

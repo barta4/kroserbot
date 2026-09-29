@@ -35,7 +35,7 @@ services:
 
   # ─── Backend Node.js (API + RAG + Panel Admin) ────────────
   backend:
-    image: alfredobartaburu/kroserbot:v1.9.4
+    image: alfredobartaburu/kroserbot:v1.9.5
     container_name: kroserbot-backend
     restart: unless-stopped
     dns:

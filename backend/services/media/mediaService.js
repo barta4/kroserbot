@@ -51,17 +51,18 @@ async function fetchMediaAsBase64(url) {
   if (!axios || !url) return null;
   try {
     let targetUrl = url;
+    const dbUrl = await configuracionRepo.get('chatwoot_base_url');
+    const baseUrl = (dbUrl && dbUrl.trim()) || process.env.CHATWOOT_BASE_URL || process.env.CHATWOOT_API_URL || 'https://omnicanal.kroser.uy';
     if (targetUrl.startsWith('//')) {
       targetUrl = `https:${targetUrl}`;
     } else if (targetUrl.startsWith('/') && !targetUrl.startsWith('//')) {
-      const dbUrl = await configuracionRepo.get('chatwoot_base_url');
-      const baseUrl = (dbUrl && dbUrl.trim()) || process.env.CHATWOOT_BASE_URL || process.env.CHATWOOT_API_URL || 'https://omnicanal.kroser.uy';
       targetUrl = `${baseUrl.replace(/\/+$/, '')}${targetUrl}`;
     }
-    const headers = {};
+    const headers = { 'User-Agent': 'Kroserbot/1.9.5' };
     const dbToken = await configuracionRepo.get('chatwoot_api_token');
     const token = (dbToken && dbToken.trim()) || process.env.CHATWOOT_API_ACCESS_TOKEN || process.env.CHATWOOT_API_TOKEN;
-    if (token && (targetUrl.includes('uruchat.com') || targetUrl.includes('kroser.uy') || targetUrl.startsWith('/'))) {
+    const baseHost = baseUrl.replace(/^https?:\/\//i, '').split('/')[0].toLowerCase();
+    if (token && (targetUrl.includes('uruchat.com') || targetUrl.includes('kroser.uy') || (baseHost && targetUrl.toLowerCase().includes(baseHost)) || targetUrl.startsWith('/'))) {
       headers['api_access_token'] = token;
     }
     const response = await axios.get(targetUrl, {

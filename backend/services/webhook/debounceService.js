@@ -52,4 +52,18 @@ module.exports = {
     }
     return false;
   },
+
+  getAndClear(conversationId) {
+    if (pendingBuffers.has(conversationId)) {
+      const buffer = pendingBuffers.get(conversationId);
+      if (buffer.timer) {
+        clearTimeout(buffer.timer);
+      }
+      const fullText = buffer.messages.join('\n');
+      pendingBuffers.delete(conversationId);
+      logger.info('Debounce buffer flushed early for incoming media/action', { conversationId, messageCount: buffer.messages.length });
+      return fullText;
+    }
+    return '';
+  },
 };
