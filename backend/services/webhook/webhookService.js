@@ -163,52 +163,53 @@ module.exports = {
       }
     }
 
-    // Detect if this message was sent by the bot (avoid bot self-takeover loops)
-    const isBotSent = messageId ? await redis.get(`bot_sent_msg:${messageId}`) : null;
-    const isBotSending = conversationId ? await redis.get(`bot_sending:${conversationId}`) : null;
-    const lastBotReply = conversationId ? await redis.get(`last_bot_reply:${conversationId}`) : null;
-    const isContentMatch = Boolean(
-      lastBotReply &&
-      content &&
-      (content === lastBotReply || lastBotReply.includes(content) || content.includes(lastBotReply))
-    );
-
-    const isBotSender = Boolean(
-      isBotSent ||
-      isBotSending ||
-      isContentMatch ||
-      senderType === 'bot' ||
-      sender.type === 'agent_bot' ||
-      (botAgentId && sender.id && String(sender.id) === String(botAgentId))
-    );
-
-    if (isBotSender) {
-      logger.info('Bot self-message ignored', { correlationId, messageId });
-      // If human_active was mistakenly set in this conversation, clear it!
-      if (conversationId) {
-        await redis.del(`human_active:${conversationId}`);
-      }
-      return { status: 'ignored', reason: 'bot_self_message' };
-    }
-
     const isOutgoing = messageType === 'outgoing' || messageType === '1';
-    const isHumanAgent = senderType === 'agent' || (senderType === 'user' && isOutgoing);
 
-    // 3. Human Agent Takeover: If a human agent sends a message, immediately silence the bot
-    if (isHumanAgent) {
-      logger.info('Human agent message detected. Silencing bot.', { correlationId, conversationId });
-      if (conversationId) {
-        await redis.set(`human_active:${conversationId}`, '1', 'EX', HUMAN_ACTIVE_TTL);
-        debounceService.cancel(conversationId);
-        await redis.del(`conv_buffer:${conversationId}`);
-        await botLoopDetector.resetTurns(conversationId);
-        autoResolveService.cancelScheduledResolve(conversationId);
+    // 2b. Outgoing Message Handling: Bot Self-Message vs Human Agent Takeover
+    if (isOutgoing) {
+      // Detect if this outgoing message was sent by the bot (avoid bot self-takeover loops)
+      const isBotSent = messageId ? await redis.get(`bot_sent_msg:${messageId}`) : null;
+      const isBotSending = conversationId ? await redis.get(`bot_sending:${conversationId}`) : null;
+      const lastBotReply = conversationId ? await redis.get(`last_bot_reply:${conversationId}`) : null;
+      const isContentMatch = Boolean(
+        lastBotReply &&
+        content &&
+        (content === lastBotReply || lastBotReply.includes(content) || content.includes(lastBotReply))
+      );
+
+      const isBotSender = Boolean(
+        isBotSent ||
+        isBotSending ||
+        isContentMatch ||
+        senderType === 'bot' ||
+        sender.type === 'agent_bot' ||
+        (botAgentId && sender.id && String(sender.id) === String(botAgentId))
+      );
+
+      if (isBotSender) {
+        logger.info('Bot self-message ignored', { correlationId, messageId });
+        // If human_active was mistakenly set in this conversation, clear it!
+        if (conversationId) {
+          await redis.del(`human_active:${conversationId}`);
+        }
+        return { status: 'ignored', reason: 'bot_self_message' };
       }
-      return { status: 'ignored', reason: 'agent_message' };
-    }
 
-    // Filter Outgoing or Bot messages (avoid infinite loops)
-    if (isOutgoing || senderType === 'bot') {
+      // If outgoing and NOT sent by the bot, a human agent is intervening in Chatwoot/Uruchat
+      const isHumanAgent = senderType === 'agent' || senderType === 'user' || !senderType;
+      if (isHumanAgent) {
+        logger.info('Human agent message detected. Silencing bot.', { correlationId, conversationId });
+        if (conversationId) {
+          await redis.set(`human_active:${conversationId}`, '1', 'EX', HUMAN_ACTIVE_TTL);
+          debounceService.cancel(conversationId);
+          await redis.del(`conv_buffer:${conversationId}`);
+          await botLoopDetector.resetTurns(conversationId);
+          autoResolveService.cancelScheduledResolve(conversationId);
+        }
+        return { status: 'ignored', reason: 'agent_message' };
+      }
+
+      // Other outgoing or bot messages
       logger.info('Outgoing/bot message ignored', { correlationId });
       return { status: 'ignored', reason: 'bot_or_outgoing_message' };
     }

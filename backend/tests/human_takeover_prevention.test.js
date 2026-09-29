@@ -237,4 +237,41 @@ describe('Prevención de Auto-silenciamiento y Detección de Agentes Humanos', (
     const isHumanActive = await redis.get(`human_active:${convId}`);
     expect(isHumanActive).toBeNull();
   });
+
+  test('11. Mensaje entrante (incoming) de un cliente cuyo contact ID coincide con botAgentId NUNCA se descarta como bot_self_message', async () => {
+    await configuracionRepo.set('chatwoot_bot_agent_id', '42');
+    const payload = {
+      event: 'message_created',
+      conversation: { id: convId, account_id: 1 },
+      message: {
+        id: 99011,
+        content: '¿Tienen cinta aisladora 3M?',
+        message_type: 'incoming',
+        sender: { id: 42, type: 'contact', name: 'Cliente WhatsApp' },
+      },
+    };
+
+    const res = await webhookService.processWebhookEvent(payload);
+    expect(res.status).not.toBe('ignored');
+    expect(res.reason).not.toBe('bot_self_message');
+  });
+
+  test('12. Mensaje entrante (incoming) cuyo contenido coincide parcialmente con last_bot_reply NUNCA se descarta como bot_self_message', async () => {
+    await redis.set(`last_bot_reply:${convId}`, 'Hola, bienvenido a Ferreterías Kroser. ¿En qué te podemos ayudar?', 'EX', 120);
+    const payload = {
+      event: 'message_created',
+      conversation: { id: convId, account_id: 1 },
+      message: {
+        id: 99012,
+        content: 'Hola',
+        message_type: 'incoming',
+        sender: { id: 888, type: 'contact' },
+      },
+    };
+
+    const res = await webhookService.processWebhookEvent(payload);
+    expect(res.status).not.toBe('ignored');
+    expect(res.reason).not.toBe('bot_self_message');
+  });
 });
+

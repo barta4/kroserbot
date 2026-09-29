@@ -56,17 +56,24 @@ async function fetchMediaAsBase64(url) {
       const baseUrl = (dbUrl && dbUrl.trim()) || process.env.CHATWOOT_BASE_URL || process.env.CHATWOOT_API_URL || 'https://omnicanal.kroser.uy';
       targetUrl = `${baseUrl.replace(/\/+$/, '')}${targetUrl}`;
     }
+    const headers = {};
+    const dbToken = await configuracionRepo.get('chatwoot_api_token');
+    const token = (dbToken && dbToken.trim()) || process.env.CHATWOOT_API_ACCESS_TOKEN || process.env.CHATWOOT_API_TOKEN;
+    if (token && (targetUrl.includes('uruchat.com') || targetUrl.includes('kroser.uy') || targetUrl.startsWith('/'))) {
+      headers['api_access_token'] = token;
+    }
     const response = await axios.get(targetUrl, {
       responseType: 'arraybuffer',
       timeout: 15000,
       maxRedirects: 5,
+      headers,
     });
     const contentType = response.headers['content-type'] || 'application/octet-stream';
     const buffer = Buffer.from(response.data);
     const base64 = buffer.toString('base64');
     return { base64, mimeType: contentType, buffer };
   } catch (err) {
-    logger.warn('Failed to download media attachment', { url, error: err.message });
+    logger.warn('Failed to download media attachment', { url, error: err.message, status: err.response?.status });
     return null;
   }
 }
@@ -86,7 +93,14 @@ async function transcribeAudio({ url, data_url, mime_type, extension }) {
       const mediaData = await fetchMediaAsBase64(mediaUrl);
       if (mediaData) {
         let mime = (mime_type || mediaData.mimeType || '').split(';')[0].trim().toLowerCase();
-        if (mime === 'application/octet-stream' || !mime) {
+        // Normalize WhatsApp / Uruchat audio formats for Google Gemini
+        if (mime === 'audio/opus' || mime === 'audio/oga' || mime === 'application/ogg' || mime === 'audio/x-opus') {
+          mime = 'audio/ogg';
+        } else if (mime === 'audio/x-wav') {
+          mime = 'audio/wav';
+        } else if (mime === 'audio/x-m4a') {
+          mime = 'audio/mp4';
+        } else if (mime === 'application/octet-stream' || !mime) {
           if (extension?.includes('ogg') || mediaUrl.includes('.ogg') || extension?.includes('opus') || mediaUrl.includes('.opus') || extension?.includes('oga')) {
             mime = 'audio/ogg';
           } else if (extension?.includes('mp3') || mediaUrl.includes('.mp3')) {
@@ -135,7 +149,8 @@ async function transcribeAudio({ url, data_url, mime_type, extension }) {
         }
       }
     } catch (err) {
-      logger.warn('Gemini audio transcription failed', { error: err.message });
+      const errMsg = err.response?.data?.error?.message || err.message;
+      logger.warn('Gemini audio transcription failed', { error: errMsg, status: err.response?.status });
     }
   }
 
@@ -171,7 +186,8 @@ async function transcribeAudio({ url, data_url, mime_type, extension }) {
         }
       }
     } catch (err) {
-      logger.warn('OpenAI Whisper audio transcription failed', { error: err.message });
+      const errMsg = err.response?.data?.error?.message || err.message;
+      logger.warn('OpenAI Whisper audio transcription failed', { error: errMsg, status: err.response?.status });
     }
   }
 
@@ -277,26 +293,30 @@ DETALLE: <Explicación breve de 1 o 2 oraciones para el cliente sobre qué pieza
     try {
       rawAnalysis = await runOpenAIVision();
     } catch (err) {
-      logger.warn('OpenAI hardware vision analysis failed, trying Gemini fallback', { error: err.message });
+      const errMsg = err.response?.data?.error?.message || err.message;
+      logger.warn('OpenAI hardware vision analysis failed, trying Gemini fallback', { error: errMsg });
     }
     if (!rawAnalysis) {
       try {
         rawAnalysis = await runGeminiVision();
       } catch (err) {
-        logger.warn('Gemini hardware vision fallback failed', { error: err.message });
+        const errMsg = err.response?.data?.error?.message || err.message;
+        logger.warn('Gemini hardware vision fallback failed', { error: errMsg });
       }
     }
   } else {
     try {
       rawAnalysis = await runGeminiVision();
     } catch (err) {
-      logger.warn('Gemini hardware vision analysis failed, trying OpenAI fallback', { error: err.message });
+      const errMsg = err.response?.data?.error?.message || err.message;
+      logger.warn('Gemini hardware vision analysis failed, trying OpenAI fallback', { error: errMsg });
     }
     if (!rawAnalysis) {
       try {
         rawAnalysis = await runOpenAIVision();
       } catch (err) {
-        logger.warn('OpenAI hardware vision fallback failed', { error: err.message });
+        const errMsg = err.response?.data?.error?.message || err.message;
+        logger.warn('OpenAI hardware vision fallback failed', { error: errMsg });
       }
     }
   }
