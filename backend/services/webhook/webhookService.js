@@ -109,14 +109,14 @@ module.exports = {
     const conversation = payload.conversation || {};
     const conversationId = conversation.id || payload.conversation_id;
     const accountId = payload.account?.id || conversation.account_id || 1;
+    const botAgentId = await chatwootService.getBotAgentId();
 
     // 0. Handle Conversation Assignment & Status Changes (Chatwoot conversation_updated / conversation_status_changed)
     if (payload.event === 'conversation_updated' || payload.event === 'conversation_status_changed') {
       const assigneeId = conversation.assignee_id || conversation.meta?.assignee?.id || conversation.assignee?.id;
-      const botAgentId = await chatwootService.getBotAgentId();
 
       if (conversationId) {
-        if (assigneeId && (!botAgentId || String(assigneeId) !== String(botAgentId))) {
+        if (assigneeId && botAgentId && String(assigneeId) !== String(botAgentId)) {
           await redis.set(`human_active:${conversationId}`, '1', 'EX', HUMAN_ACTIVE_TTL);
           debounceService.cancel(conversationId);
           await redis.del(`conv_buffer:${conversationId}`);
@@ -165,9 +165,18 @@ module.exports = {
 
     // Detect if this message was sent by the bot (avoid bot self-takeover loops)
     const isBotSent = messageId ? await redis.get(`bot_sent_msg:${messageId}`) : null;
-    const botAgentId = await chatwootService.getBotAgentId();
+    const isBotSending = conversationId ? await redis.get(`bot_sending:${conversationId}`) : null;
+    const lastBotReply = conversationId ? await redis.get(`last_bot_reply:${conversationId}`) : null;
+    const isContentMatch = Boolean(
+      lastBotReply &&
+      content &&
+      (content === lastBotReply || lastBotReply.includes(content) || content.includes(lastBotReply))
+    );
+
     const isBotSender = Boolean(
       isBotSent ||
+      isBotSending ||
+      isContentMatch ||
       senderType === 'bot' ||
       sender.type === 'agent_bot' ||
       (botAgentId && sender.id && String(sender.id) === String(botAgentId))
@@ -175,6 +184,10 @@ module.exports = {
 
     if (isBotSender) {
       logger.info('Bot self-message ignored', { correlationId, messageId });
+      // If human_active was mistakenly set in this conversation, clear it!
+      if (conversationId) {
+        await redis.del(`human_active:${conversationId}`);
+      }
       return { status: 'ignored', reason: 'bot_self_message' };
     }
 
@@ -224,7 +237,7 @@ module.exports = {
 
     // 5. Human Assignment Check: If conversation is currently assigned to a human agent, silence bot
     const assigneeId = conversation.assignee_id || conversation.meta?.assignee?.id || conversation.assignee?.id;
-    if (assigneeId && (!botAgentId || String(assigneeId) !== String(botAgentId))) {
+    if (assigneeId && botAgentId && String(assigneeId) !== String(botAgentId)) {
       logger.info('Conversation currently assigned to human agent. Bot silenced.', { correlationId, conversationId, assigneeId });
       if (conversationId) {
         await redis.set(`human_active:${conversationId}`, '1', 'EX', HUMAN_ACTIVE_TTL);

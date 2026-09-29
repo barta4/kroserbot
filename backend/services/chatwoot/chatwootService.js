@@ -71,6 +71,21 @@ module.exports = {
       return { success: true, mock: true, isPrivate };
     }
 
+    const trimmedContent = (content || '').trim();
+
+    // 1. Pre-register sending state in Redis BEFORE dispatching HTTP POST
+    // to prevent any incoming webhook race condition from mistaking this for a human agent
+    try {
+      if (conversationId) {
+        await redis.set(`bot_sending:${conversationId}`, '1', 'EX', 30);
+        if (trimmedContent) {
+          await redis.set(`last_bot_reply:${conversationId}`, trimmedContent, 'EX', 120);
+        }
+      }
+    } catch (_preErr) {
+      logger.debug('Error pre-registering bot sending state in Redis', { error: _preErr.message });
+    }
+
     try {
       const response = await client.post(
         `/api/v1/accounts/${accountId}/conversations/${conversationId}/messages`,
@@ -89,10 +104,21 @@ module.exports = {
           logger.warn('Error saving bot message idempotency in Redis', { msgId, error: _redisErr.message });
         }
       }
+      // Also auto-detect and cache bot user ID from sender field of response
+      if (response.data?.sender?.id) {
+        const autoBotId = String(response.data.sender.id);
+        try {
+          await redis.set('chatwoot_auto_bot_agent_id', autoBotId, 'EX', 86400 * 30);
+        } catch (_idErr) {}
+      }
       return response.data;
     } catch (err) {
       logger.error('Chatwoot send error', { conversationId, isPrivate, error: err.message });
       return { success: false, error: err.message };
+    } finally {
+      if (conversationId) {
+        redis.del(`bot_sending:${conversationId}`).catch(() => {});
+      }
     }
   },
 

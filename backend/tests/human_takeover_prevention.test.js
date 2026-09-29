@@ -171,4 +171,70 @@ describe('Prevención de Auto-silenciamiento y Detección de Agentes Humanos', (
     const isHumanActive = await redis.get(`human_active:${convId}`);
     expect(isHumanActive).toBe('1');
   });
+
+  test('8. Condición de carrera: bot_sending activo reconoce el mensaje saliente como propio', async () => {
+    // Simular que el bot está en medio de enviar el mensaje por HTTP
+    await redis.set(`bot_sending:${convId}`, '1', 'EX', 30);
+
+    const payload = {
+      event: 'message_created',
+      conversation: { id: convId, account_id: 1 },
+      message: {
+        id: 99008,
+        content: 'Tenemos taladros inalámbricos Bosch de 12V y 18V.',
+        message_type: 'outgoing',
+        sender: { id: 999, type: 'user' },
+      },
+    };
+
+    const res = await webhookService.processWebhookEvent(payload);
+    expect(res.status).toBe('ignored');
+    expect(res.reason).toBe('bot_self_message');
+
+    const isHumanActive = await redis.get(`human_active:${convId}`);
+    expect(isHumanActive).toBeNull();
+  });
+
+  test('9. Coincidencia de contenido: last_bot_reply coincide con el texto del mensaje saliente', async () => {
+    const replyText = 'El costo de envío a Pocitos es de $250 o gratis superando $2000.';
+    await redis.set(`last_bot_reply:${convId}`, replyText, 'EX', 120);
+
+    const payload = {
+      event: 'message_created',
+      conversation: { id: convId, account_id: 1 },
+      message: {
+        id: 99009,
+        content: replyText,
+        message_type: 'outgoing',
+        sender: { id: 999, type: 'user' },
+      },
+    };
+
+    const res = await webhookService.processWebhookEvent(payload);
+    expect(res.status).toBe('ignored');
+    expect(res.reason).toBe('bot_self_message');
+
+    const isHumanActive = await redis.get(`human_active:${convId}`);
+    expect(isHumanActive).toBeNull();
+  });
+
+  test('10. Si botAgentId no está configurado (null), una conversación con assignee no silencia al bot', async () => {
+    // Limpiar botAgentId para simular que no está configurado
+    await redis.del('chatwoot_auto_bot_agent_id');
+    await configuracionRepo.set('chatwoot_bot_agent_id', '');
+
+    const payload = {
+      event: 'conversation_updated',
+      conversation: {
+        id: convId,
+        account_id: 1,
+        assignee_id: 1, // Inbox asignó un agente por defecto
+      },
+    };
+
+    const res = await webhookService.processWebhookEvent(payload);
+    // No debe silenciar porque botAgentId no está configurado y no se sabe si es el bot
+    const isHumanActive = await redis.get(`human_active:${convId}`);
+    expect(isHumanActive).toBeNull();
+  });
 });
