@@ -127,22 +127,28 @@ module.exports = {
   },
 
   async assignAgent(accountId, conversationId, assigneeId) {
+    if (!assigneeId) {
+      logger.info('Chatwoot assign skipped (no assigneeId provided)', { conversationId });
+      return { success: false, skipped: true };
+    }
+
+    const numericAssigneeId = Number(assigneeId) || assigneeId;
     const client = await getChatwootClient();
     if (!client) {
-      logger.info('Chatwoot assign mock', { conversationId, assigneeId });
-      return { success: true, mock: true };
+      logger.info('Chatwoot assign mock', { conversationId, assigneeId: numericAssigneeId });
+      return { success: true, mock: true, assigneeId: numericAssigneeId };
     }
 
     try {
       const response = await client.post(
         `/api/v1/accounts/${accountId}/conversations/${conversationId}/assignments`,
         {
-          assignee_id: assigneeId,
+          assignee_id: numericAssigneeId,
         }
       );
       return response.data;
     } catch (err) {
-      logger.error('Chatwoot assign error', { conversationId, error: err.message });
+      logger.error('Chatwoot assign error', { conversationId, assigneeId: numericAssigneeId, error: err.message });
       return { success: false, error: err.message };
     }
   },
@@ -210,6 +216,38 @@ module.exports = {
         { id: 2, name: 'Instagram Direct (Offline)', channel_type: 'Channel::Instagram', is_mock: true },
         { id: 3, name: 'Chat Web Widget (Offline)', channel_type: 'Channel::WebWidget', is_mock: true },
       ];
+    }
+  },
+
+  async getAgents(accountId = null) {
+    const client = await getChatwootClient();
+    const accId = accountId || (await configuracionRepo.get('chatwoot_account_id')) || process.env.CHATWOOT_ACCOUNT_ID || 2;
+
+    if (!client) {
+      return [
+        { id: 1, name: 'Asesor General Kroser', email: 'asesor@kroser.com.uy', role: 'agent', is_mock: true },
+        { id: 2, name: 'E-commerce & Ventas', email: 'ecommerce@kroser.com.uy', role: 'agent', is_mock: true },
+      ];
+    }
+
+    try {
+      const response = await client.get(`/api/v1/accounts/${accId}/agents`);
+      const payload = response.data || [];
+      return payload.map((agent) => ({
+        id: agent.id,
+        name: agent.name || agent.available_name || agent.email,
+        email: agent.email,
+        role: agent.role,
+        confirmed: agent.confirmed,
+        is_mock: false,
+      }));
+    } catch (err) {
+      logger.error('Chatwoot getAgents error', {
+        error: err.response?.data?.error || err.message,
+        accountId: accId,
+        status: err.response?.status,
+      });
+      return [];
     }
   },
 

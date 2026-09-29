@@ -1,6 +1,6 @@
-# 🌙 Guía de Mantenimiento y Verificación para la Noche — Kroserbot v1.9.9
+# 🌙 Guía de Mantenimiento y Verificación para la Noche — Kroserbot v2.0.0
 
-Este documento resume las causas analizadas, todas las mejoras implementadas en la versión **v1.9.9** y el paso a paso exacto a ejecutar esta noche en Dokploy y en el servidor.
+Este documento resume las causas analizadas, todas las mejoras implementadas en la versión **v2.0.0** y el paso a paso exacto a ejecutar esta noche en Dokploy y en el servidor.
 
 ---
 
@@ -22,7 +22,7 @@ Este documento resume las causas analizadas, todas las mejoras implementadas en 
 
 ---
 
-## 🛠️ 2. Mejoras y Soluciones Implementadas en v1.9.9
+## 🛠️ 2. Mejoras y Soluciones Implementadas en v2.0.0
 
 1. **Nuevo Servicio de Interpretación de Enlaces (`urlInterpreterService.js`)**:
    - Detecta y analiza URLs entrantes de **Mercado Libre**, **Kroser** y cualquier tienda online.
@@ -37,15 +37,15 @@ Este documento resume las causas analizadas, todas las mejoras implementadas en 
    - Omite automáticamente la búsqueda vectorial (`searchVector`) si los embeddings son simulados (`isMock: true`), evitando que los vectores falsos contaminen las búsquedas de texto.
    - Filtro de coherencia estricta para pinturas/impermeabilizantes: bloquea la infiltración de herramientas/mechas si la consulta era sobre pinturas.
 5. **Proveedor de Embeddings Multi-Proveedor Dinámico (`embeddingProvider.js`)**:
-   - Ahora lee la configuración activa de la base de datos (`llm_provider`, `llm_api_key`, `llm_fallback_provider`, `llm_fallback_api_key`).
-   - Al tener **Google Gemini** como proveedor principal en el panel admin, genera embeddings reales de alta fidelidad con **`text-embedding-004`**, con conmutación fail-safe a OpenAI `text-embedding-3-small`.
-6. **Pruebas y Releases**:
-   - Nueva suite de pruebas unitarias: `backend/tests/url_interpreter.test.js` (9 tests en verde).
-   - Total verificado: **19 suites de Jest (238 tests)** y **22 tests de Python (Scraper)** pasando al 100%.
-   - Imagen Docker compilada para `linux/amd64` y publicada en Docker Hub:
-     - `alfredobartaburu/kroserbot:v1.9.9`
-     - `alfredobartaburu/kroserbot:latest`
-   - Código sincronizado con GitHub `main` (commit `c54e099`).
+   - Lee la configuración activa de la base de datos (`llm_provider`, `llm_api_key`, `llm_fallback_provider`, `llm_fallback_api_key`).
+   - Prioriza **Google Gemini `text-embedding-004`** (768d) con fail-safe a OpenAI `text-embedding-3-small`.
+6. **Asignación Configurable de Agente y Etiqueta 'derivar' en Uruchat**:
+   - Se añadió en el webhook la asignación del agente configurado (`derivation_agent_id` o `chatwoot_default_assignee_id`) o por área (`assignee_id_${area}`).
+   - Se aplica automáticamente la etiqueta `'derivar'` (o la configurada en `derivation_label`) en Uruchat junto con las etiquetas de fuera de horario.
+   - Endpoint `GET /api/chatwoot/agents` y selector interactivo de operadores en la pestaña Uruchat del panel administrativo.
+7. **Pruebas y Releases**:
+   - Suites unitarias adicionales: `backend/tests/url_interpreter.test.js` y `backend/tests/derivation_assignment_and_labels.test.js`.
+   - Total verificado: **20 suites de Jest (243 tests)** y **22 tests de Python (Scraper)** pasando al 100%.
 
 ---
 
@@ -56,7 +56,7 @@ Este documento resume las causas analizadas, todas las mejoras implementadas en 
 2. Ir al servicio **kroserbot-backend**.
 3. Verificar que la imagen apunte a:
    ```
-   alfredobartaburu/kroserbot:v1.9.9
+   alfredobartaburu/kroserbot:v2.0.0
    ```
 4. Pulsar **Deploy / Redeploy**.
 

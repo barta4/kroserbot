@@ -1587,6 +1587,36 @@
         <input type="password" id="chatwoot-token-input" placeholder="API Access Token de la cuenta / usuario">
 
         <div style="margin-top:1.5rem; border-top:1px solid var(--border-subtle); padding-top:1.25rem;">
+          <h4 style="margin:0 0 0.25rem; font-size:1.05rem;">👥 Derivación a Asesor Humano y Asignación de Agente</h4>
+          <p style="color:var(--text-muted); font-size:0.83rem; margin-top:0.25rem; margin-bottom:1rem;">
+            Control de asignación automática de operador en Uruchat y etiquetado para cuando el bot deriva una conversación al equipo humano.
+          </p>
+
+          <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap:1rem;">
+            <div>
+              <label style="font-weight:600; font-size:0.85rem;">ID de Agente a Asignar al Derivar</label>
+              <div style="display:flex; gap:0.5rem; margin-top:0.25rem;">
+                <input type="number" id="derivation-agent-id-input" min="1" placeholder="ej. 1" style="max-width:130px;">
+                <select id="derivation-agent-select" style="flex:1;" onchange="onSelectDerivationAgent(this)">
+                  <option value="">Cargando agentes de Uruchat...</option>
+                </select>
+              </div>
+              <small style="color:var(--text-muted); display:block; margin-top:0.25rem; font-size:0.78rem;">
+                ID del usuario o asesor en Uruchat. Puedes escribir el ID numérico o elegirlo del desplegable.
+              </small>
+            </div>
+
+            <div>
+              <label style="font-weight:600; font-size:0.85rem;">Etiqueta al Derivar Conversación</label>
+              <input type="text" id="derivation-label-input" value="derivar" placeholder="derivar" style="max-width:280px; margin-top:0.25rem;">
+              <small style="color:var(--text-muted); display:block; margin-top:0.25rem; font-size:0.78rem;">
+                Etiqueta asignada en Uruchat al derivar (por defecto: <code>derivar</code>).
+              </small>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top:1.5rem; border-top:1px solid var(--border-subtle); padding-top:1.25rem;">
           <h4 style="margin:0 0 0.25rem; font-size:1.05rem;">🧹 Resolución Automática y Limpieza de Bandeja</h4>
           <p style="color:var(--text-muted); font-size:0.83rem; margin-top:0.25rem; margin-bottom:1rem;">
             Mantiene limpia la bandeja de entrada de los asesores resolviendo automáticamente las conversaciones que el bot solucionó con éxito.
@@ -2876,6 +2906,16 @@
         const elLabel = document.getElementById('auto-resolve-label-input');
         if (elLabel) elLabel.value = cfg.auto_resolve_label || 'resuelto-bot';
 
+        const elDerivAgent = document.getElementById('derivation-agent-id-input');
+        if (elDerivAgent) {
+          elDerivAgent.value = cfg.derivation_agent_id || cfg.chatwoot_default_assignee_id || '';
+        }
+        const elDerivLabel = document.getElementById('derivation-label-input');
+        if (elDerivLabel) {
+          elDerivLabel.value = cfg.derivation_label || 'derivar';
+        }
+        await loadUruchatAgents();
+
         let disabledList = [];
         if (cfg.canales_desactivados) {
           try {
@@ -3029,8 +3069,58 @@
         method: 'PUT', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ key: 'auto_resolve_label', value: label })
       });
-      alert('Configuración de Uruchat y Resolución Automática guardada exitosamente.');
+
+      const derivAgentId = document.getElementById('derivation-agent-id-input')?.value?.trim();
+      const derivLabel = document.getElementById('derivation-label-input')?.value?.trim() || 'derivar';
+
+      if (derivAgentId) {
+        await apiFetch(`${API_BASE}/configuracion`, {
+          method: 'PUT', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ key: 'derivation_agent_id', value: derivAgentId })
+        });
+        await apiFetch(`${API_BASE}/configuracion`, {
+          method: 'PUT', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ key: 'chatwoot_default_assignee_id', value: derivAgentId })
+        });
+      }
+      await apiFetch(`${API_BASE}/configuracion`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: 'derivation_label', value: derivLabel })
+      });
+
+      alert('Configuración de Uruchat, Agente de Derivación y Resolución Automática guardada exitosamente.');
       await refreshUruchatInboxes();
+      await loadUruchatAgents();
+    }
+
+    async function loadUruchatAgents() {
+      const select = document.getElementById('derivation-agent-select');
+      if (!select) return;
+      try {
+        const res = await apiFetch(`${API_BASE}/chatwoot/agents`);
+        const data = await res.json();
+        if (data.success && Array.isArray(data.agents) && data.agents.length > 0) {
+          select.innerHTML = '<option value="">-- Seleccionar operador de Uruchat --</option>' +
+            data.agents.map(a => `<option value="${a.id}">${a.name} (ID: ${a.id}${a.role ? ' · ' + a.role : ''})</option>`).join('');
+          
+          const currentId = document.getElementById('derivation-agent-id-input')?.value;
+          if (currentId) {
+            select.value = currentId;
+          }
+        } else {
+          select.innerHTML = '<option value="">Sin agentes disponibles (ingrese ID manual)</option>';
+        }
+      } catch (err) {
+        console.warn('No se pudieron cargar los agentes de Uruchat:', err);
+        select.innerHTML = '<option value="">Ingrese ID manual</option>';
+      }
+    }
+
+    function onSelectDerivationAgent(selectEl) {
+      if (selectEl.value) {
+        const input = document.getElementById('derivation-agent-id-input');
+        if (input) input.value = selectEl.value;
+      }
     }
 
     async function saveChannelConfig() {

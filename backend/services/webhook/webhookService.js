@@ -456,12 +456,8 @@ module.exports = {
 
       if (guardrail.shouldEscalate) {
         const area = guardrail.escalationArea || 'info';
-        const assigneeId = (await configuracionRepo.get(`assignee_id_${area}`)) || 1;
-        const msgDerivacion =
-          (await configuracionRepo.get('msg_derivacion')) ||
-          'Le estamos derivando con un asesor especializado que podrá brindarle una atención personalizada. Por favor aguarde un instante.';
 
-        // Check human business hours
+        // Check human business hours & derivation config
         const channel = (
           conversation.channel ||
           conversation.inbox?.channel_type ||
@@ -472,6 +468,11 @@ module.exports = {
         ).toLowerCase();
 
         const bConfig = await configuracionRepo.getMultiple([
+          `assignee_id_${area}`,
+          'derivation_agent_id',
+          'chatwoot_default_assignee_id',
+          'derivation_label',
+          'msg_derivacion',
           'business_hours_weekday_start',
           'business_hours_weekday_end',
           'business_hours_saturday_enabled',
@@ -480,6 +481,16 @@ module.exports = {
           'contact_alternative_email',
           'msg_fuera_de_horario',
         ]);
+
+        const areaAssignee = bConfig[`assignee_id_${area}`];
+        const defaultAssignee = bConfig.derivation_agent_id || bConfig.chatwoot_default_assignee_id;
+        const rawAssignee = areaAssignee || defaultAssignee || 1;
+        const assigneeId = Number(rawAssignee) || rawAssignee;
+
+        const derivationLabel = (bConfig.derivation_label && bConfig.derivation_label.trim()) || 'derivar';
+        const msgDerivacion =
+          bConfig.msg_derivacion ||
+          'Le estamos derivando con un asesor especializado que podrá brindarle una atención personalizada. Por favor aguarde un instante.';
 
         const hoursStatus = businessHours.isWithinBusinessHours(new Date(), bConfig);
         const nextBusinessDay = businessHours.getNextBusinessDayString(new Date(), bConfig);
@@ -507,11 +518,13 @@ module.exports = {
         await chatwootService.assignAgent(accountId, conversationId, assigneeId);
         await chatwootService.sendMessage(accountId, conversationId, msgToSend);
 
+        // Apply derivation label (default 'derivar') + out-of-hours tags
+        const labels = [derivationLabel];
         if (isOutOfHours) {
-          const labels = ['fuera-de-horario'];
+          labels.push('fuera-de-horario');
           if (hoursStatus.reason === 'weekend') labels.push('fin-de-semana');
-          await chatwootService.addLabels(accountId, conversationId, labels);
         }
+        await chatwootService.addLabels(accountId, conversationId, labels);
 
         // Generate executive summary & action plan as private note for agent
         await derivationNoteService.generateAndSendDerivationNote({
@@ -785,12 +798,7 @@ module.exports = {
       const match = llmReply.match(/DERIVAR:\s*(\w+)/i);
       const area = match ? match[1].toLowerCase() : 'info';
 
-      const assigneeId = (await configuracionRepo.get(`assignee_id_${area}`)) || 1;
-      const defaultMsgDerivacion =
-        (await configuracionRepo.get('msg_derivacion')) ||
-        'Le estamos derivando con un asesor especializado que podrá brindarle una atención personalizada. Por favor aguarde un instante.';
-
-      // Check human business hours
+      // Check human business hours & derivation settings
       const channel = (
         conversation.channel ||
         conversation.inbox?.channel_type ||
@@ -801,6 +809,11 @@ module.exports = {
       ).toLowerCase();
 
       const bConfig = await configuracionRepo.getMultiple([
+        `assignee_id_${area}`,
+        'derivation_agent_id',
+        'chatwoot_default_assignee_id',
+        'derivation_label',
+        'msg_derivacion',
         'business_hours_weekday_start',
         'business_hours_weekday_end',
         'business_hours_saturday_enabled',
@@ -809,6 +822,16 @@ module.exports = {
         'contact_alternative_email',
         'msg_fuera_de_horario',
       ]);
+
+      const areaAssignee = bConfig[`assignee_id_${area}`];
+      const defaultAssignee = bConfig.derivation_agent_id || bConfig.chatwoot_default_assignee_id;
+      const rawAssignee = areaAssignee || defaultAssignee || 1;
+      const assigneeId = Number(rawAssignee) || rawAssignee;
+
+      const derivationLabel = (bConfig.derivation_label && bConfig.derivation_label.trim()) || 'derivar';
+      const defaultMsgDerivacion =
+        bConfig.msg_derivacion ||
+        'Le estamos derivando con un asesor especializado que podrá brindarle una atención personalizada. Por favor aguarde un instante.';
 
       const hoursStatus = businessHours.isWithinBusinessHours(new Date(), bConfig);
       const nextBusinessDay = businessHours.getNextBusinessDayString(new Date(), bConfig);
@@ -855,12 +878,13 @@ module.exports = {
       }
       await redis.set(sessionKey, JSON.stringify(history), 'EX', 86400);
 
-      // Add out-of-hours tags in Chatwoot if applicable
+      // Add derivation label (default 'derivar') + out-of-hours tags in Chatwoot
+      const labels = [derivationLabel];
       if (isOutOfHours) {
-        const labels = ['fuera-de-horario'];
+        labels.push('fuera-de-horario');
         if (hoursStatus.reason === 'weekend') labels.push('fin-de-semana');
-        await chatwootService.addLabels(accountId, conversationId, labels);
       }
+      await chatwootService.addLabels(accountId, conversationId, labels);
 
       // Generate executive summary & action plan as private note for agent
       await derivationNoteService.generateAndSendDerivationNote({

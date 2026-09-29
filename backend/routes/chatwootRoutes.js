@@ -13,4 +13,14 @@ router.get('/inboxes', requireAuth, requireRole('admin'), async (req, res, next)
   }
 });
 
+// GET /api/chatwoot/agents - List all agents directly from Uruchat
+router.get('/agents', requireAuth, requireRole('admin'), async (req, res, next) => {
+  try {
+    const agents = await chatwootService.getAgents();
+    res.json({ success: true, agents });
+  } catch (err) {
+    next(err);
+  }
+});
+
 module.exports = router;
