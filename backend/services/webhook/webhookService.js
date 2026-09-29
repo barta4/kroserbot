@@ -133,13 +133,18 @@ module.exports = {
       return { status: 'ignored', reason: 'conversation_event_unhandled' };
     }
 
-    // 1. Event Shield: Only handle message_created for chat processing
-    if (payload.event !== 'message_created') {
-      logger.info('Event ignored (not message_created)', { correlationId, event: payload.event });
+    const message = payload.message || payload;
+    const attachments = message.attachments || payload.attachments || [];
+    const isMessageEvent =
+      payload.event === 'message_created' ||
+      (payload.event === 'message_updated' && Array.isArray(attachments) && attachments.length > 0);
+
+    // 1. Event Shield: Only handle message_created or message_updated with attachments
+    if (!isMessageEvent) {
+      logger.info('Event ignored (not message_created or message_updated with attachments)', { correlationId, event: payload.event });
       return { status: 'ignored', reason: 'event_type_not_handled' };
     }
 
-    const message = payload.message || payload;
     const messageId = message.id;
     const sender = message.sender || payload.sender || {};
     let content = (message.content || '').trim();
@@ -151,6 +156,12 @@ module.exports = {
     if (isPrivate) {
       logger.info('Private internal note ignored', { correlationId, messageId });
       return { status: 'ignored', reason: 'private_note' };
+    }
+
+    // 1c. If incoming message has NO content and NO attachments, it is an empty stub waiting for media download
+    if (!content && (!Array.isArray(attachments) || attachments.length === 0)) {
+      logger.info('Empty message content without attachments ignored (waiting for media download)', { correlationId, messageId });
+      return { status: 'ignored', reason: 'empty_content' };
     }
 
     // 2. Idempotency Check: Atomic dedup by message_id with SET NX
@@ -259,8 +270,7 @@ module.exports = {
 
     // 7. Process Attachments (Multimodal: Audio voice notes & Images / Visual Parts Finder)
     let visualKeywords = [];
-    const attachments = message.attachments || payload.attachments || [];
-    if (attachments.length > 0) {
+    if (attachments && attachments.length > 0) {
       logger.info('Processing message attachments', { correlationId, count: attachments.length });
       try {
         const { mediaSummaries, transcribedTexts, visualSearchTerms } = await mediaService.processMessageAttachments(attachments);

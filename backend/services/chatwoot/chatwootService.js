@@ -108,7 +108,7 @@ module.exports = {
       if (response.data?.sender?.id) {
         const autoBotId = String(response.data.sender.id);
         try {
-          await redis.set('chatwoot_auto_bot_agent_id', autoBotId, 'EX', 86400 * 30);
+          await redis.set('chatwoot_auto_bot_agent_id', autoBotId, 'EX', 604800);
         } catch (_idErr) {}
       }
       return response.data;

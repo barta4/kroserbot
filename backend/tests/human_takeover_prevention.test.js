@@ -273,5 +273,53 @@ describe('Prevención de Auto-silenciamiento y Detección de Agentes Humanos', (
     expect(res.status).not.toBe('ignored');
     expect(res.reason).not.toBe('bot_self_message');
   });
+
+  test('13. Mensaje entrante message_created vacío (stub de audio de WhatsApp) se ignora temporalmente sin bloquear idempotencia', async () => {
+    const payload = {
+      event: 'message_created',
+      conversation: { id: convId, account_id: 1 },
+      message: {
+        id: 99013,
+        content: '',
+        message_type: 'incoming',
+        attachments: [],
+        sender: { id: 888, type: 'contact' },
+      },
+    };
+
+    const res = await webhookService.processWebhookEvent(payload);
+    expect(res.status).toBe('ignored');
+    expect(res.reason).toBe('empty_content');
+
+    // Comprobar que no bloqueó el mensaje en Redis
+    const isProcessed = await redis.get('msg_processed:99013');
+    expect(isProcessed).toBeNull();
+  });
+
+  test('14. Mensaje entrante message_updated con adjunto de audio de WhatsApp es procesado correctamente', async () => {
+    const payload = {
+      event: 'message_updated',
+      conversation: { id: convId, account_id: 1 },
+      message: {
+        id: 99014,
+        content: '',
+        message_type: 'incoming',
+        attachments: [
+          {
+            file_type: 'audio',
+            content_type: 'audio/ogg; codecs=opus',
+            extension: '.opus',
+            data_url: 'https://fake-cdn.kroser.uy/voice.opus',
+          },
+        ],
+        sender: { id: 888, type: 'contact' },
+      },
+    };
+
+    const res = await webhookService.processWebhookEvent(payload);
+    // Debe haber procesado el audio sin ignorarlo como event_type_not_handled
+    expect(res.status).not.toBe('ignored');
+  });
 });
+
 
