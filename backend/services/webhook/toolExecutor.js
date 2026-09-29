@@ -235,7 +235,7 @@ async function executeBuscarProductos({ consulta = '' }) {
   }
 
   const res = {
-    productos: productos.map((p) => {
+    productos: productos.slice(0, 2).map((p) => {
       const item = {
         sku: p.sku,
         nombre: p.nombre,
@@ -249,10 +249,19 @@ async function executeBuscarProductos({ consulta = '' }) {
       }
       return item;
     }),
+    producto_destacado: productos[0] ? {
+      sku: productos[0].sku,
+      nombre: productos[0].nombre,
+      precio: formatCurrencyPrice(productos[0]),
+      stock_status: productos[0].stock_status,
+      marca: (productos[0].marca && productos[0].marca !== 'N/A') ? productos[0].marca : undefined,
+    } : null,
+    total_coincidencias: productos.length,
+    directiva_vendedor: 'Mencione ÚNICAMENTE el producto principal con su precio en 1 o 2 oraciones breves de chat. NO arme listas con viñetas ni mencione varios artículos. Pregunte de forma cordial si le sirve esa opción.',
   };
 
   if (alternativas.length > 0) {
-    res.alternativas = alternativas.map((p) => {
+    res.alternativas = alternativas.slice(0, 2).map((p) => {
       const item = {
         sku: p.sku,
         nombre: p.nombre,
@@ -265,7 +274,7 @@ async function executeBuscarProductos({ consulta = '' }) {
   }
 
   if (complementarios.length > 0) {
-    res.complementarios_sugeridos = complementarios.map((p) => {
+    res.complementarios_sugeridos = complementarios.slice(0, 2).map((p) => {
       const item = {
         sku: p.sku,
         nombre: p.nombre,
@@ -274,6 +283,7 @@ async function executeBuscarProductos({ consulta = '' }) {
       if (p.producto_url) item.enlace_web = p.producto_url;
       return item;
     });
+    res.nota_cross_selling = 'No mencione consumibles de entrada; solo consúltelos si el cliente demuestra intención de compra.';
   }
 
   return res;

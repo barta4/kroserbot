@@ -169,6 +169,12 @@ function cleanAndHumanizeReply(text = '', historyLength = 1) {
     }
   }
 
+  // Convert markdown links [Text](url) to cleaner Text (url) for WhatsApp readability
+  cleaned = cleaned.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '$1 ($2)');
+
+  // Strip robotic catalog introductions
+  cleaned = cleaned.replace(/^(A continuación le (detallo|presento|muestro)|Disponemos de las siguientes opciones|Le ofrecemos las siguientes opciones|Tenemos disponibles las siguientes opciones)[^:\n]*:?\s*/gim, '');
+
   return cleaned.trim();
 }
 
