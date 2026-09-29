@@ -113,7 +113,7 @@ module.exports = {
     // 0. Handle Conversation Assignment & Status Changes (Chatwoot conversation_updated / conversation_status_changed)
     if (payload.event === 'conversation_updated' || payload.event === 'conversation_status_changed') {
       const assigneeId = conversation.assignee_id || conversation.meta?.assignee?.id || conversation.assignee?.id;
-      const botAgentId = await configuracionRepo.get('chatwoot_bot_agent_id');
+      const botAgentId = await chatwootService.getBotAgentId();
 
       if (conversationId) {
         if (assigneeId && (!botAgentId || String(assigneeId) !== String(botAgentId))) {
@@ -124,9 +124,9 @@ module.exports = {
           autoResolveService.cancelScheduledResolve(conversationId);
           logger.info('Conversation assigned to human agent. Bot silenced.', { correlationId, conversationId, assigneeId });
           return { status: 'processed', action: 'human_assigned', conversationId, assigneeId };
-        } else if (!assigneeId) {
+        } else if (!assigneeId || (botAgentId && String(assigneeId) === String(botAgentId))) {
           await redis.del(`human_active:${conversationId}`);
-          logger.info('Conversation unassigned. Bot reactivated.', { correlationId, conversationId });
+          logger.info('Conversation unassigned or assigned to bot. Bot reactivated.', { correlationId, conversationId });
           return { status: 'processed', action: 'bot_reactivated', conversationId };
         }
       }
@@ -144,8 +144,14 @@ module.exports = {
     const sender = message.sender || payload.sender || {};
     let content = (message.content || '').trim();
     const senderType = (sender.type || message.sender_type || payload.sender_type || '').toLowerCase();
-    const messageType = (message.message_type || payload.message_type || '').toLowerCase();
-    const isHumanAgent = senderType === 'agent' || (senderType === 'user' && messageType === 'outgoing');
+    const messageType = String(message.message_type || payload.message_type || '').toLowerCase();
+    const isPrivate = Boolean(message.private || payload.private);
+
+    // 1b. Ignore internal private notes from customer chat processing
+    if (isPrivate) {
+      logger.info('Private internal note ignored', { correlationId, messageId });
+      return { status: 'ignored', reason: 'private_note' };
+    }
 
     // 2. Idempotency Check: Atomic dedup by message_id with SET NX
     if (messageId) {
@@ -156,6 +162,24 @@ module.exports = {
         return { status: 'ignored', reason: 'duplicate_message' };
       }
     }
+
+    // Detect if this message was sent by the bot (avoid bot self-takeover loops)
+    const isBotSent = messageId ? await redis.get(`bot_sent_msg:${messageId}`) : null;
+    const botAgentId = await chatwootService.getBotAgentId();
+    const isBotSender = Boolean(
+      isBotSent ||
+      senderType === 'bot' ||
+      sender.type === 'agent_bot' ||
+      (botAgentId && sender.id && String(sender.id) === String(botAgentId))
+    );
+
+    if (isBotSender) {
+      logger.info('Bot self-message ignored', { correlationId, messageId });
+      return { status: 'ignored', reason: 'bot_self_message' };
+    }
+
+    const isOutgoing = messageType === 'outgoing' || messageType === '1';
+    const isHumanAgent = senderType === 'agent' || (senderType === 'user' && isOutgoing);
 
     // 3. Human Agent Takeover: If a human agent sends a message, immediately silence the bot
     if (isHumanAgent) {
@@ -171,7 +195,7 @@ module.exports = {
     }
 
     // Filter Outgoing or Bot messages (avoid infinite loops)
-    if (message.message_type === 'outgoing' || senderType === 'bot') {
+    if (isOutgoing || senderType === 'bot') {
       logger.info('Outgoing/bot message ignored', { correlationId });
       return { status: 'ignored', reason: 'bot_or_outgoing_message' };
     }
@@ -200,7 +224,6 @@ module.exports = {
 
     // 5. Human Assignment Check: If conversation is currently assigned to a human agent, silence bot
     const assigneeId = conversation.assignee_id || conversation.meta?.assignee?.id || conversation.assignee?.id;
-    const botAgentId = await configuracionRepo.get('chatwoot_bot_agent_id');
     if (assigneeId && (!botAgentId || String(assigneeId) !== String(botAgentId))) {
       logger.info('Conversation currently assigned to human agent. Bot silenced.', { correlationId, conversationId, assigneeId });
       if (conversationId) {

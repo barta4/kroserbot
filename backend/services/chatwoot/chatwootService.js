@@ -8,6 +8,7 @@ try {
 }
 
 const configuracionRepo = require('../../repositories/configuracionRepository');
+const redis = require('../../config/redis');
 const logger = require('../../config/logger');
 
 async function getChatwootClient() {
@@ -33,6 +34,32 @@ async function getChatwootClient() {
 }
 
 module.exports = {
+  async getBotAgentId() {
+    try {
+      const configured = await configuracionRepo.get('chatwoot_bot_agent_id');
+      if (configured && String(configured).trim()) {
+        return String(configured).trim();
+      }
+      const cached = await redis.get('chatwoot_auto_bot_agent_id');
+      if (cached && String(cached).trim()) {
+        return String(cached).trim();
+      }
+
+      const client = await getChatwootClient();
+      if (!client) return null;
+
+      const res = await client.get('/api/v1/profile');
+      if (res.data?.id) {
+        const autoId = String(res.data.id);
+        await redis.set('chatwoot_auto_bot_agent_id', autoId, 'EX', 86400);
+        return autoId;
+      }
+    } catch (err) {
+      logger.debug('Could not auto-detect bot agent ID', { error: err.message });
+    }
+    return null;
+  },
+
   async sendMessage(accountId, conversationId, content, isPrivate = false) {
     const client = await getChatwootClient();
     if (!client) {
@@ -53,6 +80,15 @@ module.exports = {
           private: Boolean(isPrivate),
         }
       );
+      if (response.data?.id) {
+        const msgId = response.data.id;
+        try {
+          await redis.set(`msg_processed:${msgId}`, '1', 'EX', 3600);
+          await redis.set(`bot_sent_msg:${msgId}`, '1', 'EX', 3600);
+        } catch (_redisErr) {
+          logger.warn('Error saving bot message idempotency in Redis', { msgId, error: _redisErr.message });
+        }
+      }
       return response.data;
     } catch (err) {
       logger.error('Chatwoot send error', { conversationId, isPrivate, error: err.message });
