@@ -51,7 +51,9 @@ async function fetchMediaAsBase64(url) {
   if (!axios || !url) return null;
   try {
     let targetUrl = url;
-    if (targetUrl.startsWith('/') && !targetUrl.startsWith('//')) {
+    if (targetUrl.startsWith('//')) {
+      targetUrl = `https:${targetUrl}`;
+    } else if (targetUrl.startsWith('/') && !targetUrl.startsWith('//')) {
       const dbUrl = await configuracionRepo.get('chatwoot_base_url');
       const baseUrl = (dbUrl && dbUrl.trim()) || process.env.CHATWOOT_BASE_URL || process.env.CHATWOOT_API_URL || 'https://omnicanal.kroser.uy';
       targetUrl = `${baseUrl.replace(/\/+$/, '')}${targetUrl}`;
@@ -124,8 +126,7 @@ async function transcribeAudio({ url, data_url, mime_type, extension }) {
             const fbModel = await configuracionRepo.get('llm_fallback_model');
             geminiModel = (fbModel && fbModel.toLowerCase().startsWith('gemini')) ? fbModel : 'gemini-1.5-flash';
           }
-          const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${geminiKey}`;
-          const res = await axios.post(apiUrl, {
+          const requestBody = {
             contents: [
               {
                 parts: [
@@ -139,9 +140,26 @@ async function transcribeAudio({ url, data_url, mime_type, extension }) {
                 ],
               },
             ],
-          }, { timeout: 20000 });
+          };
 
-          const transcription = res.data?.candidates?.[0]?.content?.parts?.[0]?.text;
+          let res = null;
+          let apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${geminiKey}`;
+          try {
+            res = await axios.post(apiUrl, requestBody, { timeout: 20000 });
+          } catch (modelErr) {
+            if (geminiModel !== 'gemini-1.5-flash') {
+              logger.info('Gemini custom model failed for audio transcription, retrying with gemini-1.5-flash', {
+                triedModel: geminiModel,
+                error: modelErr.message,
+              });
+              apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`;
+              res = await axios.post(apiUrl, requestBody, { timeout: 20000 });
+            } else {
+              throw modelErr;
+            }
+          }
+
+          const transcription = res?.data?.candidates?.[0]?.content?.parts?.[0]?.text;
           if (transcription && transcription.trim()) {
             logger.info('Audio transcribed successfully with Gemini', { length: transcription.length });
             return transcription.trim();
@@ -244,8 +262,7 @@ DETALLE: <Explicación breve de 1 o 2 oraciones para el cliente sobre qué pieza
       const fbModel = await configuracionRepo.get('llm_fallback_model');
       geminiModel = (fbModel && fbModel.toLowerCase().startsWith('gemini')) ? fbModel : 'gemini-1.5-flash';
     }
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${geminiKey}`;
-    const res = await axios.post(apiUrl, {
+    const visionPayload = {
       contents: [
         {
           parts: [
@@ -259,8 +276,23 @@ DETALLE: <Explicación breve de 1 o 2 oraciones para el cliente sobre qué pieza
           ],
         },
       ],
-    }, { timeout: 20000 });
-    return res.data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || null;
+    };
+    let apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${geminiKey}`;
+    try {
+      const res = await axios.post(apiUrl, visionPayload, { timeout: 20000 });
+      return res.data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || null;
+    } catch (visErr) {
+      if (geminiModel !== 'gemini-1.5-flash') {
+        logger.info('Gemini custom model failed for hardware vision, retrying with gemini-1.5-flash', {
+          triedModel: geminiModel,
+          error: visErr.message,
+        });
+        apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`;
+        const res = await axios.post(apiUrl, visionPayload, { timeout: 20000 });
+        return res.data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || null;
+      }
+      throw visErr;
+    }
   };
 
   const runOpenAIVision = async () => {

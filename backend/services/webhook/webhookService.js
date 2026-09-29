@@ -114,8 +114,18 @@ module.exports = {
     // 0. Handle Conversation Assignment & Status Changes (Chatwoot conversation_updated / conversation_status_changed)
     if (payload.event === 'conversation_updated' || payload.event === 'conversation_status_changed') {
       const assigneeId = conversation.assignee_id || conversation.meta?.assignee?.id || conversation.assignee?.id;
+      const status = conversation.status || payload.status;
 
       if (conversationId) {
+        if (status === 'resolved') {
+          await redis.del(`human_active:${conversationId}`);
+          debounceService.cancel(conversationId);
+          await redis.del(`conv_buffer:${conversationId}`);
+          await botLoopDetector.resetTurns(conversationId);
+          logger.info('Conversation resolved in Uruchat. Human active flag cleared.', { correlationId, conversationId });
+          return { status: 'processed', action: 'conversation_resolved_cleared', conversationId };
+        }
+
         if (assigneeId && botAgentId && String(assigneeId) !== String(botAgentId)) {
           await redis.set(`human_active:${conversationId}`, '1', 'EX', HUMAN_ACTIVE_TTL);
           debounceService.cancel(conversationId);
