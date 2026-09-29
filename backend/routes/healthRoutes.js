@@ -3,6 +3,8 @@ const router = express.Router();
 const db = require('../config/db');
 const redis = require('../config/redis');
 
+const logger = require('../config/logger');
+
 const getHealthHandler = async (req, res) => {
   let dbStatus = 'down';
   let redisStatus = 'down';
@@ -11,7 +13,8 @@ const getHealthHandler = async (req, res) => {
     await db.query('SELECT 1');
     dbStatus = 'up';
   } catch (err) {
-    dbStatus = `error: ${err.message}`;
+    logger.error('Healthcheck database query failed', { error: err.message });
+    dbStatus = process.env.NODE_ENV === 'production' ? 'down' : `error: ${err.message}`;
   }
 
   if (redis.isReady()) {

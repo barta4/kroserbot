@@ -49,7 +49,7 @@ function clearAuthCookie(res) {
 }
 
 module.exports = {
-  login(req, res) {
+  async login(req, res) {
     const { username, password } = req.body;
 
     if (typeof username !== 'string' || typeof password !== 'string') {
@@ -64,7 +64,7 @@ module.exports = {
       return res.status(401).json({ error: 'Usuario o contraseña incorrectos' });
     }
 
-    const ok = bcrypt.compareSync(password, user.passwordHash);
+    const ok = await bcrypt.compare(password, user.passwordHash);
     if (!ok) {
       return res.status(401).json({ error: 'Usuario o contraseña incorrectos' });
     }
