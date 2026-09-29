@@ -176,10 +176,10 @@ async function executeBuscarProductos({ consulta = '' }) {
   try {
     const keywordResults = await productosRepo.searchByKeyword(query, 5);
     let vectorResults = [];
-    if (embeddingProvider) {
+    if (embeddingProvider && !embeddingProvider.isMock) {
       try {
         const queryEmbedding = await embeddingProvider.generateSingleEmbedding(query);
-        if (queryEmbedding && queryEmbedding.length > 0) {
+        if (queryEmbedding && queryEmbedding.length > 0 && !embeddingProvider.isMock) {
           const rawVector = await productosRepo.searchVector(queryEmbedding, 5);
           vectorResults = rawVector.filter((p) => p.similarity !== undefined && p.similarity >= SIMILARITY_THRESHOLD);
         }
@@ -195,6 +195,27 @@ async function executeBuscarProductos({ consulta = '' }) {
         productos.push(item);
       }
       if (productos.length >= 5) break;
+    }
+
+    // Category coherence guard: if user is clearly searching for paint, exclude power tools / drill bits
+    const isPaintQuery = /\b(pintura|pintar|latex|látex|esmalte|barniz|impermeabilizante|enduido|pincel|rodillo)\b/i.test(lowerQ);
+    if (isPaintQuery && productos.length > 0) {
+      productos = productos.filter((p) => {
+        const cat = (p.categoria || '').toLowerCase();
+        const nom = (p.nombre || '').toLowerCase();
+        // Exclude heavy tools/mechas/taladros that falsely matched
+        if (
+          cat.includes('herramientas') &&
+          !nom.includes('pincel') &&
+          !nom.includes('rodillo') &&
+          !nom.includes('espatula') &&
+          !nom.includes('espátula') &&
+          !nom.includes('pintar')
+        ) {
+          return false;
+        }
+        return true;
+      });
     }
   } catch (pErr) {
     logger.error('Error in searchByKeyword tool', { error: pErr.message });

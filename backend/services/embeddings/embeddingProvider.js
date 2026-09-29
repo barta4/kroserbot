@@ -73,6 +73,7 @@ module.exports = {
           dimensions: 768,
           input: textArray,
         });
+        this.isMock = false;
         return response.data.map((item) => item.embedding);
       } catch (err) {
         logger.warn(`[EmbeddingProvider Warning] OpenAI embedding failed (${err.message}). Using fallback.`);
@@ -93,6 +94,7 @@ module.exports = {
             })),
           });
           if (batchRes && batchRes.embeddings) {
+            this.isMock = false;
             return batchRes.embeddings.map((e) => e.values);
           }
         }
@@ -102,6 +104,7 @@ module.exports = {
             return res.embedding.values;
           })
         );
+        this.isMock = false;
         return results;
       } catch (err) {
         logger.warn(`[EmbeddingProvider Warning] Gemini embedding failed (${err.message}). Using fallback.`);
@@ -109,6 +112,7 @@ module.exports = {
     }
 
     // 3. Mock Fallback
+    this.isMock = true;
     logger.info(`[EmbeddingProvider] Generating ${textArray.length} deterministic mock embeddings.`);
     return textArray.map((txt) => generateMockEmbedding(txt));
   },

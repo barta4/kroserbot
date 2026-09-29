@@ -19,6 +19,7 @@ const orderExtractor = require('../pedidos/orderExtractor');
 const derivationNoteService = require('../chatwoot/derivationNoteService');
 const autoResolveService = require('../chatwoot/autoResolveService');
 const businessHours = require('../../utils/businessHours');
+const urlInterpreterService = require('../media/urlInterpreterService');
 
 const IDEMPOTENCY_TTL = 3600; // 1 hour
 const HUMAN_ACTIVE_TTL = 86400; // 24 hours
@@ -307,6 +308,27 @@ module.exports = {
         }
       } catch (mediaErr) {
         logger.warn('Error processing attachments in webhook', { correlationId, error: mediaErr.message });
+      }
+    }
+
+    // 7b. Process Message URLs (Mercado Libre, Kroser & general e-commerce links)
+    if (content && typeof content === 'string') {
+      try {
+        const urlResult = await urlInterpreterService.processMessageUrls(content);
+        if (urlResult.hasUrls) {
+          logger.info('URLs detected and interpreted in user message', {
+            correlationId,
+            urlCount: urlResult.urls.length,
+            platforms: urlResult.urls.map((u) => u.platform),
+            terms: urlResult.combinedSearchTerms,
+          });
+          content = urlResult.enrichedContent;
+          if (urlResult.combinedSearchTerms && visualKeywords.length === 0) {
+            visualKeywords = urlResult.combinedSearchTerms.split(' ').filter(Boolean);
+          }
+        }
+      } catch (urlErr) {
+        logger.warn('Error interpreting URLs in webhook message', { correlationId, error: urlErr.message });
       }
     }
 
