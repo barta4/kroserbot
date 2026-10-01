@@ -40,6 +40,7 @@ const COLORS = [
 
 // ──────────────────────────────────────────── Categories (normalized)
 const CATEGORY_HINTS = {
+  hidrolavadoras: ['hidrolavadora', 'hidrolavadoras', 'lavadora a presion', 'lavadora de alta presion'],
   pintura: ['pintura', 'latex', 'esmalte', 'barniz', 'impermeabilizante', 'membrana', 'enduido', 'fijador', 'cetol', 'lasur'],
   herramientas: ['taladro', 'amoladora', 'atornillador', 'sierra', 'caladora', 'fresadora', 'lijadora', 'soldadora'],
   electricidad: ['cable', 'termica', 'disyuntor', 'enchufe', 'toma', 'llave', 'tablero', 'prolongador'],
@@ -47,7 +48,7 @@ const CATEGORY_HINTS = {
   fijaciones: ['tornillo', 'clavo', 'tarugo', 'bulón', 'tuerca', 'arandela', 'remache'],
   iluminacion: ['lampara', 'foco', 'led', 'reflector', 'dicroica', 'tubo', 'plafon'],
   jardin: ['manguera', 'aspersora', 'tijera poda', 'fumigador', 'cortadora', 'bordeadora'],
-  parrillas: ['medio tanque', 'parrilla', 'barbacoa', 'asador', 'carbon', 'fogonero', 'churrasquera'],
+  parrillas: ['medio tanque', 'parrilla', 'barbacoa', 'chulengo', 'carbon', 'fogonero', 'churrasquera'],
   adhesivos: ['silicona', 'sellador', 'pegamento', 'cola', 'adhesivo', 'epoxi', 'cianoacrilato'],
   abrasivos: ['lija', 'disco corte', 'disco desbaste', 'piedra', 'muela', 'disco flap'],
 };
@@ -55,7 +56,7 @@ const CATEGORY_HINTS = {
 // ──────────────────────────────────────────── Local Uruguayan Hardware Synonyms
 // Maps popular local vernacular to formal retail catalog terminology
 const LOCAL_SYNONYMS = {
-  'medio tanque': ['parrilla', 'asador', 'barbacoa', 'tambor'],
+  'medio tanque': ['parrilla', 'chulengo', 'barbacoa'],
   'trincheta': ['cutter', 'cuchilla'],
   'cuerito': ['valvula', 'arandela canilla'],
   'alargue': ['prolongador', 'cable alargue'],
@@ -67,6 +68,17 @@ const LOCAL_SYNONYMS = {
   'fleje': ['cinta pasacable'],
   'canilla': ['griferia'],
 };
+
+/**
+ * Strip common stopwords from query to isolate substantive search keywords.
+ * @param {string} str - Query string
+ * @returns {string} Substantive keywords joined by space
+ */
+function stripStopwords(str) {
+  if (!str || typeof str !== 'string') return '';
+  const norm = normalizeQuery(str);
+  return norm.split(/\s+/).filter((t) => t.length >= 2 && !STOPWORDS.has(t)).join(' ');
+}
 
 /**
  * Normalize query preserving technical measurements and special chars.
@@ -277,4 +289,5 @@ module.exports = {
   COLORS,
   CATEGORY_HINTS,
   LOCAL_SYNONYMS,
+  stripStopwords,
 };

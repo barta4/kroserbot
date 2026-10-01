@@ -9,7 +9,7 @@
  * - Business score (stock, price, image availability)
  */
 
-const { normalizeQuery } = require('../../utils/queryAnalyzer');
+const { normalizeQuery, stripStopwords } = require('../../utils/queryAnalyzer');
 
 // ──────────────────────────────────────────── Weight Configuration
 const WEIGHTS = {
@@ -43,7 +43,7 @@ const WEIGHTS = {
   BIZ_HAS_IMAGE: 5,
 
   // Coherence penalty (product from wrong category)
-  CATEGORY_INCOHERENCE_PENALTY: -30,
+  CATEGORY_INCOHERENCE_PENALTY: -35,
 };
 
 /**
@@ -69,6 +69,7 @@ function scoreProduct(product, normalizedQuery, attrs = {}, options = {}) {
   const marca = normalizeQuery(product.marca || '');
   const categoria = normalizeQuery(product.categoria || '');
   const descripcion = normalizeQuery(product.descripcion || '');
+  const cleanQuery = stripStopwords(normalizedQuery);
 
   // ── 1. Exact Match Bonus
   if (product._matchType === 'exact') {
@@ -77,12 +78,13 @@ function scoreProduct(product, normalizedQuery, attrs = {}, options = {}) {
 
   // ── 2. Text Score
   if (normalizedQuery) {
-    // Full name match
-    if (nombre.includes(normalizedQuery)) {
+    // Full name match (using either raw normalized query or substantive query without stopwords)
+    if (nombre.includes(normalizedQuery) || (cleanQuery && nombre.includes(cleanQuery))) {
       breakdown.text += WEIGHTS.TEXT_NOMBRE_FULL;
     } else {
-      // Token-level matching
-      const queryTokens = normalizedQuery.split(/\s+/).filter((t) => t.length >= 2);
+      // Token-level matching (isolated to substantive query tokens)
+      const targetQuery = cleanQuery || normalizedQuery;
+      const queryTokens = targetQuery.split(/\s+/).filter((t) => t.length >= 2);
       let tokenMatchCount = 0;
       for (const token of queryTokens) {
         if (nombre.includes(token) || descripcion.includes(token)) {
@@ -91,7 +93,10 @@ function scoreProduct(product, normalizedQuery, attrs = {}, options = {}) {
       }
       if (queryTokens.length > 0) {
         const matchRatio = tokenMatchCount / queryTokens.length;
-        if (matchRatio >= 0.8) {
+        if (matchRatio >= 0.95) {
+          // All search tokens found in product name/description!
+          breakdown.text += WEIGHTS.TEXT_NOMBRE_FULL;
+        } else if (matchRatio >= 0.65) {
           breakdown.text += WEIGHTS.TEXT_NOMBRE_PARTIAL;
         } else if (tokenMatchCount > 0) {
           breakdown.text += Math.round(WEIGHTS.TEXT_NOMBRE_TOKEN * matchRatio * 2);
@@ -115,10 +120,14 @@ function scoreProduct(product, normalizedQuery, attrs = {}, options = {}) {
       const normalizedRank = Math.min(product._ftsRank / 0.3, 1);
       breakdown.text += Math.round(normalizedRank * WEIGHTS.TEXT_FTS_RANK);
     }
-    // Check synonym matches if any were extracted
+    // Check synonym matches with whole-word regex (prevents 'asador' matching 'engrasadora')
     if (attrs.synonyms && attrs.synonyms.length > 0) {
       for (const syn of attrs.synonyms) {
-        if (nombre.includes(syn) || categoria.includes(syn)) {
+        const synPattern = new RegExp(`\\b${syn}\\b`, 'i');
+        if (synPattern.test(nombre)) {
+          breakdown.text += WEIGHTS.TEXT_NOMBRE_FULL;
+          break;
+        } else if (synPattern.test(categoria)) {
           breakdown.text += WEIGHTS.TEXT_NOMBRE_PARTIAL;
           break;
         }
@@ -201,16 +210,22 @@ function scoreProduct(product, normalizedQuery, attrs = {}, options = {}) {
   }
 
   // ── 6. Category Coherence Penalty
-  if (attrs.categoriaHint && categoria) {
-    const isPaintQuery = attrs.categoriaHint === 'pintura';
-    if (isPaintQuery) {
+  if (attrs.categoriaHint) {
+    if (attrs.categoriaHint === 'pintura') {
       const isToolProduct = categoria.includes('herramienta') && !nombre.includes('pincel') && !nombre.includes('rodillo') && !nombre.includes('espatula') && !nombre.includes('bandeja') && !nombre.includes('pintar');
       if (isToolProduct) {
         breakdown.penalty += WEIGHTS.CATEGORY_INCOHERENCE_PENALTY;
       }
+    } else if (attrs.categoriaHint === 'hidrolavadoras') {
+      // If customer asks for pressure washers, aspiradoras or unpowered tools get penalized
+      const isAspiradoraOrUnrelated = nombre.includes('aspiradora') && !nombre.includes('hidrolavadora');
+      if (isAspiradoraOrUnrelated) {
+        breakdown.penalty += WEIGHTS.CATEGORY_INCOHERENCE_PENALTY;
+      }
     } else if (attrs.categoriaHint === 'parrillas') {
-      const isToolProduct = categoria.includes('herramienta') || categoria.includes('fijacion') || categoria.includes('abrasivo') || nombre.includes('mecha') || nombre.includes('broca') || nombre.includes('tarugo') || nombre.includes('tornillo');
-      if (isToolProduct) {
+      const isToolOrAccProduct = categoria.includes('herramienta') || categoria.includes('fijacion') || categoria.includes('abrasivo') || categoria.includes('accesorio') || nombre.includes('mecha') || nombre.includes('broca') || nombre.includes('tarugo') || nombre.includes('tornillo') || nombre.includes('engrasadora');
+      const isBaseOrStand = nombre.startsWith('base para') || nombre.startsWith('soporte para') || nombre.startsWith('funda para');
+      if (isToolOrAccProduct || isBaseOrStand) {
         breakdown.penalty += WEIGHTS.CATEGORY_INCOHERENCE_PENALTY;
       }
     }
@@ -247,16 +262,22 @@ function rerank(products, rawQuery, attrs = {}) {
 
   const scored = products.map((p) => scoreProduct(p, normalizedQ, attrs));
 
-  // Sort by score descending, then by stock (in_stock first), then by name alphabetically
+  // Sort by score descending, then by stock (in_stock first), then by normalized price
   scored.sort((a, b) => {
     if (b._score !== a._score) return b._score - a._score;
     // Tiebreaker: in_stock first
     const stockA = a.stock_status === 'in_stock' ? 1 : 0;
     const stockB = b.stock_status === 'in_stock' ? 1 : 0;
     if (stockB !== stockA) return stockB - stockA;
-    // Tiebreaker: lower price
-    const priceA = parseFloat(a.precio) || Infinity;
-    const priceB = parseFloat(b.precio) || Infinity;
+    // Tiebreaker: lower price (currency-aware: convert USD to UYU approx so U$S 392 is not considered cheaper than $6200 UYU)
+    const normPrice = (p) => {
+      const num = parseFloat(p.precio) || Infinity;
+      if (num === Infinity) return num;
+      if (p.moneda === 'USD' || p.moneda === 'U$S') return num * 42;
+      return num;
+    };
+    const priceA = normPrice(a);
+    const priceB = normPrice(b);
     return priceA - priceB;
   });
 

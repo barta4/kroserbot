@@ -123,7 +123,7 @@ describe('queryAnalyzer', () => {
       const attrs = extractAttributes('medio tanque');
       expect(attrs.categoriaHint).toBe('parrillas');
       expect(attrs.synonyms).toContain('parrilla');
-      expect(attrs.synonyms).toContain('asador');
+      expect(attrs.synonyms).toContain('chulengo');
     });
 
     it('should detect local synonyms for trincheta', () => {

@@ -72,12 +72,18 @@ async function hybridSearch(rawQuery, { limit = 5, skipVector = false } = {}) {
   // ── STEP 2: Extract attributes
   const attrs = queryAnalyzer.extractAttributes(normalizedQuery);
 
-  // ── STEP 3: Textual search (two approaches in parallel + synonyms)
+  // ── STEP 3: Textual search (two approaches in parallel + synonyms + clean stopwords)
   try {
     const textPromises = [
       productosRepo.searchByKeyword(query, limit * 2),
       _searchFTS(normalizedQuery, limit * 2),
     ];
+
+    const cleanQuery = queryAnalyzer.stripStopwords(normalizedQuery);
+    if (cleanQuery && cleanQuery !== normalizedQuery) {
+      textPromises.push(productosRepo.searchByKeyword(cleanQuery, limit * 2));
+      textPromises.push(_searchFTS(cleanQuery, limit * 2));
+    }
 
     if (attrs.synonyms && attrs.synonyms.length > 0) {
       const synQuery = attrs.synonyms.join(' ');
