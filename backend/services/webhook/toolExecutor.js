@@ -6,16 +6,9 @@ const pedidosRepo = require('../../repositories/pedidosRepository');
 const configuracionRepo = require('../../repositories/configuracionRepository');
 const orderTrackingService = require('../pedidos/orderTrackingService');
 const emailService = require('../email/emailService');
+const searchService = require('../search/searchService');
 const logger = require('../../config/logger');
 
-let embeddingProvider = null;
-try {
-  embeddingProvider = require('../embeddings/embeddingProvider');
-} catch (_e) {
-  embeddingProvider = null;
-}
-
-const SIMILARITY_THRESHOLD = 0.52;
 
 const CROSS_SELLING_MAP = require('../../utils/crossSellingMap');
 const { formatCurrencyPrice } = require('../../utils/formatCurrency');
@@ -172,53 +165,11 @@ async function executeBuscarProductos({ consulta = '' }) {
   let complementarios = [];
   const lowerQ = query.toLowerCase();
 
-  // 1. Keyword search
+  // 1. Hybrid search (exact + textual + vector with re-ranking)
   try {
-    const keywordResults = await productosRepo.searchByKeyword(query, 5);
-    let vectorResults = [];
-    if (embeddingProvider && !embeddingProvider.isMock) {
-      try {
-        const queryEmbedding = await embeddingProvider.generateSingleEmbedding(query);
-        if (queryEmbedding && queryEmbedding.length > 0 && !embeddingProvider.isMock) {
-          const rawVector = await productosRepo.searchVector(queryEmbedding, 5);
-          vectorResults = rawVector.filter((p) => p.similarity !== undefined && p.similarity >= SIMILARITY_THRESHOLD);
-        }
-      } catch (_vErr) {
-        logger.warn('Vector search error in tool executor', { error: _vErr.message });
-      }
-    }
-
-    const seenSkus = new Set();
-    for (const item of [...keywordResults, ...vectorResults]) {
-      if (!seenSkus.has(item.sku)) {
-        seenSkus.add(item.sku);
-        productos.push(item);
-      }
-      if (productos.length >= 5) break;
-    }
-
-    // Category coherence guard: if user is clearly searching for paint, exclude power tools / drill bits
-    const isPaintQuery = /\b(pintura|pintar|latex|látex|esmalte|barniz|impermeabilizante|enduido|pincel|rodillo)\b/i.test(lowerQ);
-    if (isPaintQuery && productos.length > 0) {
-      productos = productos.filter((p) => {
-        const cat = (p.categoria || '').toLowerCase();
-        const nom = (p.nombre || '').toLowerCase();
-        // Exclude heavy tools/mechas/taladros that falsely matched
-        if (
-          cat.includes('herramientas') &&
-          !nom.includes('pincel') &&
-          !nom.includes('rodillo') &&
-          !nom.includes('espatula') &&
-          !nom.includes('espátula') &&
-          !nom.includes('pintar')
-        ) {
-          return false;
-        }
-        return true;
-      });
-    }
+    productos = await searchService.hybridSearch(query, { limit: 5 });
   } catch (pErr) {
-    logger.error('Error in searchByKeyword tool', { error: pErr.message });
+    logger.error('Error in hybrid search tool', { error: pErr.message });
   }
 
   // 2. Smart substitutions if out of stock

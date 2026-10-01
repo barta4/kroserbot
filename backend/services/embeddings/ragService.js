@@ -1,12 +1,11 @@
 const db = require('../../config/db');
-const embeddingProvider = require('./embeddingProvider');
 const productosRepo = require('../../repositories/productosRepository');
 const localesRepo = require('../../repositories/localesRepository');
 const guiasTecnicasRepo = require('../../repositories/guiasTecnicasRepository');
+const searchService = require('../search/searchService');
 const CROSS_SELLING_MAP = require('../../utils/crossSellingMap');
 const { formatCurrencyPrice } = require('../../utils/formatCurrency');
 
-const SIMILARITY_THRESHOLD = 0.52; // Calibrated cosine similarity threshold for pgvector
 
 const CACHE_TTL_MS = 5 * 60 * 1000;
 let cachedLocales = { data: null, expiresAt: 0 };
@@ -57,26 +56,9 @@ module.exports = {
 
     const lowerQ = (queryText || '').toLowerCase();
 
-    // 1. Keyword & Vector Product Search
+    // 1. Hybrid Product Search (exact + textual + vector, unified)
     try {
-      const keywordResults = await productosRepo.searchByKeyword(queryText, 5);
-      let vectorResults = [];
-      try {
-        const queryEmbedding = await embeddingProvider.generateSingleEmbedding(queryText);
-        if (queryEmbedding && queryEmbedding.length > 0) {
-          const rawVector = await productosRepo.searchVector(queryEmbedding, 5);
-          vectorResults = rawVector.filter((p) => p.similarity !== undefined && p.similarity >= SIMILARITY_THRESHOLD);
-        }
-      } catch (_vErr) {}
-
-      const seenSkus = new Set();
-      for (const item of [...keywordResults, ...vectorResults]) {
-        if (!seenSkus.has(item.sku)) {
-          seenSkus.add(item.sku);
-          productos.push(item);
-        }
-        if (productos.length >= 5) break;
-      }
+      productos = await searchService.hybridSearch(queryText, { limit: 5 });
     } catch (_pErr) {}
 
     // 2. Smart Substitution for Out-of-Stock Products
