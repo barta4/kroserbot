@@ -114,9 +114,12 @@ describe('ToolExecutor Test Suite (Herramientas de IA y Function Calling)', () =
       expect(res.alternativas[0].sku).toBe('TAL-002');
     });
 
-    test('búsqueda vacía retorna lista vacía sin romper', async () => {
+    test('búsqueda vacía retorna lista vacía sin romper y con directiva no invasiva', async () => {
       const res = await executeTool('buscar_productos', { consulta: '' });
       expect(res.productos).toEqual([]);
+      expect(res.directiva_vendedor).toContain('NO se encontraron artículos coincidentes');
+      expect(res.directiva_vendedor).toContain('2900 1122');
+      expect(res.directiva_vendedor).toContain('asesor de ventas');
     });
 
     test('enriquecimiento de consulta con mensaje de usuario restaura modelo específico', async () => {

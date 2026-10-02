@@ -32,7 +32,21 @@ const TRACKING_PATTERNS = [
 const COMPLAINT_PATTERNS = [
   'reclamo', 'factura con error', 'queja', 'es un desastre', 'inaceptable',
   'pesimo servicio', 'defectuoso', 'vino roto', 'cobro mal', 'me cobraron de mas',
-  'garantia rota', 'falla de fabrica', 'producto roto',
+  'garantia rota', 'falla de fabrica', 'producto roto', 'vino fallado', 'vino fallada',
+  'no funciona', 'no me funciona', 'no prende', 'no arranca', 'vino danado', 'vino danada',
+  'quiero devolver', 'devolucion', 'hacer un reclamo', 'hacer una queja',
+  'me vino roto', 'me vino fallado', 'garantia', 'atendieron mal', 'pesima atencion',
+  'tengo un problema con', 'el producto no anda', 'no me anda',
+];
+
+const REJECTION_PATTERNS = [
+  'no me sirve', 'no me sirven', 'no me sirve ninguna', 'ninguna me sirve',
+  'no quiero esa', 'no quiero esa marca', 'no quiero eso', 'no me interesa esa',
+  'no tienen lo que busco', 'no es lo que busco', 'no es lo que necesito',
+  'no tienen otra marca', 'no tienen otra cosa', 'no tienen otro modelo',
+  'ninguna de esas', 'ninguno de esos', 'no era eso', 'deja nomas',
+  'dejalo ahi', 'no gracias ninguna', 'busco otra marca', 'no quiero ninguno',
+  'no quiero productos', 'no quiero producto', 'no quiero comprar nada',
 ];
 
 const URGENCY_PATTERNS = [
@@ -131,6 +145,7 @@ function detectIntent(text = '') {
   const isCancellation = CANCELLATION_PATTERNS.some((pattern) => cleanText.includes(normalizeText(pattern)));
   const isTracking = TRACKING_PATTERNS.some((pattern) => cleanText.includes(normalizeText(pattern))) || /#\s*[0-9]{1,8}/.test(text);
   const isComplaint = COMPLAINT_PATTERNS.some((pattern) => cleanText.includes(normalizeText(pattern)));
+  const isRejection = REJECTION_PATTERNS.some((pattern) => cleanText.includes(normalizeText(pattern)));
   const isUrgent = URGENCY_PATTERNS.some((pattern) => cleanText.includes(normalizeText(pattern)));
 
   // Greeting Check
@@ -159,6 +174,7 @@ function detectIntent(text = '') {
   if (isCancellation) primaryIntent = 'cancelacion';
   else if (isTracking) primaryIntent = 'tracking_pedido';
   else if (isComplaint) primaryIntent = 'reclamo';
+  else if (isRejection) primaryIntent = 'rechazo_producto';
   else if (isPureGreeting) primaryIntent = 'saludo';
   else if (isPureFarewell) primaryIntent = 'despedida';
   else if (isUrgent) primaryIntent = 'urgencia';
@@ -173,6 +189,7 @@ function detectIntent(text = '') {
     isCancellation,
     isTracking,
     isComplaint,
+    isRejection,
     isUrgent,
     getGreetingMessage: (name) => getTimeOfDayGreeting(name),
     getFarewellMessage: () => getFormalFarewell(),

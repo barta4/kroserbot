@@ -764,6 +764,7 @@ module.exports = {
       trackingContextStr,
       conversationSummaryStr,
       detectedEmotion: intentResult.emotion,
+      detectedIntent: intentResult.intent,
       messageCount: history.length,
       customerName: sender.name,
     });
@@ -795,7 +796,7 @@ module.exports = {
     });
 
     // 18. Check Human Escalation (DERIVAR... pattern)
-    if (llmReply.toUpperCase().startsWith('DERIVAR:')) {
+    if (/DERIVAR:\s*(\w+)/i.test(llmReply)) {
       const match = llmReply.match(/DERIVAR:\s*(\w+)/i);
       const area = match ? match[1].toLowerCase() : 'info';
 
@@ -839,6 +840,9 @@ module.exports = {
       const isOutOfHours = !hoursStatus.isWithin;
 
       let msgToSend = defaultMsgDerivacion;
+      if (area === 'administracion' && !msgToSend.includes('2900 1122')) {
+        msgToSend += ' También puede comunicarse directamente con nuestro teléfono central al 2900 1122.';
+      }
       if (isOutOfHours) {
         msgToSend = businessHours.getOutHoursMessage({
           channel,

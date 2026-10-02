@@ -53,6 +53,20 @@ describe('Humanización y Comportamiento Humano de KroserBot', () => {
       expect(apurado.emotion).toBe('apurado');
       expect(apurado.isUrgent).toBe(true);
     });
+
+    test('detecta rechazo de opciones y alternativas de productos', () => {
+      const rej1 = intentDetector.detectIntent('No me sirve ninguna de esas opciones');
+      expect(rej1.isRejection).toBe(true);
+      expect(rej1.intent).toBe('rechazo_producto');
+
+      const rej2 = intentDetector.detectIntent('No quiero esa marca, no tienen lo que busco');
+      expect(rej2.isRejection).toBe(true);
+      expect(rej2.intent).toBe('rechazo_producto');
+
+      const rej3 = intentDetector.detectIntent('Dejá nomás, no es lo que necesito');
+      expect(rej3.isRejection).toBe(true);
+      expect(rej3.intent).toBe('rechazo_producto');
+    });
   });
 
   describe('2. Constructor de Prompt Formal y Humanizado (promptBuilder)', () => {
@@ -113,6 +127,28 @@ describe('Humanización y Comportamiento Humano de KroserBot', () => {
       expect(prompt).toContain('ASESORAMIENTO TÉCNICO Y RESOLUCIÓN DE DUDAS');
       expect(prompt).toContain('ENLACES A PRODUCTOS EN LA TIENDA WEB');
       expect(prompt).toContain('https://www.kroser.com.uy/placa-verde');
+    });
+
+    test('incluye directivas para reclamos (prohibido venta, teléfono y derivar a administración)', async () => {
+      const promptReclamo = await promptBuilder.buildSystemPrompt({
+        detectedIntent: 'reclamo',
+        detectedEmotion: 'frustrado',
+      });
+
+      expect(promptReclamo).toContain('PROHIBIDO ofrecer productos');
+      expect(promptReclamo).toContain('2900 1122');
+      expect(promptReclamo).toContain('DERIVAR: administracion');
+    });
+
+    test('incluye directivas para rechazo de alternativas (teléfono de sucursales y derivar asesor)', async () => {
+      const promptRechazo = await promptBuilder.buildSystemPrompt({
+        detectedIntent: 'rechazo_producto',
+        detectedEmotion: 'neutral',
+      });
+
+      expect(promptRechazo).toContain('RECHAZO DE ALTERNATIVAS');
+      expect(promptRechazo).toContain('2900 1122');
+      expect(promptRechazo).toContain('asesor de ventas');
     });
   });
 

@@ -154,6 +154,8 @@ function getOpenAITools({ enableOrders = true } = {}) {
   }));
 }
 
+const EMPTY_SEARCH_DIRECTIVE = 'NO se encontraron artículos coincidentes en catálogo. Informe con total franqueza y cordialidad que no disponemos de ese producto en este momento. Facilite el teléfono de sucursales (ej: Kroser Centro 2900 1122 o consulte su zona) y ofrezca derivarlo con un asesor de ventas por este chat para verificar disponibilidad en depósito central. NO fuerce la venta de artículos no relacionados.';
+
 /**
  * Tool Executors
  */
@@ -163,7 +165,15 @@ async function executeBuscarProductos({ consulta = '' }, context = {}) {
   const enrichedQuery = extractEnrichedProductQuery(rawQuery, lastUserMsg);
   const effectiveQuery = (enrichedQuery || rawQuery || '').trim();
 
-  if (!effectiveQuery) return { productos: [], alternativas: [], complementarios_sugeridos: [] };
+  if (!effectiveQuery) {
+    return {
+      productos: [],
+      alternativas: [],
+      complementarios_sugeridos: [],
+      total_coincidencias: 0,
+      directiva_vendedor: EMPTY_SEARCH_DIRECTIVE,
+    };
+  }
 
   let productos = [];
   let alternativas = [];
@@ -219,6 +229,12 @@ async function executeBuscarProductos({ consulta = '' }, context = {}) {
     logger.warn('Error in getComplementaryItems tool', { error: cErr.message });
   }
 
+  let directivaVendedor = 'Mencione ÚNICAMENTE el producto principal con su precio en 1 o 2 oraciones breves de chat. NO arme listas con viñetas ni mencione varios artículos. Pregunte de forma cordial si le sirve esa opción.';
+
+  if (productos.length === 0) {
+    directivaVendedor = EMPTY_SEARCH_DIRECTIVE;
+  }
+
   const res = {
     productos: productos.slice(0, 4).map((p) => {
       const item = {
@@ -242,7 +258,7 @@ async function executeBuscarProductos({ consulta = '' }, context = {}) {
       marca: (productos[0].marca && productos[0].marca !== 'N/A') ? productos[0].marca : undefined,
     } : null,
     total_coincidencias: productos.length,
-    directiva_vendedor: 'Mencione ÚNICAMENTE el producto principal con su precio en 1 o 2 oraciones breves de chat. NO arme listas con viñetas ni mencione varios artículos. Pregunte de forma cordial si le sirve esa opción.',
+    directiva_vendedor: directivaVendedor,
   };
 
   if (alternativas.length > 0) {
