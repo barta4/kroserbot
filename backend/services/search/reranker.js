@@ -228,6 +228,11 @@ function scoreProduct(product, normalizedQuery, attrs = {}, options = {}) {
       if (isToolOrAccProduct || isBaseOrStand) {
         breakdown.penalty += WEIGHTS.CATEGORY_INCOHERENCE_PENALTY;
       }
+    } else if (attrs.categoriaHint === 'sanitaria') {
+      const isGasOrMask = nombre.includes('gas') || nombre.includes('garrafa') || nombre.includes('mascarilla') || nombre.includes('respirador') || categoria.includes('gas') || categoria.includes('pintura');
+      if (isGasOrMask) {
+        breakdown.penalty += WEIGHTS.CATEGORY_INCOHERENCE_PENALTY;
+      }
     }
   }
 
