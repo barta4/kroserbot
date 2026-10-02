@@ -59,6 +59,7 @@ module.exports = {
         accountId: 1,
         channel,
         customerName,
+        lastUserMessage: trimmedMessage,
       };
 
       let llmResult = { reply: '', rawReply: '', toolsUsed: [], createdOrder: null };

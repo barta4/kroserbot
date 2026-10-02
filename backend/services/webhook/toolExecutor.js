@@ -13,6 +13,7 @@ const logger = require('../../config/logger');
 const CROSS_SELLING_MAP = require('../../utils/crossSellingMap');
 const { formatCurrencyPrice } = require('../../utils/formatCurrency');
 const { normalize } = require('../../utils/textNormalizer');
+const { extractEnrichedProductQuery } = require('../../utils/queryAnalyzer');
 
 /**
  * Standard definitions of available tools (JSON Schema)
@@ -20,11 +21,11 @@ const { normalize } = require('../../utils/textNormalizer');
 const TOOL_DEFINITIONS = [
   {
     name: 'buscar_productos',
-    description: 'Busca productos, precios y stock en catálogo Kroser con alternativas.',
+    description: 'Busca productos, precios y stock en catálogo Kroser. IMPORTANTE: En "consulta" incluya siempre marca, modelo y especificaciones exactas si el cliente las mencionó (ej: "hidrolavadora alpha-pro 1600w", "taladro percutor dewalt 13mm"). NUNCA reduzca la búsqueda a una categoría genérica si el cliente aportó detalles.',
     parameters: {
       type: 'object',
       properties: {
-        consulta: { type: 'string', description: 'Artículo, marca o modelo a buscar' },
+        consulta: { type: 'string', description: 'Artículo, marca, modelo o especificación exacta a buscar' },
       },
       required: ['consulta'],
     },
@@ -156,18 +157,30 @@ function getOpenAITools({ enableOrders = true } = {}) {
 /**
  * Tool Executors
  */
-async function executeBuscarProductos({ consulta = '' }) {
-  const query = (consulta || '').trim();
-  if (!query) return { productos: [], alternativas: [], complementarios_sugeridos: [] };
+async function executeBuscarProductos({ consulta = '' }, context = {}) {
+  const rawQuery = (consulta || '').trim();
+  const lastUserMsg = context?.lastUserMessage || '';
+  const enrichedQuery = extractEnrichedProductQuery(rawQuery, lastUserMsg);
+  const effectiveQuery = (enrichedQuery || rawQuery || '').trim();
+
+  if (!effectiveQuery) return { productos: [], alternativas: [], complementarios_sugeridos: [] };
 
   let productos = [];
   let alternativas = [];
   let complementarios = [];
-  const lowerQ = query.toLowerCase();
+  const lowerQ = effectiveQuery.toLowerCase();
 
   // 1. Hybrid search (exact + textual + vector with re-ranking)
   try {
-    productos = await searchService.hybridSearch(query, { limit: 5 });
+    productos = await searchService.hybridSearch(effectiveQuery, { limit: 5 });
+    // If enriched query yielded 0 results, fall back to LLM's original rawQuery
+    if (productos.length === 0 && rawQuery && rawQuery !== effectiveQuery) {
+      logger.info('executeBuscarProductos: enriched query found 0, falling back to rawQuery', {
+        effectiveQuery,
+        rawQuery,
+      });
+      productos = await searchService.hybridSearch(rawQuery, { limit: 5 });
+    }
   } catch (pErr) {
     logger.error('Error in hybrid search tool', { error: pErr.message });
   }
@@ -176,7 +189,7 @@ async function executeBuscarProductos({ consulta = '' }) {
   try {
     const outOfStockItem = productos.find((p) => p.stock_status === 'out_of_stock');
     if (outOfStockItem || productos.length === 0) {
-      const targetCategory = outOfStockItem ? outOfStockItem.categoria : query;
+      const targetCategory = outOfStockItem ? outOfStockItem.categoria : effectiveQuery;
       const targetBrand = outOfStockItem ? outOfStockItem.marca : '';
       alternativas = await productosRepo.getAlternatives({
         categoria: targetCategory,
@@ -207,7 +220,7 @@ async function executeBuscarProductos({ consulta = '' }) {
   }
 
   const res = {
-    productos: productos.slice(0, 2).map((p) => {
+    productos: productos.slice(0, 4).map((p) => {
       const item = {
         sku: p.sku,
         nombre: p.nombre,
@@ -464,7 +477,7 @@ async function executeTool(name, args = {}, context = {}) {
   logger.info('Executing tool', { toolName: name, args });
   switch (name) {
     case 'buscar_productos':
-      return await executeBuscarProductos(args);
+      return await executeBuscarProductos(args, context);
     case 'buscar_sucursales':
       return await executeBuscarSucursales(args);
     case 'buscar_envio':

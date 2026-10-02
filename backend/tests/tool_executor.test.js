@@ -7,6 +7,7 @@ const pedidosRepo = require('../repositories/pedidosRepository');
 const configuracionRepo = require('../repositories/configuracionRepository');
 const orderTrackingService = require('../services/pedidos/orderTrackingService');
 const emailService = require('../services/email/emailService');
+const searchService = require('../services/search/searchService');
 
 describe('ToolExecutor Test Suite (Herramientas de IA y Function Calling)', () => {
   beforeEach(() => {
@@ -116,6 +117,61 @@ describe('ToolExecutor Test Suite (Herramientas de IA y Function Calling)', () =
     test('búsqueda vacía retorna lista vacía sin romper', async () => {
       const res = await executeTool('buscar_productos', { consulta: '' });
       expect(res.productos).toEqual([]);
+    });
+
+    test('enriquecimiento de consulta con mensaje de usuario restaura modelo específico', async () => {
+      const spyHybrid = jest.spyOn(searchService, 'hybridSearch').mockResolvedValue([
+        {
+          sku: '820HL7125M2',
+          nombre: 'HIDROLAVADORA ALPHA-PRO 1600W 125BAR CON RUEDAS',
+          precio: '6200',
+          moneda: 'UYU',
+          stock_status: 'in_stock',
+          marca: 'Alpha-Pro',
+        },
+      ]);
+
+      const res = await executeTool(
+        'buscar_productos',
+        { consulta: 'hidrolavadora' },
+        { lastUserMessage: 'HIDROLAVADORA ALPHA-PRO 1600W' }
+      );
+
+      expect(spyHybrid).toHaveBeenCalledWith('hidrolavadora alpha-pro 1600w', expect.any(Object));
+      expect(res.productos[0].sku).toBe('820HL7125M2');
+      expect(res.producto_destacado.nombre).toContain('ALPHA-PRO 1600W');
+    });
+
+    test('retorna hasta 4 productos si existen coincidencias', async () => {
+      jest.spyOn(searchService, 'hybridSearch').mockResolvedValue([
+        { sku: 'P-1', nombre: 'Prod 1', precio: '100', moneda: 'UYU', stock_status: 'in_stock' },
+        { sku: 'P-2', nombre: 'Prod 2', precio: '200', moneda: 'UYU', stock_status: 'in_stock' },
+        { sku: 'P-3', nombre: 'Prod 3', precio: '300', moneda: 'UYU', stock_status: 'in_stock' },
+        { sku: 'P-4', nombre: 'Prod 4', precio: '400', moneda: 'UYU', stock_status: 'in_stock' },
+        { sku: 'P-5', nombre: 'Prod 5', precio: '500', moneda: 'UYU', stock_status: 'in_stock' },
+      ]);
+
+      const res = await executeTool('buscar_productos', { consulta: 'tornillos' });
+      expect(res.productos.length).toBe(4);
+      expect(res.total_coincidencias).toBe(5);
+    });
+
+    test('fallback a consulta original si la enriquecida no arroja resultados', async () => {
+      const spyHybrid = jest.spyOn(searchService, 'hybridSearch')
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([
+          { sku: 'GEN-1', nombre: 'Genérico', precio: '500', moneda: 'UYU', stock_status: 'in_stock' },
+        ]);
+
+      const res = await executeTool(
+        'buscar_productos',
+        { consulta: 'taladro' },
+        { lastUserMessage: 'taladro no-existente-xyz-999' }
+      );
+
+      expect(spyHybrid).toHaveBeenCalledTimes(2);
+      expect(res.productos.length).toBe(1);
+      expect(res.productos[0].sku).toBe('GEN-1');
     });
   });
 

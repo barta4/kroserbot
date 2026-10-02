@@ -777,6 +777,7 @@ module.exports = {
       accountId,
       channel: conversation.channel || 'chatwoot',
       sender,
+      lastUserMessage: fullContent,
     };
 
     const { reply: llmReply, toolsUsed, createdOrder: toolCreatedOrder } = await llmService.generateWithTools(

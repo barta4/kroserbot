@@ -541,7 +541,13 @@ module.exports = {
     const tempConfig = options.temperature !== undefined ? options.temperature : await configuracionRepo.get('llm_temperature');
     const temperature = tempConfig !== undefined && tempConfig !== null ? parseFloat(tempConfig) : 0.5;
 
-    const toolContext = options.toolContext || {};
+    const toolContext = { ...(options.toolContext || {}) };
+    if (!toolContext.lastUserMessage && Array.isArray(userMessages) && userMessages.length > 0) {
+      const lastUserItem = [...userMessages].reverse().find((m) => typeof m === 'string' || (m && m.role === 'user'));
+      if (lastUserItem) {
+        toolContext.lastUserMessage = typeof lastUserItem === 'string' ? lastUserItem : lastUserItem.content || '';
+      }
+    }
     logger.info('generateWithTools invoked', {
       primaryProvider,
       primaryModel,

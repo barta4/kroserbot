@@ -13,10 +13,15 @@ const { normalize } = require('./textNormalizer');
 const STOPWORDS = new Set([
   'de', 'la', 'el', 'en', 'para', 'con', 'un', 'una', 'y', 'o', 'del',
   'los', 'las', 'al', 'por', 'que', 'qué', 'se', 'es', 'son', 'tenes',
-  'tienen', 'hola', 'cuanto', 'cuánto', 'cuesta', 'precio', 'tienen',
-  'venden', 'hay', 'me', 'le', 'lo', 'su', 'nos', 'les', 'muy', 'mas',
-  'más', 'como', 'esto', 'esta', 'ese', 'esa', 'esos', 'esas', 'algo',
-  'necesito', 'busco', 'quiero', 'tengo', 'dame', 'preciso',
+  'tienen', 'hola', 'cuanto', 'cuánto', 'cuesta', 'precio', 'venden', 'hay',
+  'me', 'le', 'lo', 'su', 'nos', 'les', 'muy', 'mas', 'más', 'como',
+  'esto', 'esta', 'ese', 'esa', 'esos', 'esas', 'algo', 'necesito',
+  'busco', 'quiero', 'tengo', 'dame', 'preciso', 'buenas', 'buenos',
+  'dias', 'días', 'tardes', 'noches', 'saludos', 'gracias', 'favor',
+  'porfa', 'consulta', 'consultar', 'averiguar', 'saber', 'queria',
+  'quería', 'quisiera', 'tendran', 'tendras', 'tendrias', 'podes',
+  'podrian', 'pueden', 'queda', 'quedan', 'disponen', 'disponible',
+  'disponibles', 'si'
 ]);
 
 // ──────────────────────────────────────────── Known brands (lowercase, normalized)
@@ -27,7 +32,8 @@ const KNOWN_BRANDS = [
   'gamma', 'lusqtoff', 'neo', 'total', 'ingco', 'bremen',
   'sinteplast', 'sherwin', 'alba', 'recuplast', 'ormiflex',
   'tigre', 'acqua', 'ceresita', 'weber', 'klaukol', 'ferrobet',
-  'colorin', 'colorín', 'tersuave', 'ombú', 'ombu',
+  'colorin', 'colorín', 'tersuave', 'ombú', 'ombu', 'harden',
+  'alpha.?pro', 'alpha', 'lavor',
 ];
 
 // ──────────────────────────────────────────── Colors (normalized, no accents)
@@ -92,8 +98,63 @@ function normalizeQuery(raw) {
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
+    .replace(/[¿?¡!.,;:()]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
+}
+
+/**
+ * Intelligently enrich or restore the product query using the original user message.
+ * LLMs frequently over-generalize to broad categories (e.g. calling buscar_productos with "hidrolavadora"
+ * when the user explicitly said "hidrolavadora alpha-pro 1600w").
+ *
+ * @param {string} consulta - Query passed by LLM function call
+ * @param {string} userMessage - Raw message sent by the user in this turn
+ * @returns {string} Substantive search query preserving model/brand
+ */
+function extractEnrichedProductQuery(consulta, userMessage) {
+  const baseQuery = (consulta || '').trim();
+  if (!userMessage || typeof userMessage !== 'string') return baseQuery;
+
+  const rawUser = userMessage.trim();
+  if (!rawUser) return baseQuery;
+
+  // Split into sentences / clauses
+  const sentences = rawUser
+    .split(/[\n.;?!]|\by\s+ademas\b|\by\s+tambien\b/i)
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  const baseTokens = baseQuery.toLowerCase().split(/\s+/).filter(Boolean);
+  let targetSentence = '';
+
+  if (baseTokens.length > 0) {
+    targetSentence =
+      sentences.find((s) => {
+        const lower = s.toLowerCase();
+        return baseTokens.some((t) => lower.includes(t));
+      }) ||
+      sentences[0] ||
+      rawUser;
+  } else {
+    targetSentence = sentences[0] || rawUser;
+  }
+
+  const cleanUserPart = stripStopwords(targetSentence);
+  if (!cleanUserPart) return baseQuery;
+
+  // If the user's sentence contains more detail (brand, model, numbers, power specs)
+  if (cleanUserPart.length > baseQuery.length) {
+    const cleanTokens = cleanUserPart.toLowerCase().split(/\s+/);
+    const matchesAny =
+      baseTokens.length === 0 ||
+      baseTokens.some((t) => cleanTokens.some((ct) => ct.includes(t) || t.includes(ct)));
+    if (matchesAny) {
+      return cleanUserPart;
+    }
+  }
+
+  return baseQuery;
 }
 
 /**
@@ -290,4 +351,5 @@ module.exports = {
   CATEGORY_HINTS,
   LOCAL_SYNONYMS,
   stripStopwords,
+  extractEnrichedProductQuery,
 };
