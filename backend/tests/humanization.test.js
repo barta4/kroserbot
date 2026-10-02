@@ -136,7 +136,7 @@ describe('Humanización y Comportamiento Humano de KroserBot', () => {
       });
 
       expect(promptReclamo).toContain('PROHIBIDO ofrecer productos');
-      expect(promptReclamo).toContain('2900 1122');
+      expect(promptReclamo).toContain('2218 5987');
       expect(promptReclamo).toContain('DERIVAR: administracion');
     });
 
@@ -147,7 +147,7 @@ describe('Humanización y Comportamiento Humano de KroserBot', () => {
       });
 
       expect(promptRechazo).toContain('RECHAZO DE ALTERNATIVAS');
-      expect(promptRechazo).toContain('2900 1122');
+      expect(promptRechazo).toContain('2218 5987');
       expect(promptRechazo).toContain('asesor de ventas');
     });
   });

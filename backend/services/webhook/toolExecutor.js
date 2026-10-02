@@ -154,7 +154,7 @@ function getOpenAITools({ enableOrders = true } = {}) {
   }));
 }
 
-const EMPTY_SEARCH_DIRECTIVE = 'NO se encontraron artículos coincidentes en catálogo. Informe con total franqueza y cordialidad que no disponemos de ese producto en este momento. Facilite el teléfono de sucursales (ej: Kroser Centro 2900 1122 o consulte su zona) y ofrezca derivarlo con un asesor de ventas por este chat para verificar disponibilidad en depósito central. NO fuerce la venta de artículos no relacionados.';
+const EMPTY_SEARCH_DIRECTIVE = 'NO se encontraron artículos coincidentes en catálogo. Informe con total franqueza y cordialidad que no disponemos de ese producto en este momento. Facilite los teléfonos de Central (2218 5987 / 2218 5988 o consulte su zona para sucursal cercana) y ofrezca derivarlo con un asesor de ventas por este chat para verificar disponibilidad en depósito central. NO fuerce la venta de artículos no relacionados.';
 
 /**
  * Tool Executors

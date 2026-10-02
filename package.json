@@ -1,6 +1,6 @@
 {
   "name": "kroserbot",
-  "version": "2.1.5",
+  "version": "2.1.6",
   "description": "Bot Kroser - RAG + Pedidos + Scraper + Admin Panel",
   "main": "backend/index.js",
   "scripts": {

@@ -840,8 +840,8 @@ module.exports = {
       const isOutOfHours = !hoursStatus.isWithin;
 
       let msgToSend = defaultMsgDerivacion;
-      if (area === 'administracion' && !msgToSend.includes('2900 1122')) {
-        msgToSend += ' También puede comunicarse directamente con nuestro teléfono central al 2900 1122.';
+      if (area === 'administracion' && !msgToSend.includes('2218 5987')) {
+        msgToSend += ' También puede comunicarse directamente con nuestra Central de Reclamos a los teléfonos 2218 5987 / 2218 5988.';
       }
       if (isOutOfHours) {
         msgToSend = businessHours.getOutHoursMessage({

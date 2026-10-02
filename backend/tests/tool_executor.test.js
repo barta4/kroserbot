@@ -118,7 +118,7 @@ describe('ToolExecutor Test Suite (Herramientas de IA y Function Calling)', () =
       const res = await executeTool('buscar_productos', { consulta: '' });
       expect(res.productos).toEqual([]);
       expect(res.directiva_vendedor).toContain('NO se encontraron artículos coincidentes');
-      expect(res.directiva_vendedor).toContain('2900 1122');
+      expect(res.directiva_vendedor).toContain('2218 5987');
       expect(res.directiva_vendedor).toContain('asesor de ventas');
     });
 
