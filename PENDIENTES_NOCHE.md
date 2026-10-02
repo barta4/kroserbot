@@ -1,98 +1,101 @@
-# 🌙 Guía de Mantenimiento y Verificación para la Noche — Kroserbot v2.0.0
+# 🌙 Bitácora de Cierre y Guía de Operaciones — Kroserbot v2.1.6
 
-Este documento resume las causas analizadas, todas las mejoras implementadas en la versión **v2.0.0** y el paso a paso exacto a ejecutar esta noche en Dokploy y en el servidor.
-
----
-
-## 🔍 1. Diagnóstico de los Incidentes de Producción
-
-### Caso A: Cliente "Ze-Sergio" (Consulta por Paneles WPC vía link de Mercado Libre)
-* **Qué ocurrió**: El cliente envió el enlace de Mercado Libre de paneles decorativos de pared WPC. El bot no interpretaba URLs, tomó como fallback la palabra aislada `"panel"` y buscó en catálogo, recomendando *"PANEL LED"* (luminarias de techo). Luego, ante la réplica del cliente, el LLM generó una respuesta vacía tras la ejecución de herramientas y cayó 3 veces seguidas en frases robóticas de contingencia (`"¿En qué más te puedo ayudar?"` / `"Por el momento no contamos con stock..."`) sin derivar a un asesor humano.
-* **Causa raíz**:
-  1. Falta de un módulo de desestructuración de URLs de e-commerce en el pipeline de webhooks.
-  2. Búsqueda léxica genérica (`"panel"` coincidió con paneles de iluminación).
-  3. Ausencia de regla de prompt para derivar al área de e-commerce cuando el cliente consulta por artículos o condiciones de una publicación externa.
-
-### Caso B: Pintura ➔ Mechas (Pide pintura y el bot ofrece brocas/mechas de taladro)
-* **Qué ocurrió**: Al pedir pintura, el buscador RAG devolvía mechas y herramientas pesadas.
-* **Causa raíz**:
-  1. En la base de datos PostgreSQL, los 3.390 productos tenían **mock embeddings** (vectores senoidales ficticios).
-  2. Al calcular la distancia coseno contra un vector simulado, cualquier texto producía una similitud artificial de ~0.9999 contra la categoría más grande del catálogo (`Herramientas`, que concentra el 58% de los productos con 2.046 ítems).
-  3. El proveedor de embeddings (`embeddingProvider.js`) intentaba obligatoriamente OpenAI primero y fallaba si la API key era de Gemini o un proxy sin credenciales OpenAI, retrocediendo siempre a mock embeddings en lugar de usar la clave activa de Gemini.
+Este documento resume la totalidad de causas analizadas, diagnósticos de raíz, soluciones arquitectónicas implementadas, suites de pruebas y el estado listo para producción al cierre de la jornada en **v2.1.6**.
 
 ---
 
-## 🛠️ 2. Mejoras y Soluciones Implementadas en v2.0.0
+## 🚀 1. Resumen Ejecutivo de Versiones Desplegadas
 
-1. **Nuevo Servicio de Interpretación de Enlaces (`urlInterpreterService.js`)**:
-   - Detecta y analiza URLs entrantes de **Mercado Libre**, **Kroser** y cualquier tienda online.
-   - Extrae el slug descriptivo de la URL (ej: `panel-wpc-decorativo-revestimiento-pared-wall-panel` ➔ `"Panel wpc decorativo revestimiento pared wall panel"`).
-   - Consulta metadatos OpenGraph/HTML con timeout rápido de 2.5s y escudo anti-bloqueo (ignora títulos genéricos como `"Mercado Libre"` y prioriza el slug real del producto).
-2. **Integración Transparente en el Webhook (`webhookService.js` Paso 7b)**:
-   - Todo mensaje con enlaces se enriquece automáticamente:  
-     `[Enlace analizado de Mercado Libre: Producto "Panel Wpc Decorativo Revestimiento Pared Wall Panel" (URL: ...)]`.
-3. **Nueva Regla de Negocio en el Prompt del Sistema (`promptBuilder.js`)**:
-   - **Regla 5 (Enlaces y publicaciones externas)**: El bot busca el producto exacto con `buscar_productos`. Si Kroser no lo vende o el cliente pregunta por stock/envíos de dicha publicación de Mercado Libre, el bot lo aclara amablemente y deriva a `DERIVAR: ecommerce`.
-4. **Blindaje de Búsqueda RAG y Coherencia de Categorías (`toolExecutor.js`)**:
-   - Omite automáticamente la búsqueda vectorial (`searchVector`) si los embeddings son simulados (`isMock: true`), evitando que los vectores falsos contaminen las búsquedas de texto.
-   - Filtro de coherencia estricta para pinturas/impermeabilizantes: bloquea la infiltración de herramientas/mechas si la consulta era sobre pinturas.
-5. **Proveedor de Embeddings Multi-Proveedor Dinámico (`embeddingProvider.js`)**:
-   - Lee la configuración activa de la base de datos (`llm_provider`, `llm_api_key`, `llm_fallback_provider`, `llm_fallback_api_key`).
-   - Prioriza **Google Gemini `text-embedding-004`** (768d) con fail-safe a OpenAI `text-embedding-3-small`.
-6. **Asignación Configurable de Agente y Etiqueta 'derivar' en Uruchat**:
-   - Se añadió en el webhook la asignación del agente configurado (`derivation_agent_id` o `chatwoot_default_assignee_id`) o por área (`assignee_id_${area}`).
-   - Se aplica automáticamente la etiqueta `'derivar'` (o la configurada en `derivation_label`) en Uruchat junto con las etiquetas de fuera de horario.
-   - Endpoint `GET /api/chatwoot/agents` y selector interactivo de operadores en la pestaña Uruchat del panel administrativo.
-7. **Pruebas y Releases**:
-   - Suites unitarias adicionales: `backend/tests/url_interpreter.test.js` y `backend/tests/derivation_assignment_and_labels.test.js`.
-   - Total verificado: **20 suites de Jest (243 tests)** y **22 tests de Python (Scraper)** pasando al 100%.
+| Versión | Foco de la Solución | Estado |
+|---|---|---|
+| **v2.0.0** | Desestructuración de URLs de Mercado Libre/Kroser (`urlInterpreterService`), bypass de mock embeddings y asignación de agentes en Uruchat. | ✅ Desplegado |
+| **v2.1.0** | Búsqueda Híbrida RRF (Reciprocal Rank Fusion k=60) combinando búsqueda léxica multitérmino + vectorial con embeddings reales. | ✅ Desplegado |
+| **v2.1.1** | Expansión léxica con sinónimos ferreteros uruguayos (`LOCAL_SYNONYMS`) y re-ranker con penalización de categorías cruzadas. | ✅ Desplegado |
+| **v2.1.2** | Enriquecedor de consultas (`queryAnalyzer.js`), evitando que el LLM degrade modelos específicos (ej: "Alpha-Pro 1600W") a categorías genéricas. | ✅ Desplegado |
+| **v2.1.3** | Tagging Dokploy y sinónimos para asadores/parrillas (`parrillero`/`parrillera`). Verificado en vivo vía API remota. | ✅ Desplegado |
+| **v2.1.4** | Migración SQL para reactivar productos discontinuados con stock (`1786214800000_reactivate_catalog_products.sql`) y desambiguación de "cueritos" de canilla vs. válvulas de gas. | ✅ Desplegado |
+| **v2.1.5** | **Protocolo Híbrido Inteligente:** Detección de rechazo de opciones (`rechazo_producto`) y reclamos (`reclamo`), prohibición de venta invasiva y directivas para derivación o teléfonos de sucursales. | ✅ Desplegado |
+| **v2.1.6** | Integración de los teléfonos oficiales de la **Central de Reclamos** (**`2218 5987 / 2218 5988`**) en prompt, derivaciones Uruchat y respuestas de asistencia. | ✅ **Versión Final de Cierre** |
 
 ---
 
-## 📋 3. Lista de Tareas para la Noche (Paso a Paso)
+## 🔍 2. Diagnóstico de Incidentes y Soluciones de Raíz
 
-### Paso 1: Actualizar y Desplegar en Dokploy
-1. Ingresar a Dokploy: `http://192.168.1.X:3000` (o por dominio local).
-2. Ir al servicio **kroserbot-backend**.
-3. Verificar que la imagen apunte a:
-   ```
-   alfredobartaburu/kroserbot:v2.0.0
-   ```
-4. Pulsar **Deploy / Redeploy**.
+### Caso 1: Enlaces de Mercado Libre ("Ze-Sergio" - Paneles WPC)
+* **Causa**: El webhook recibía el link crudo de Mercado Libre, buscaba la palabra suelta "panel" y devolvía paneles LED de iluminación.
+* **Solución**: `urlInterpreterService.js` extrae el slug semántico de la URL de Mercado Libre y la inyecta al prompt. Si Kroser no lo comercializa, aclara con honestidad y activa `DERIVAR: ecommerce`.
 
-### Paso 2: Verificar Estado de Salud
-1. Abrir en el navegador:
-   ```
-   https://venta.urufile.duckdns.org/api/health
-   ```
-2. Verificar que devuelva estado `200 OK`.
-3. *(Opcional)* Si Redis aún muestra `"redis":"memory_fallback"`, revisar en las variables de entorno de Dokploy que `REDIS_URL=redis://redis:6379` o `REDIS_HOST=redis` y que ambos contenedores compartan la red `kroserbot-network`.
+### Caso 2: Búsqueda de Pinturas devolvía Mechas de Taladro
+* **Causa**: Vectores senoidales ficticios (*mock embeddings*) con similitud artificial de ~0.9999 hacia la categoría mayoritaria (`Herramientas`).
+* **Solución**: `embeddingProvider.js` lee dinámicamente las credenciales activas de Gemini (`text-embedding-004`), desactiva automáticamente vectores simulados en `searchVector` y aplica filtro estricto de coherencia.
 
-### Paso 3: Prueba E2E en el Simulador de Chat del Panel Admin
-1. Ingresar al panel admin: `https://venta.urufile.duckdns.org/admin/` (o localhost).
-2. Ir a la pestaña **Simulador de Chat**.
-3. Enviar el mensaje que falló originalmente:
-   ```
-   Hola! https://www.mercadolibre.com.uy/panel-wpc-decorativo-revestimiento-pared-wall-panel/up/MLUU4824517083 tienen este panel?
-   ```
-4. **Resultado esperado**:
-   - El bot identificará que se trata de *"panel wpc decorativo revestimiento pared"*.
-   - Buscará en catálogo sin confundirse con luminarias LED.
-   - Si no hay paneles WPC en stock, responderá con empatía ferretera y ofrecerá transferir con un asesor de e-commerce (`DERIVAR: ecommerce`).
+### Caso 3: "HIDROLAVADORA ALPHA-PRO 1600W tenes"
+* **Causas**: 
+  1. El LLM sobre-generalizaba el término a `"hidrolavadora"`, perdiendo la marca Alpha-Pro.
+  2. En la base de datos remota, el SKU `820HL7125M2` tenía `discontinuado = TRUE`.
+* **Solución**:
+  - `queryAnalyzer.js` intercepta la query del LLM y la restituye con el modelo exacto consultado por el usuario.
+  - Migración `db/migrations/1786214800000_reactivate_catalog_products.sql` que al iniciar el contenedor reactiva productos que tienen stock real.
 
-### Paso 4: (Opcional) Re-indexar Embeddings Reales de Gemini en Catálogo
-* Si se desea sustituir de una sola vez los vectores simulados en la base de datos de producción por vectores reales de Gemini:
-  ```bash
-  # Desde la terminal del servidor o dentro del contenedor backend:
-  node backend/services/embeddings/generateEmbeddings.js
-  ```
-  *(El script ahora usará la API Key de Gemini configurada y poblará vectores reales de 768 dimensiones).*
+### Caso 4: "cueritos de canilla" devolvía válvulas de gas y mascarillas
+* **Causa**: En `LOCAL_SYNONYMS`, `"cuerito"` incluía `"valvula"`, atrayendo válvulas de supergás Dinamarquesa y mascarillas FFP2 con válvula de exhalación.
+* **Solución**: Se eliminó `"valvula"` del sinónimo de cueritos, mapeándose exclusivamente a sanitaria (`canilla`, `grifo`, `griferia`), y se añadió en `reranker.js` una penalización de -35 puntos si una consulta de sanitaria se mezcla con gas o mascarillas.
 
-### Paso 5: Seguridad del Servidor (Cierre de Puerto 3000)
-1. Entrar al panel del router de casa (`192.168.1.1`).
-2. En **Reenvío de Puertos (Port Forwarding)**, desactivar o borrar la regla que expone el puerto `3000` a Internet.
-3. Mantener abiertos únicamente los puertos `80` y `443` (Traefik / HTTPS).
+### Caso 5: Reclamos y Rechazo de Productos ("no quiero esa que me pasaste" / 0 productos)
+* **Causa**: El bot estaba instruido para vender siempre; si el cliente se quejaba o rechazaba una opción, insistía ofreciendo otros artículos o quedaba en un callejón sin salida.
+* **Solución**:
+  - `intentDetector.js`: Se incorporaron `REJECTION_PATTERNS` (`rechazo_producto`) y se ampliaron `COMPLAINT_PATTERNS` (`reclamo`).
+  - `promptBuilder.js`: Prohibición estricta de insistir con ventas ante reclamos o rechazo explícito.
+  - `webhookService.js`: Soporte para derivación con `/DERIVAR:\s*(\w+)/i` y adjunción automática de teléfonos de contacto.
+  - `toolExecutor.js`: Directiva no invasiva (`EMPTY_SEARCH_DIRECTIVE`) cuando el catálogo arroja 0 coincidencias.
+
+### Caso 6: Teléfonos Oficiales de Atención y Reclamos
+* **Configuración aplicada**:
+  - **Central de Reclamos:** **`2218 5987 / 2218 5988`**
+  - **Sucursales Físicas:** Disponibles vía tool `buscar_sucursales` (Centro: `2900 1122`, Portones: `2601 0000`, Pocitos: `2708 3344`, Carrasco: `2600 5566`, Ciudad de la Costa: `2682 7788`).
 
 ---
 
-*Documentación lista y consolidada para la sesión nocturna.*
+## 📋 3. Guía de Operaciones en el Servidor (Dokploy)
+
+Al retomar la operativa:
+
+1. **Ingreso a Dokploy**:
+   - Abrir el panel de Dokploy.
+   - Ir al servicio **kroserbot-backend**.
+2. **Imagen a Desplegar**:
+   - Comprobar que apunte a la versión recién compilada:
+     ```text
+     alfredobartaburu/kroserbot:v2.1.6
+     ```
+     *(O alternativamente `:latest`, ya que ambas están sincronizadas en Docker Hub).*
+3. **Pulsar Deploy / Redeploy**.
+4. **Verificación de Salud**:
+   - Abrir: `https://venta.urufile.duckdns.org/api/health` ➔ Debe responder `200 OK`.
+5. **Prueba en Vivo**:
+   - Probar consultas en el chat de Uruchat o en el panel admin:
+     - *"Tengo un reclamo, la hidrolavadora vino fallada"* ➔ El bot se disculpa cordialmente, proporciona `2218 5987 / 2218 5988` y deriva a administración.
+     - Consulta de artículo no comercializado ➔ El bot informa con honestidad que no está en catálogo web y ofrece los teléfonos de Central o derivar con un asesor.
+
+---
+
+## 🧪 4. Estado de Pruebas Automatizadas
+
+Antes de dar por cerrado el turno, todas las suites de pruebas pasaron al 100% en verde:
+
+```bash
+# 21 suites de Jest (282 tests) — Backend API, Webhooks, LLM Fail-Safe, RRF, Intents
+PASS backend/tests/humanization.test.js
+PASS backend/tests/tool_executor.test.js
+PASS backend/tests/system_audit_improvements.test.js
+PASS backend/tests/llm_failsafe.test.js
+PASS backend/tests/derivation_assignment_and_labels.test.js
+... (21 suites passed, 282 passed)
+
+# 22 tests de Pytest — Scraper de Catálogo Python
+22 passed in 3.19s
+```
+
+---
+
+*Fin de jornada. Código sincronizado en GitHub `main` y Docker Hub listo en `v2.1.6`.*
