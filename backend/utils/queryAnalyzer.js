@@ -54,7 +54,7 @@ const CATEGORY_HINTS = {
   fijaciones: ['tornillo', 'clavo', 'tarugo', 'bulón', 'tuerca', 'arandela', 'remache'],
   iluminacion: ['lampara', 'foco', 'led', 'reflector', 'dicroica', 'tubo', 'plafon'],
   jardin: ['manguera', 'aspersora', 'tijera poda', 'fumigador', 'cortadora', 'bordeadora'],
-  parrillas: ['medio tanque', 'parrilla', 'barbacoa', 'chulengo', 'carbon', 'fogonero', 'churrasquera'],
+  parrillas: ['medio tanque', 'parrilla', 'barbacoa', 'chulengo', 'carbon', 'fogonero', 'churrasquera', 'parrillero', 'parrilleros'],
   adhesivos: ['silicona', 'sellador', 'pegamento', 'cola', 'adhesivo', 'epoxi', 'cianoacrilato'],
   abrasivos: ['lija', 'disco corte', 'disco desbaste', 'piedra', 'muela', 'disco flap'],
 };
@@ -62,7 +62,9 @@ const CATEGORY_HINTS = {
 // ──────────────────────────────────────────── Local Uruguayan Hardware Synonyms
 // Maps popular local vernacular to formal retail catalog terminology
 const LOCAL_SYNONYMS = {
-  'medio tanque': ['parrilla', 'chulengo', 'barbacoa'],
+  'medio tanque': ['parrilla', 'chulengo', 'barbacoa', 'parrillero'],
+  'parrillero': ['parrilla', 'chulengo', 'barbacoa', 'medio tanque'],
+  'parrillera': ['parrilla', 'chulengo', 'barbacoa', 'medio tanque'],
   'trincheta': ['cutter', 'cuchilla'],
   'cuerito': ['valvula', 'arandela canilla'],
   'alargue': ['prolongador', 'cable alargue'],
