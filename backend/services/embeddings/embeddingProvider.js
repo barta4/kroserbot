@@ -85,10 +85,35 @@ module.exports = {
     if (!oaiKey && configs.llm_api_key?.startsWith('sk-')) oaiKey = configs.llm_api_key.trim();
     if (!oaiKey && configs.llm_fallback_api_key?.startsWith('sk-')) oaiKey = configs.llm_fallback_api_key.trim();
 
-    // Helper functions for providers
+    // Helper functions with exponential backoff for rate limits
+    const withRetry = async (fn, name) => {
+      let attempts = 0;
+      const maxRetries = 2;
+      while (attempts <= maxRetries) {
+        try {
+          return await fn();
+        } catch (err) {
+          attempts++;
+          const isRateLimit =
+            err?.status === 429 ||
+            err?.message?.includes('429') ||
+            err?.message?.includes('quota') ||
+            err?.message?.includes('RESOURCE_EXHAUSTED');
+          if (attempts > maxRetries || !isRateLimit) {
+            logger.warn(`[EmbeddingProvider Warning] ${name} embedding failed: ${err.message}`);
+            return null;
+          }
+          const backoff = attempts * 1000;
+          logger.warn(`[EmbeddingProvider] ${name} rate limit (429) hit, retrying in ${backoff}ms (attempt ${attempts}/${maxRetries})...`);
+          await new Promise((resolve) => setTimeout(resolve, backoff));
+        }
+      }
+      return null;
+    };
+
     const tryGemini = async () => {
       if (!gemKey) return null;
-      try {
+      return await withRetry(async () => {
         const { GoogleGenerativeAI } = require('@google/generative-ai');
         const genAI = new GoogleGenerativeAI(gemKey);
         const model = genAI.getGenerativeModel({ model: 'text-embedding-004' });
@@ -112,15 +137,12 @@ module.exports = {
         );
         this.isMock = false;
         return results;
-      } catch (err) {
-        logger.warn(`[EmbeddingProvider Warning] Gemini embedding failed (${err.message}).`);
-        return null;
-      }
+      }, 'Gemini');
     };
 
     const tryOpenAI = async () => {
       if (!oaiKey) return null;
-      try {
+      return await withRetry(async () => {
         const OpenAI = require('openai');
         const opts = { apiKey: oaiKey };
         if (oaiBaseUrl && !oaiBaseUrl.includes('api.openai.com')) {
@@ -135,10 +157,7 @@ module.exports = {
         });
         this.isMock = false;
         return response.data.map((item) => item.embedding);
-      } catch (err) {
-        logger.warn(`[EmbeddingProvider Warning] OpenAI embedding failed (${err.message}).`);
-        return null;
-      }
+      }, 'OpenAI');
     };
 
     // Execute in priority order based on primary provider
@@ -158,5 +177,40 @@ module.exports = {
     this.isMock = true;
     logger.info(`[EmbeddingProvider] Generating ${textArray.length} deterministic mock embeddings.`);
     return textArray.map((txt) => generateMockEmbedding(txt));
+  },
+
+  async getActiveProviderInfo() {
+    const configs = (await configuracionRepo.getMultiple([
+      'llm_provider',
+      'llm_fallback_provider',
+      'llm_api_key',
+      'llm_fallback_api_key',
+    ])) || {};
+
+    const primary = configs.llm_provider || 'gemini';
+    const fallback = configs.llm_fallback_provider || (primary === 'gemini' ? 'openai' : 'gemini');
+
+    const hasGemKey = Boolean(
+      process.env.GEMINI_API_KEY ||
+      (primary === 'gemini' && configs.llm_api_key?.trim()) ||
+      (fallback === 'gemini' && configs.llm_fallback_api_key?.trim())
+    );
+    const hasOaiKey = Boolean(
+      process.env.OPENAI_API_KEY ||
+      (primary === 'openai' && configs.llm_api_key?.trim()) ||
+      (fallback === 'openai' && configs.llm_fallback_api_key?.trim())
+    );
+
+    return {
+      primaryProvider: primary,
+      fallbackProvider: fallback,
+      hasGeminiKey: hasGemKey,
+      hasOpenAIKey: hasOaiKey,
+      isConfigured: hasGemKey || hasOaiKey,
+      isMock: this.isMock ?? !(hasGemKey || hasOaiKey),
+      dimensions: 768,
+      modelGemini: 'text-embedding-004',
+      modelOpenAI: 'text-embedding-3-small (768d)',
+    };
   },
 };

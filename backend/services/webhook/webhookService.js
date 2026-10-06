@@ -36,6 +36,43 @@ function safeParseHistory(rawHistory) {
   }
 }
 
+async function releaseLockAndDrainBuffer(lockKey, bufferKey, conversationId, payload, processFn) {
+  if (!lockKey || payload._alreadyDebounced) return;
+  try {
+    await redis.del(lockKey);
+    const remainingBuffered = await redis.lrange(bufferKey, 0, -1);
+    if (remainingBuffered && remainingBuffered.length > 0) {
+      await redis.del(bufferKey);
+      const nextContent = remainingBuffered.join('\n');
+      const recursionDepth = payload._recursionDepth || 0;
+      if (recursionDepth < 2 && processFn) {
+        setImmediate(async () => {
+          try {
+            await processFn({
+              ...payload,
+              _alreadyDebounced: true,
+              _recursionDepth: recursionDepth + 1,
+              message: {
+                ...(payload.message || {}),
+                content: nextContent,
+              },
+            });
+          } catch (err) {
+            logger.error('Error processing subsequent buffered messages', { conversationId, error: err.message });
+          }
+        });
+      } else {
+        logger.warn('Max webhook recursion depth reached, discarding remaining buffer', {
+          conversationId,
+          droppedCount: remainingBuffered.length,
+        });
+      }
+    }
+  } catch (err) {
+    logger.warn('Error releasing lock and draining buffer', { conversationId, error: err.message });
+  }
+}
+
 async function isChannelDisabled(payload, conversation) {
   const rawConfig = await configuracionRepo.get('canales_desactivados');
   if (!rawConfig) return false;
@@ -83,7 +120,11 @@ async function isChannelDisabled(payload, conversation) {
 
     // Check by channel type (e.g. 'instagram', 'channel::instagram', 'whatsapp', 'email', 'webwidget')
     if (channelType) {
-      if (channelType === disabled || channelType.includes(disabled) || disabled.includes(channelType)) {
+      const match =
+        channelType === disabled ||
+        (disabled.length >= 3 && channelType.includes(disabled)) ||
+        (channelType.length >= 3 && disabled.includes(channelType));
+      if (match) {
         return { disabled: true, match: disabled, channelType };
       }
     }
@@ -94,8 +135,14 @@ async function isChannelDisabled(payload, conversation) {
     }
 
     // Check by inbox name (e.g. 'instagram oficial')
-    if (inboxName && (inboxName === disabled || inboxName.includes(disabled) || disabled.includes(inboxName))) {
-      return { disabled: true, match: disabled, inboxName };
+    if (inboxName) {
+      const match =
+        inboxName === disabled ||
+        (disabled.length >= 3 && inboxName.includes(disabled)) ||
+        (inboxName.length >= 3 && disabled.includes(inboxName));
+      if (match) {
+        return { disabled: true, match: disabled, inboxName };
+      }
     }
   }
 
@@ -200,7 +247,8 @@ module.exports = {
       const isContentMatch = Boolean(
         lastBotReply &&
         content &&
-        (content === lastBotReply || lastBotReply.includes(content) || content.includes(lastBotReply))
+        (content === lastBotReply ||
+          (content.length >= 25 && (lastBotReply.includes(content) || content.includes(lastBotReply))))
       );
 
       const isBotSender = Boolean(
@@ -517,7 +565,9 @@ module.exports = {
           await redis.del(`conv_buffer:${conversationId}`);
         }
 
-        await chatwootService.assignAgent(accountId, conversationId, assigneeId);
+        if (!isOutOfHours) {
+          await chatwootService.assignAgent(accountId, conversationId, assigneeId);
+        }
         await chatwootService.sendMessage(accountId, conversationId, msgToSend);
 
         // Apply derivation label (default 'derivar') + out-of-hours tags
@@ -552,6 +602,7 @@ module.exports = {
             : (guardrail.reason || 'Guardrail de seguridad activado por conducta reiterada'),
         });
 
+        await releaseLockAndDrainBuffer(lockKey, bufferKey, conversationId, payload, module.exports.processWebhookEvent);
         return { status: 'processed', action: 'guardrail_escalation', category: guardrail.category, isOutOfHours };
       }
 
@@ -570,6 +621,7 @@ module.exports = {
       history.push({ role: 'assistant', content: guardrail.reply });
       await redis.set(sessionKey, JSON.stringify(history), 'EX', 86400);
 
+      await releaseLockAndDrainBuffer(lockKey, bufferKey, conversationId, payload, module.exports.processWebhookEvent);
       return {
         status: 'processed',
         action: 'guardrail_blocked',
@@ -606,6 +658,7 @@ module.exports = {
       logger.info('Farewell suppressed to prevent politeness spiral loop', { correlationId, conversationId });
       history.push({ role: 'user', content: fullContent });
       await redis.set(sessionKey, JSON.stringify(history), 'EX', 86400);
+      await releaseLockAndDrainBuffer(lockKey, bufferKey, conversationId, payload, module.exports.processWebhookEvent);
       return { status: 'ignored', reason: 'farewell_loop_prevented' };
     }
 
@@ -625,6 +678,7 @@ module.exports = {
       history.push({ role: 'assistant', content: greetingReply });
       await redis.set(sessionKey, JSON.stringify(history), 'EX', 86400);
 
+      await releaseLockAndDrainBuffer(lockKey, bufferKey, conversationId, payload, module.exports.processWebhookEvent);
       logger.info('Pure greeting handled directly with formal time-of-day greeting', { correlationId });
       return { status: 'processed', action: 'pure_greeting', reply: greetingReply };
     }
@@ -650,6 +704,7 @@ module.exports = {
         await autoResolveService.resolveImmediately(accountId, conversationId, 'farewell');
       }
 
+      await releaseLockAndDrainBuffer(lockKey, bufferKey, conversationId, payload, module.exports.processWebhookEvent);
       logger.info('Pure farewell handled directly with formal closing', { correlationId, autoResolved: autoResolveFarewell });
       return { status: 'processed', action: 'pure_farewell', reply: farewellReply, autoResolved: autoResolveFarewell };
     }
@@ -661,8 +716,8 @@ module.exports = {
     let processedHistory = history;
     let conversationSummaryStr = '';
     if (history.length > CONTEXT_WINDOW_LIMIT) {
-      const olderMessages = history.slice(0, history.length - 8);
-      let recentMessages = history.slice(-8);
+      const olderMessages = history.slice(0, history.length - 12);
+      let recentMessages = history.slice(-12);
 
       // Ensure recent window starts with a user message for natural dialog flow
       if (recentMessages.length > 0 && recentMessages[0].role === 'assistant') {
@@ -688,7 +743,7 @@ module.exports = {
 
     // 15b. Order Tracking Self-Service Check
     let trackingContextStr = '';
-    const hasOrderTrackingIntent = intentResult.isTracking || intentResult.intent === 'tracking_pedido' || /#\s*[0-9]{1,8}/.test(fullContent);
+    const hasOrderTrackingIntent = intentResult.isTracking || intentResult.intent === 'tracking_pedido' || /(?:pedido|orden|compra|seguimiento|ref|rastreo)\s*#?\s*[0-9]{1,8}\b|#\s*[0-9]{4,8}\b/i.test(fullContent);
     if (hasOrderTrackingIntent) {
       const trackingResult = await orderTrackingService.getTrackingInfo({
         text: fullContent,
@@ -722,6 +777,7 @@ module.exports = {
           '⚠️ [Auto-Shield] Bucle repetitivo detectado (el interlocutor envió el mismo mensaje 3 veces seguidas). Bot pausado para revisión humana.'
         );
       }
+      await releaseLockAndDrainBuffer(lockKey, bufferKey, conversationId, payload, module.exports.processWebhookEvent);
       return { status: 'processed', action: 'repetitive_loop_blocked', conversationId };
     }
 
@@ -757,14 +813,36 @@ module.exports = {
         );
       }
 
+      await releaseLockAndDrainBuffer(lockKey, bufferKey, conversationId, payload, module.exports.processWebhookEvent);
       return { status: 'processed', action: 'turn_limit_reached', turnCount: turnCheck.turnCount };
     }
 
     // 16. Build Dynamic, Humanized, Lightweight System Prompt (No unconditional RAG)
+    let quotedProductsStr = '';
+    if (conversationId) {
+      try {
+        const rawQuoted = await redis.get(`conv_last_quoted:${conversationId}`);
+        if (rawQuoted) {
+          const quotedList = JSON.parse(rawQuoted);
+          if (Array.isArray(quotedList) && quotedList.length > 0) {
+            quotedProductsStr = quotedList
+              .map(
+                (p, idx) =>
+                  `${idx + 1}. ${p.nombre} (SKU: ${p.sku}) - Precio: ${p.precio}${p.marca ? ` - Marca: ${p.marca}` : ''}`
+              )
+              .join('\n');
+          }
+        }
+      } catch (qErr) {
+        logger.warn('Error reading conv_last_quoted from Redis', { error: qErr.message, conversationId });
+      }
+    }
+
     const fullSystemPrompt = await promptBuilder.buildSystemPrompt({
       customerProfileStr: customerMemory.contextStr,
       trackingContextStr,
       conversationSummaryStr,
+      quotedProductsStr,
       detectedEmotion: intentResult.emotion,
       detectedIntent: intentResult.intent,
       messageCount: history.length,
@@ -772,6 +850,10 @@ module.exports = {
     });
 
     // 17. Call LLM with Agentic Tools & Typing Indicator Active
+    // Extend lock during LLM call to prevent parallel collisions on long inferences
+    if (lockKey && !payload._alreadyDebounced) {
+      await redis.expire(lockKey, 25);
+    }
     await chatwootService.toggleTypingStatus(accountId, conversationId, 'on');
     const startLlmTime = Date.now();
 
@@ -790,6 +872,31 @@ module.exports = {
     );
     const llmElapsed = Date.now() - startLlmTime;
 
+    // Cache quoted products from buscar_productos in Redis for anaphoric resolution in subsequent turns
+    if (conversationId && toolsUsed && toolsUsed.length > 0) {
+      try {
+        const prodTool = toolsUsed.find(
+          (t) =>
+            t.name === 'buscar_productos' &&
+            t.result &&
+            Array.isArray(t.result.productos) &&
+            t.result.productos.length > 0
+        );
+        if (prodTool) {
+          const itemsToCache = prodTool.result.productos.slice(0, 3).map((p) => ({
+            sku: p.sku,
+            nombre: p.nombre,
+            precio: p.precio,
+            marca: p.marca,
+            enlace_web: p.enlace_web,
+          }));
+          await redis.set(`conv_last_quoted:${conversationId}`, JSON.stringify(itemsToCache), 'EX', 86400);
+        }
+      } catch (cacheErr) {
+        logger.warn('Error caching quoted products to Redis', { error: cacheErr.message, conversationId });
+      }
+    }
+
     logger.info('LLM reply generated with tools', {
       correlationId,
       replyLength: llmReply.length,
@@ -798,8 +905,8 @@ module.exports = {
     });
 
     // 18. Check Human Escalation (DERIVAR... pattern)
-    if (/DERIVAR:\s*(\w+)/i.test(llmReply)) {
-      const match = llmReply.match(/DERIVAR:\s*(\w+)/i);
+    if (/DERIVAR:\s*\[?(\w+)\]?/i.test(llmReply)) {
+      const match = llmReply.match(/DERIVAR:\s*\[?(\w+)\]?/i);
       const area = match ? match[1].toLowerCase() : 'info';
 
       // Check human business hours & derivation settings
@@ -870,8 +977,10 @@ module.exports = {
 
       await chatwootService.toggleTypingStatus(accountId, conversationId, 'off');
 
-      // Assign in Chatwoot & send appropriate message
-      await chatwootService.assignAgent(accountId, conversationId, assigneeId);
+      // Assign in Chatwoot only if within business hours so bot is not silenced during off-hours/weekends
+      if (!isOutOfHours) {
+        await chatwootService.assignAgent(accountId, conversationId, assigneeId);
+      }
       await chatwootService.sendMessage(accountId, conversationId, msgToSend);
       await conversacionesRepo.logMessage(conversationId, msgToSend, 'assistant');
 
@@ -918,6 +1027,7 @@ module.exports = {
           : content,
       });
 
+      await releaseLockAndDrainBuffer(lockKey, bufferKey, conversationId, payload, module.exports.processWebhookEvent);
       return {
         status: 'processed',
         action: 'human_escalation',
@@ -982,37 +1092,7 @@ module.exports = {
     await redis.set(sessionKey, JSON.stringify(history), 'EX', 86400);
 
     // Release debounce lock and drain any pending messages buffered during processing
-    const recursionDepth = payload._recursionDepth || 0;
-    if (lockKey && !payload._alreadyDebounced) {
-      await redis.del(lockKey);
-      const remainingBuffered = await redis.lrange(bufferKey, 0, -1);
-      if (remainingBuffered && remainingBuffered.length > 0) {
-        await redis.del(bufferKey);
-        const nextContent = remainingBuffered.join('\n');
-        if (recursionDepth < 2) {
-          setImmediate(async () => {
-            try {
-              await module.exports.processWebhookEvent({
-                ...payload,
-                _alreadyDebounced: true,
-                _recursionDepth: recursionDepth + 1,
-                message: {
-                  ...(payload.message || {}),
-                  content: nextContent,
-                },
-              });
-            } catch (err) {
-              logger.error('Error processing subsequent buffered messages', { conversationId, error: err.message });
-            }
-          });
-        } else {
-          logger.warn('Max webhook recursion depth reached, discarding remaining buffer', {
-            conversationId,
-            droppedCount: remainingBuffered.length,
-          });
-        }
-      }
-    }
+    await releaseLockAndDrainBuffer(lockKey, bufferKey, conversationId, payload, module.exports.processWebhookEvent);
 
     return { status: 'processed', reply: safeReply };
   },

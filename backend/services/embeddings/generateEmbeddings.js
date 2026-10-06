@@ -1,11 +1,70 @@
 const db = require('../../config/db');
+const redis = require('../../config/redis');
 const embeddingProvider = require('./embeddingProvider');
 const logger = require('../../config/logger');
 
 const BATCH_SIZE = 20;
 
-async function processIncrementalEmbeddings() {
+async function getEmbeddingsStatus() {
+  try {
+    const countsQuery = `
+      SELECT
+        COUNT(*) FILTER (WHERE discontinuado = FALSE) AS total_activos,
+        COUNT(*) FILTER (WHERE discontinuado = FALSE AND embedding IS NOT NULL AND (embedding_updated_at >= updated_at OR updated_at IS NULL)) AS vectorizados,
+        COUNT(*) FILTER (WHERE discontinuado = FALSE AND (embedding IS NULL OR embedding_updated_at IS NULL OR updated_at > embedding_updated_at)) AS pendientes
+      FROM productos;
+    `;
+    const res = await db.query(countsQuery);
+    const row = res.rows[0] || {};
+    const total = parseInt(row.total_activos, 10) || 0;
+    const vectorizados = parseInt(row.vectorizados, 10) || 0;
+    const pendientes = parseInt(row.pendientes, 10) || 0;
+    const porcentaje = total > 0 ? Math.round((vectorizados / total) * 100) : 100;
+
+    const providerInfo = await embeddingProvider.getActiveProviderInfo();
+
+    let isRunning = false;
+    try {
+      const runningFlag = await redis.get('embeddings:running');
+      isRunning = Boolean(runningFlag);
+    } catch (_) {}
+
+    return {
+      total_activos: total,
+      vectorizados,
+      pendientes,
+      porcentaje_completado: porcentaje,
+      is_running: isRunning,
+      provider: providerInfo,
+    };
+  } catch (err) {
+    logger.error(`[RAG Pipeline] Error getting status: ${err.message}`);
+    return {
+      total_activos: 0,
+      vectorizados: 0,
+      pendientes: 0,
+      porcentaje_completado: 0,
+      is_running: false,
+      error: err.message,
+    };
+  }
+}
+
+async function processIncrementalEmbeddings(options = {}) {
   logger.info('[RAG Pipeline] Checking for products needing vector embeddings...');
+
+  // Concurrency lock in Redis (max 30 mins TTL)
+  let lockAcquired = false;
+  try {
+    const acquired = await redis.set('embeddings:running', '1', 'EX', 1800, 'NX');
+    if (!acquired) {
+      logger.warn('[RAG Pipeline] Embeddings generation already in progress, skipping duplicate job.');
+      return { status: 'already_running', message: 'Ya hay una vectorización en ejecución' };
+    }
+    lockAcquired = true;
+  } catch (rErr) {
+    logger.warn('[RAG Pipeline] Could not acquire Redis lock for embeddings', { error: rErr.message });
+  }
 
   try {
     const res = await db.query(`
@@ -19,7 +78,7 @@ async function processIncrementalEmbeddings() {
     const products = res.rows;
     if (products.length === 0) {
       logger.info('[RAG Pipeline] All active products have up-to-date embeddings.');
-      return { processed: 0 };
+      return { processed: 0, message: 'Todos los productos activos están vectorizados' };
     }
 
     logger.info(`[RAG Pipeline] Found ${products.length} products to process in batches of ${BATCH_SIZE}...`);
@@ -67,7 +126,20 @@ async function processIncrementalEmbeddings() {
         }
         await client.query('COMMIT');
         totalProcessed += batch.length;
-        logger.info(`[RAG Pipeline] Saved batch ${i / BATCH_SIZE + 1} (${totalProcessed}/${products.length} products updated).`);
+        logger.info(`[RAG Pipeline] Saved batch ${Math.floor(i / BATCH_SIZE) + 1} (${totalProcessed}/${products.length} products updated).`);
+
+        try {
+          await redis.set(
+            'embeddings:progress',
+            JSON.stringify({
+              processed: totalProcessed,
+              total: products.length,
+              porcentaje: Math.round((totalProcessed / products.length) * 100),
+            }),
+            'EX',
+            3600
+          );
+        } catch (_) {}
       } catch (err) {
         await client.query('ROLLBACK');
         logger.error(`[RAG Pipeline Error] Batch update failed: ${err.message}`);
@@ -77,15 +149,26 @@ async function processIncrementalEmbeddings() {
     }
 
     logger.info(`[RAG Pipeline] COMPLETED. Processed ${totalProcessed} product embeddings.`);
-    return { processed: totalProcessed };
+    return { processed: totalProcessed, total: products.length };
   } catch (err) {
     logger.error(`[RAG Pipeline Error] ${err.message}`);
     return { processed: 0, error: err.message };
+  } finally {
+    if (lockAcquired) {
+      try {
+        await redis.del('embeddings:running');
+      } catch (_) {}
+    }
   }
 }
 
 if (require.main === module) {
-  processIncrementalEmbeddings();
+  processIncrementalEmbeddings().then(() => {
+    process.exit(0);
+  });
 }
 
-module.exports = { processIncrementalEmbeddings };
+module.exports = {
+  processIncrementalEmbeddings,
+  getEmbeddingsStatus,
+};

@@ -3,6 +3,7 @@ const { spawn } = require('child_process');
 const db = require('../config/db');
 const redis = require('../config/redis');
 const logger = require('../config/logger');
+const generateEmbeddingsService = require('../services/embeddings/generateEmbeddings');
 
 function triggerScraperProcess() {
   try {
@@ -18,6 +19,20 @@ function triggerScraperProcess() {
         error: err.message,
       });
     });
+
+    if (process.env.NODE_ENV !== 'test') {
+      scraperProcess.on('close', async (code) => {
+        logger.info(`Background scraper process exited with code ${code}`);
+        if (code === 0) {
+          try {
+            logger.info('[Post-Scraper Hook] Triggering automatic incremental embeddings indexation...');
+            await generateEmbeddingsService.processIncrementalEmbeddings();
+          } catch (postErr) {
+            logger.error('[Post-Scraper Hook] Failed to auto-generate embeddings', { error: postErr.message });
+          }
+        }
+      });
+    }
 
     scraperProcess.unref();
     logger.info('Background python scraper process triggered');
@@ -101,6 +116,51 @@ module.exports = {
 
       res.json({
         currentRun: lastRun.rows[0] || null,
+      });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  async getEmbeddingsStatus(req, res, next) {
+    try {
+      const status = await generateEmbeddingsService.getEmbeddingsStatus();
+      res.json(status);
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  async triggerEmbeddingsGeneration(req, res, next) {
+    try {
+      const currentStatus = await generateEmbeddingsService.getEmbeddingsStatus();
+
+      if (currentStatus.is_running) {
+        return res.status(409).json({
+          message: 'Ya hay un proceso de vectorización en ejecución',
+          status: currentStatus,
+        });
+      }
+
+      if (currentStatus.pendientes === 0) {
+        return res.json({
+          message: 'Todos los productos ya cuentan con embeddings actualizados',
+          status: currentStatus,
+        });
+      }
+
+      // Launch async in background
+      setImmediate(async () => {
+        try {
+          await generateEmbeddingsService.processIncrementalEmbeddings();
+        } catch (bgErr) {
+          logger.error('[Embeddings Controller] Background generation failed', { error: bgErr.message });
+        }
+      });
+
+      res.status(202).json({
+        message: 'Indexación de embeddings iniciada en segundo plano',
+        pendientes: currentStatus.pendientes,
       });
     } catch (err) {
       next(err);

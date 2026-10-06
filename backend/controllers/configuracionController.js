@@ -44,6 +44,7 @@ const ALLOWED_EXACT_KEYS = new Set([
   'business_hours_saturday_end',
   'contact_alternative_email',
   'msg_fuera_de_horario',
+  'cotizacion_usd',
 ]);
 
 const ALLOWED_PREFIXES = ['msg_', 'assignee_id_'];

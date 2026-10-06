@@ -290,12 +290,12 @@ function scoreProduct(product, normalizedQuery, attrs = {}, options = {}) {
  * @param {Object} attrs - Extracted attributes from queryAnalyzer
  * @returns {Object[]} Products sorted by _score descending
  */
-function rerank(products, rawQuery, attrs = {}) {
+function rerank(products, rawQuery, attrs = {}, options = {}) {
   if (!products || products.length === 0) return [];
 
   const normalizedQ = normalizeQuery(rawQuery);
 
-  const scored = products.map((p) => scoreProduct(p, normalizedQ, attrs));
+  const scored = products.map((p) => scoreProduct(p, normalizedQ, attrs, options));
 
   // Sort by score descending, then by stock (in_stock first), then by normalized price
   scored.sort((a, b) => {
@@ -308,7 +308,7 @@ function rerank(products, rawQuery, attrs = {}) {
     const normPrice = (p) => {
       const num = parseFloat(p.precio) || Infinity;
       if (num === Infinity) return num;
-      if (p.moneda === 'USD' || p.moneda === 'U$S') return num * 42;
+      if (p.moneda === 'USD' || p.moneda === 'U$S') return num * (options.exchangeRate || 42);
       return num;
     };
     const priceA = normPrice(a);

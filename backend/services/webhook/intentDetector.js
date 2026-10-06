@@ -16,9 +16,9 @@ const FAREWELL_PATTERNS = [
 
 const CANCELLATION_PATTERNS = [
   'ya no lo quiero', 'cancelar mi pedido', 'cancela el pedido', 'cancelar pedido',
-  'no quiero mas', 'dejo sin efecto', 'dejalo sin efecto', 'dejar sin efecto mi compra', 'dejar sin efecto el pedido',
-  'anular pedido', 'anulen el pedido', 'anular mi pedido', 'no me interesa mas', 'olvidate del pedido', 'dejalo asi',
-  'cancelen el pedido', 'deseo cancelar la compra',
+  'dejo sin efecto', 'dejalo sin efecto', 'dejar sin efecto mi compra', 'dejar sin efecto el pedido',
+  'anular pedido', 'anulen el pedido', 'anular mi pedido', 'no me interesa mas', 'olvidate del pedido',
+  'cancelen el pedido', 'deseo cancelar la compra', 'no quiero mas el pedido',
 ];
 
 const TRACKING_PATTERNS = [
@@ -156,8 +156,17 @@ function detectIntent(text = '') {
 
   // Normalized pattern check
   const isCancellation = CANCELLATION_PATTERNS.some((pattern) => cleanText.includes(normalizeText(pattern)));
-  const isTracking = TRACKING_PATTERNS.some((pattern) => cleanText.includes(normalizeText(pattern))) || /#\s*[0-9]{1,8}/.test(text);
-  const isComplaint = COMPLAINT_PATTERNS.some((pattern) => cleanText.includes(normalizeText(pattern)));
+
+  // Guardrail H6: Prevent hardware specs like "tornillo #8" or "mecha #6" from triggering tracking
+  const isHardwareSpec = /\b(?:tornillo|tornillos|mecha|mechas|lija|lijas|grano|calibre|chapa|chapas|broca|brocas|rosca|alambre|canaleta|arandela|tuerca|perno)\s*#\s*[0-9]{1,4}\b/i.test(text);
+  const hasOrderRef = !isHardwareSpec && (/(?:pedido|orden|compra|seguimiento|ref|rastreo)\s*#?\s*[0-9]{1,8}\b|#\s*[0-9]{4,8}\b/i.test(text));
+  const isTracking = !isHardwareSpec && (TRACKING_PATTERNS.some((pattern) => cleanText.includes(normalizeText(pattern))) || hasOrderRef);
+
+  const rawComplaint = COMPLAINT_PATTERNS.some((pattern) => cleanText.includes(normalizeText(pattern)));
+  // Disambiguation H8: if customer is asking to purchase spare parts/accessories or how to repair/fix, treat as technical inquiry instead of blocking claim
+  const isExplicitClaim = /\b(?:reclamo|queja|devolucion|devolver|garantia|factura|me cobraron|cobro mal|vino roto|vino fallad|estafador)\b/i.test(cleanText);
+  const hasPartsOrPurchaseInquiry = /\b(?:repuesto|repuestos|pieza|piezas|comprar|venden|tienen|precio|cuanto sale|cuanto cuesta|accesorio|accesorios|como arreglo|como solucionar|que puede ser|que lleva|que le pongo|reparar|solucionar|cambiar|arreglo)\b/i.test(cleanText);
+  const isComplaint = rawComplaint && (isExplicitClaim || !hasPartsOrPurchaseInquiry);
   const isRejection = REJECTION_PATTERNS.some((pattern) => cleanText.includes(normalizeText(pattern)));
   const isUrgent = URGENCY_PATTERNS.some((pattern) => cleanText.includes(normalizeText(pattern)));
 

@@ -10,6 +10,7 @@
  */
 
 const productosRepo = require('../../repositories/productosRepository');
+const configuracionRepo = require('../../repositories/configuracionRepository');
 const { rerank } = require('./reranker');
 const queryAnalyzer = require('../../utils/queryAnalyzer');
 const logger = require('../../config/logger');
@@ -72,7 +73,7 @@ async function hybridSearch(rawQuery, { limit = 5, skipVector = false } = {}) {
   // ── STEP 2: Extract attributes
   const attrs = queryAnalyzer.extractAttributes(normalizedQuery);
 
-  // ── STEP 3: Textual search (two approaches in parallel + synonyms + clean stopwords)
+  // ── STEP 3: Textual and Vector search (executed in parallel when vector is available)
   try {
     const textPromises = [
       productosRepo.searchByKeyword(query, limit * 2),
@@ -92,63 +93,96 @@ async function hybridSearch(rawQuery, { limit = 5, skipVector = false } = {}) {
       }
     }
 
-    const textResults = await Promise.all(textPromises);
+    let vectorPromise = null;
+    const canRunParallelVector = !skipVector && embeddingProvider && !embeddingProvider.isMock;
+    if (canRunParallelVector) {
+      const vectorQuery = (attrs.synonyms && attrs.synonyms.length > 0)
+        ? `${query} ${attrs.synonyms.join(' ')}`
+        : query;
+      vectorPromise = (async () => {
+        try {
+          const queryEmbedding = await embeddingProvider.generateSingleEmbedding(vectorQuery);
+          if (queryEmbedding && queryEmbedding.length > 0) {
+            const vectorFilters = {};
+            if (attrs.marca) vectorFilters.marca = attrs.marca;
+            const rawVector = await productosRepo.searchVectorFiltered(queryEmbedding, vectorFilters, limit);
+            return rawVector.filter((p) => p.similarity !== undefined && p.similarity >= SIMILARITY_THRESHOLD);
+          }
+        } catch (vErr) {
+          logger.warn('[HybridSearch] Parallel vector search error', { error: vErr.message });
+        }
+        return [];
+      })();
+    }
+
+    const [textResults, vectorResults] = await Promise.all([
+      Promise.all(textPromises),
+      vectorPromise ? vectorPromise : Promise.resolve([]),
+    ]);
+
     for (const r of textResults) {
       addCandidates(r);
     }
+    if (vectorResults && vectorResults.length > 0) {
+      addCandidates(vectorResults);
+      logger.info('[HybridSearch] Parallel vector search added candidates', {
+        vectorCount: vectorResults.length,
+        totalCandidates: candidates.length,
+      });
+    }
 
-    logger.info('[HybridSearch] Textual search completed', {
+    logger.info('[HybridSearch] Search completed', {
       totalCandidates: candidates.length,
       hasSynonyms: Boolean(attrs.synonyms && attrs.synonyms.length > 0),
+      hasParallelVector: Boolean(canRunParallelVector),
     });
   } catch (err) {
     logger.warn('[HybridSearch] Textual search error', { error: err.message });
   }
 
-  // ── STEP 4: Vector search (only if we need more candidates)
-  if (!skipVector && candidates.length < limit) {
+  // ── STEP 4: Fallback vector search (for mock provider during test/dev if needed)
+  if (!skipVector && candidates.length < limit && embeddingProvider && embeddingProvider.isMock) {
     try {
-      if (embeddingProvider && !embeddingProvider.isMock) {
-        const vectorQuery = (attrs.synonyms && attrs.synonyms.length > 0)
-          ? `${query} ${attrs.synonyms.join(' ')}`
-          : query;
-        const queryEmbedding = await embeddingProvider.generateSingleEmbedding(vectorQuery);
+      const vectorQuery = (attrs.synonyms && attrs.synonyms.length > 0)
+        ? `${query} ${attrs.synonyms.join(' ')}`
+        : query;
+      const queryEmbedding = await embeddingProvider.generateSingleEmbedding(vectorQuery);
 
-        if (queryEmbedding && queryEmbedding.length > 0 && !embeddingProvider.isMock) {
-          // Build pre-filters from extracted attributes
-          const vectorFilters = {};
-          if (attrs.marca) vectorFilters.marca = attrs.marca;
+      if (queryEmbedding && queryEmbedding.length > 0) {
+        const vectorFilters = {};
+        if (attrs.marca) vectorFilters.marca = attrs.marca;
 
-          const rawVector = await productosRepo.searchVectorFiltered(
-            queryEmbedding,
-            vectorFilters,
-            limit
-          );
-          const filtered = rawVector.filter(
-            (p) => p.similarity !== undefined && p.similarity >= SIMILARITY_THRESHOLD
-          );
+        const rawVector = await productosRepo.searchVectorFiltered(
+          queryEmbedding,
+          vectorFilters,
+          limit
+        );
+        const filtered = rawVector.filter(
+          (p) => p.similarity !== undefined && p.similarity >= SIMILARITY_THRESHOLD
+        );
 
-          addCandidates(filtered);
-
-          logger.info('[HybridSearch] Vector search completed', {
-            raw: rawVector.length,
-            aboveThreshold: filtered.length,
-            totalCandidates: candidates.length,
-          });
-        }
+        addCandidates(filtered);
       }
     } catch (err) {
-      logger.warn('[HybridSearch] Vector search error', { error: err.message });
+      logger.warn('[HybridSearch] Fallback mock vector search error', { error: err.message });
     }
   }
 
-  // ── STEP 5: Re-rank and return
+  // ── STEP 5: Re-rank and return with dynamic exchange rate
   if (candidates.length === 0) {
     logger.info('[HybridSearch] No candidates found', { query });
     return [];
   }
 
-  const ranked = rerank(candidates, query, attrs);
+  let exchangeRate = 42;
+  try {
+    const rawRate = await configuracionRepo.get('cotizacion_usd');
+    if (rawRate && parseFloat(rawRate) > 0) {
+      exchangeRate = parseFloat(rawRate);
+    }
+  } catch (_) {}
+
+  const ranked = rerank(candidates, query, attrs, { exchangeRate });
   // Exclude products whose category was penalized to zero or below
   const validRanked = ranked.filter((p) => (p._score || 0) > 0);
   return validRanked.slice(0, limit);

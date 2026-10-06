@@ -8,13 +8,17 @@ function extractOrderIdentifier(text = '') {
   if (!text) return null;
   const clean = text.trim();
 
-  // 1. Matches: #1042, # 1042
-  const hashMatch = clean.match(/#\s*([0-9]{1,8})/);
-  if (hashMatch) return hashMatch[1];
+  // Guardrail: technical hardware specifications (e.g. "tornillo #8", "mecha #6", "lija al agua #120")
+  const isHardwareSpec = /\b(?:tornillo|tornillos|mecha|mechas|lija|lijas|grano|calibre|chapa|chapas|broca|brocas|rosca|alambre|canaleta|arandela|tuerca|perno)\s*#\s*[0-9]{1,4}\b/i.test(clean);
+  if (isHardwareSpec) return null;
 
-  // 2. Matches: pedido 1042, orden 1042, compra 1042, numero 1042, seguimiento 1042
-  const keywordMatch = clean.match(/(?:pedido|orden|compra|nro|numero|número|seguimiento)\s*(?:n[°o]?\s*)?([0-9]{1,8})\b/i);
+  // 1. Matches with semantic order keywords: pedido #1042, orden 1042, compra 1042, numero 1042, seguimiento 1042, ref 1042
+  const keywordMatch = clean.match(/(?:pedido|orden|compra|nro|numero|número|seguimiento|ref|rastreo)\s*(?:n[°o]?\s*)?#?\s*([0-9]{1,8})\b/i);
   if (keywordMatch) return keywordMatch[1];
+
+  // 2. Matches standalone #1042, # 1042 ONLY if at least 4 digits (to avoid confusing with tool or screw sizes like #6, #8)
+  const hashMatch = clean.match(/#\s*([0-9]{4,8})\b/);
+  if (hashMatch) return hashMatch[1];
 
   // 3. Matches: alphanumeric codes like KRO-1042, EC-5542, ORD-1234
   const codeMatch = clean.match(/\b([A-Z]{2,4}-[0-9]{2,8})\b/i);

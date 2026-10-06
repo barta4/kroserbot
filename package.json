@@ -1,6 +1,6 @@
 {
   "name": "kroserbot",
-  "version": "2.1.7",
+  "version": "2.1.8",
   "description": "Bot Kroser - RAG + Pedidos + Scraper + Admin Panel",
   "main": "backend/index.js",
   "scripts": {
@@ -14,7 +14,9 @@
     "test": "jest --runInBand --forceExit",
     "test:python": "python -m pytest scraper/tests -q",
     "test:all": "npm test && npm run test:python",
-    "test:schema": "node db/test-schema.js"
+    "test:schema": "node db/test-schema.js",
+    "embeddings:generate": "node backend/services/embeddings/generateEmbeddings.js",
+    "embeddings:status": "node -e \"require('./backend/services/embeddings/generateEmbeddings').getEmbeddingsStatus().then(s => console.log(JSON.stringify(s, null, 2))).then(() => process.exit(0))\""
   },
   "keywords": [
     "bot",

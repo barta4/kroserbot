@@ -63,7 +63,7 @@ const CATEGORY_HINTS = {
   pintura: ['pintura', 'latex', 'esmalte', 'barniz', 'impermeabilizante', 'membrana', 'enduido', 'fijador', 'cetol', 'lasur'],
   herramientas: ['taladro', 'amoladora', 'atornillador', 'sierra', 'caladora', 'fresadora', 'lijadora', 'soldadora'],
   electricidad: ['cable', 'termica', 'disyuntor', 'enchufe', 'toma', 'llave', 'tablero', 'prolongador'],
-  sanitaria: ['canilla', 'griferia', 'inodoro', 'bidet', 'flexible', 'caño', 'flotante', 'grifo', 'monocomando', 'ducha', 'cuerito', 'cueritos', 'sopapa'],
+  sanitaria: ['canilla', 'griferia', 'inodoro', 'bidet', 'flexible', 'caño', 'caños', 'tuberia', 'tuberias', 'termofusion', 'desague', 'flotante', 'grifo', 'monocomando', 'ducha', 'cuerito', 'cueritos', 'sopapa'],
   fijaciones: ['tornillo', 'clavo', 'tarugo', 'bulón', 'tuerca', 'arandela', 'remache'],
   iluminacion: ['lampara', 'foco', 'led', 'reflector', 'dicroica', 'tubo', 'plafon'],
   jardin: ['manguera', 'aspersora', 'tijera poda', 'fumigador', 'cortadora', 'bordeadora'],
@@ -330,10 +330,16 @@ function extractAttributes(query) {
     }
   }
 
-  // ── Category hint (detected, not filtered — used for scoring boost)
+  // ── Category hint (detected with word boundaries, not filtered — used for scoring boost)
   for (const [cat, keywords] of Object.entries(CATEGORY_HINTS)) {
     for (const kw of keywords) {
-      if (normalized.includes(kw)) {
+      const kwPattern = new RegExp(`(?:^|\\s|[.,;¿?¡!])${kw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?:$|\\s|[.,;¿?¡!])`, 'i');
+      if (kwPattern.test(normalized)) {
+        // Disambiguation: if "tubo" matched in iluminacion but query has sanitary context, do not classify as iluminacion
+        if (kw === 'tubo' && cat === 'iluminacion') {
+          const isSanitaryContext = /\b(?:pvc|desague|termofusion|agua|caño|caños|plomeria|cloacal|fusion)\b/i.test(normalized);
+          if (isSanitaryContext) continue;
+        }
         attrs.categoriaHint = cat;
         break;
       }

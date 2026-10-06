@@ -181,6 +181,9 @@ module.exports = {
       return 'Disculpe la molestia. En Kroser estamos a las órdenes para responder sobre productos, stock y pedidos. ¿En qué le podemos ayudar?';
     }
 
+    // Strip any leaked internal DERIVAR commands from customer-facing text
+    text = text.replace(/DERIVAR:\s*\[?[a-zA-Z0-9_]+\]?/gi, '').trim();
+
     return text;
   },
   botLoopDetector,

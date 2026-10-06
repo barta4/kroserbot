@@ -1810,6 +1810,48 @@
           <button class="btn-action btn-danger" onclick="stopScraper()">⏹️ Detener</button>
         </div>
       </div>
+
+      <!-- TARJETA MOTOR VECTORIAL Y EMBEDDINGS -->
+      <div class="card-box" style="margin-top:1.5rem;">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;">
+          <div>
+            <h3>🧠 Motor Vectorial & Indexación Semántica (Embeddings)</h3>
+            <p style="color:var(--text-muted); font-size:0.85rem; margin-top:0.25rem;">
+              Control de embeddings vectoriales (768 dimensiones) para búsqueda inteligente en lenguaje natural y recomendación de ferretería.
+            </p>
+          </div>
+          <div>
+            <span class="badge" id="embeddings-provider-badge" style="background:#e0f2fe; color:#0369a1; font-weight:700;">
+              Detectando proveedor...
+            </span>
+          </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:1rem; margin-top:1.25rem;">
+          <div style="background:var(--bg-surface-subtle); padding:1rem; border-radius:0.5rem; border:1px solid var(--border-subtle);">
+            <div style="font-size:0.75rem; color:var(--text-muted); font-weight:600; text-transform:uppercase;">Total Productos Activos</div>
+            <div style="font-size:1.6rem; font-weight:800; color:var(--text-main); margin-top:0.25rem;" id="emb-total-activos">-</div>
+          </div>
+          <div style="background:var(--bg-surface-subtle); padding:1rem; border-radius:0.5rem; border:1px solid var(--border-subtle);">
+            <div style="font-size:0.75rem; color:var(--text-muted); font-weight:600; text-transform:uppercase;">Vectorizados al Día</div>
+            <div style="font-size:1.6rem; font-weight:800; color:var(--success); margin-top:0.25rem;" id="emb-vectorizados">-</div>
+          </div>
+          <div style="background:var(--bg-surface-subtle); padding:1rem; border-radius:0.5rem; border:1px solid var(--border-subtle);">
+            <div style="font-size:0.75rem; color:var(--text-muted); font-weight:600; text-transform:uppercase;">Pendientes de Indexar</div>
+            <div style="font-size:1.6rem; font-weight:800; color:var(--warning); margin-top:0.25rem;" id="emb-pendientes">-</div>
+          </div>
+          <div style="background:var(--bg-surface-subtle); padding:1rem; border-radius:0.5rem; border:1px solid var(--border-subtle);">
+            <div style="font-size:0.75rem; color:var(--text-muted); font-weight:600; text-transform:uppercase;">Cobertura Vectorial</div>
+            <div style="font-size:1.6rem; font-weight:800; color:#1f69ff; margin-top:0.25rem;" id="emb-cobertura">-%</div>
+          </div>
+        </div>
+
+        <div style="margin-top:1.5rem; display:flex; gap:1rem; align-items:center; flex-wrap:wrap;">
+          <button class="btn-action btn-success" id="btn-generate-embeddings" onclick="triggerEmbeddingsGeneration()">⚡ Indexar Productos Pendientes</button>
+          <button class="btn-action" onclick="loadEmbeddingsStatus()">🔄 Actualizar Estado</button>
+          <span id="embeddings-action-msg" style="font-size:0.85rem; font-weight:600; color:var(--text-muted);"></span>
+        </div>
+      </div>
     </section>
 
     <!-- ========================================================
@@ -3922,6 +3964,7 @@
       const res = await apiFetch(`${API_BASE}/scraper/status`);
       const data = await res.json();
       document.getElementById('scraper-status').innerText = data.currentRun ? data.currentRun.status.toUpperCase() : 'Inactivo';
+      loadEmbeddingsStatus();
     }
 
     async function startScraper() {
@@ -3934,10 +3977,70 @@
       loadScraperStatus();
     }
 
+    // --- EMBEDDINGS VECTORIALES ---
+    async function loadEmbeddingsStatus() {
+      try {
+        const res = await apiFetch(`${API_BASE}/scraper/embeddings/status`);
+        if (!res.ok) return;
+        const data = await res.json();
+
+        const totalEl = document.getElementById('emb-total-activos');
+        const vectEl = document.getElementById('emb-vectorizados');
+        const pendEl = document.getElementById('emb-pendientes');
+        const cobEl = document.getElementById('emb-cobertura');
+        const badgeEl = document.getElementById('embeddings-provider-badge');
+
+        if (totalEl) totalEl.innerText = (data.total_activos || 0).toLocaleString();
+        if (vectEl) vectEl.innerText = (data.vectorizados || 0).toLocaleString();
+        if (pendEl) pendEl.innerText = (data.pendientes || 0).toLocaleString();
+        if (cobEl) cobEl.innerText = `${data.porcentaje_completado || 0}%`;
+
+        if (badgeEl && data.provider) {
+          const p = data.provider;
+          if (p.isMock) {
+            badgeEl.style.background = '#fef3c7';
+            badgeEl.style.color = '#b45309';
+            badgeEl.innerText = '⚠️ Mock Offline (768d)';
+          } else {
+            badgeEl.style.background = '#ecfdf5';
+            badgeEl.style.color = '#047857';
+            badgeEl.innerText = `🟢 ${p.primaryProvider.toUpperCase()} (${p.dimensions}d)`;
+          }
+        }
+
+        const btnGen = document.getElementById('btn-generate-embeddings');
+        if (btnGen) {
+          if (data.is_running) {
+            btnGen.disabled = true;
+            btnGen.innerText = '⏳ Indexando en progreso...';
+          } else {
+            btnGen.disabled = (data.pendientes || 0) === 0;
+            btnGen.innerText = (data.pendientes || 0) === 0 ? '✅ Todo Vectorizado' : '⚡ Indexar Productos Pendientes';
+          }
+        }
+      } catch (err) {
+        console.error('Error cargando estado de embeddings:', err);
+      }
+    }
+
+    async function triggerEmbeddingsGeneration() {
+      const msgEl = document.getElementById('embeddings-action-msg');
+      if (msgEl) msgEl.innerText = 'Iniciando generación de vectores...';
+      try {
+        const res = await apiFetch(`${API_BASE}/scraper/embeddings/generate`, { method: 'POST' });
+        const data = await res.json();
+        if (msgEl) msgEl.innerText = data.message || 'Proceso iniciado';
+        setTimeout(loadEmbeddingsStatus, 1500);
+      } catch (err) {
+        if (msgEl) msgEl.innerText = 'Error al iniciar indexación';
+      }
+    }
+
     // Initialization on Page Load
     document.addEventListener('DOMContentLoaded', () => {
       loadDashboard();
       initSimulator();
+      loadEmbeddingsStatus();
     });
   </script>
 </body>
