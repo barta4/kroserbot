@@ -24,7 +24,7 @@ module.exports = function basicAuth(req, res, next) {
     return res.status(401).json({ error: 'Acceso no autorizado: credenciales inválidas' });
   }
 
-  const credentials = Buffer.from(base64Part, 'base64').toString('ascii');
+  const credentials = Buffer.from(base64Part, 'base64').toString('utf8');
   if (!credentials) {
     return res.status(401).json({ error: 'Acceso no autorizado: credenciales inválidas' });
   }

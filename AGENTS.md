@@ -1,6 +1,6 @@
 # Guía de Contexto y Reglas de Desarrollo para Agentes de IA — Kroserbot
 
-Bienvenido al repositorio de **Kroserbot** (Versión actual: **v2.1.6**).  
+Bienvenido al repositorio de **Kroserbot** (Versión actual: **v2.1.7**).  
 Este documento define la arquitectura general, las reglas de oro del negocio, los patrones de código obligatorios y los flujos de prueba y despliegue que cualquier agente de IA o desarrollador humano debe respetar al modificar este codebase.
 
 ---
@@ -119,7 +119,7 @@ npx jest backend/tests/llm_failsafe.test.js
 * **Regla de Etiquetado Incremental**: Dokploy y Easypanel cachean imágenes localmente en el servidor. **Siempre incrementa la versión semántica** (ej. `v2.1.5` ➔ `v2.1.6`) al compilar nuevas imágenes.
 * **Comando de Build y Push**:
   ```bash
-  docker buildx build --platform linux/amd64 -t alfredobartaburu/kroserbot:v2.1.6 -t alfredobartaburu/kroserbot:latest . --push
+  docker buildx build --platform linux/amd64 -t alfredobartaburu/kroserbot:v2.1.7 -t alfredobartaburu/kroserbot:latest . --push
   ```
 * **Git**: Sincronizar siempre a la rama `main` en `https://github.com/barta4/kroserbot.git`.
 * **Desarrollo local**: Mantener bind-mounts y claves dummy en `docker-compose.override.yml` (ignorado en `.gitignore` para no sobreescribir producción).
@@ -165,10 +165,10 @@ kroserbot/
 ├── docker-compose.dokploy.yml    # Configuración de despliegue Dokploy con Traefik
 ├── docker-compose.override.yml   # Overrides para desarrollo local (ignorado en Git)
 ├── Dockerfile                    # Multi-stage build no-root optimizado (Node 20 Alpine)
-├── package.json                  # Dependencias y scripts del proyecto (v2.1.6)
+├── package.json                  # Dependencias y scripts del proyecto (v2.1.7)
 └── README.md                     # Documentación de inicio rápido
 ```
 
 ---
 
-*Última actualización de contexto: Release v2.1.6 (Búsqueda Híbrida RRF, Enriquecedor de Consultas, Protocolo de Reclamos y Teléfonos Central 2218 5987 / 2218 5988).*
+*Última actualización de contexto: Release v2.1.7 (Búsqueda Híbrida Refinada, Limpieza de Superficies y Síntomas, Desacople de Debounce y Prevención de Falsos Positivos).*

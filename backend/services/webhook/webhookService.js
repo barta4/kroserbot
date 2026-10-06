@@ -399,7 +399,7 @@ module.exports = {
     await conversacionesRepo.logMessage(conversationId, content, 'user');
 
     // 10. Intent & Emotion Detection
-    const intentResult = intentDetector.detectIntent(content);
+    let intentResult = intentDetector.detectIntent(content);
     logger.info('Intent detected', { correlationId, intent: intentResult.intent, emotion: intentResult.emotion });
 
     // 11. Check Customer Order Cancellation Request
@@ -432,6 +432,8 @@ module.exports = {
       fullContent = [content, ...bufferedMessages].join('\n');
       await redis.del(bufferKey);
       logger.info('Buffered messages combined', { correlationId, count: bufferedMessages.length + 1 });
+      // Re-evaluate intent on the combined message so inquiries following a greeting are not swallowed
+      intentResult = intentDetector.detectIntent(fullContent);
     }
 
     // Bound user message length right away to prevent context & memory explosion

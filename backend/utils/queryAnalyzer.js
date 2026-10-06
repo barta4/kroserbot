@@ -24,6 +24,19 @@ const STOPWORDS = new Set([
   'disponibles', 'si'
 ]);
 
+// ──────────────────────────────────────────── Problem, Damage and Surface Words
+// Words describing household surfaces, damage, or symptoms (should NOT be treated as product keywords)
+const PROBLEM_AND_SURFACE_WORDS = new Set([
+  'techo', 'techos', 'piso', 'pisos', 'pared', 'paredes', 'azotea', 'azoteas',
+  'bano', 'baño', 'banos', 'baños', 'cocina', 'cocinas', 'patio', 'patios', 'jardin', 'jardines',
+  'puerta', 'puertas', 'ventana', 'ventanas', 'fachada', 'fachadas',
+  'llueve', 'lluvia', 'lluvias', 'gotera', 'goteras', 'filtracion', 'filtraciones',
+  'humedad', 'humedades', 'grieta', 'grietas', 'fisura', 'fisuras',
+  'roto', 'rota', 'rotos', 'rotas', 'pinchado', 'pinchada', 'pierde', 'gotea',
+  'cambiar', 'arreglar', 'reparar', 'poner', 'colocar', 'instalar', 'comprar',
+  'casa', 'hogar', 'apartamento', 'apto',
+]);
+
 // ──────────────────────────────────────────── Known brands (lowercase, normalized)
 const KNOWN_BRANDS = [
   'bosch', 'dewalt', 'makita', 'truper', 'stanley', 'fischer',
@@ -86,6 +99,12 @@ const LOCAL_SYNONYMS = {
 function stripStopwords(str) {
   if (!str || typeof str !== 'string') return '';
   const norm = normalizeQuery(str);
+  const substantiveTokens = norm
+    .split(/\s+/)
+    .filter((t) => t.length >= 2 && !STOPWORDS.has(t) && !PROBLEM_AND_SURFACE_WORDS.has(t));
+  if (substantiveTokens.length > 0) {
+    return substantiveTokens.join(' ');
+  }
   return norm.split(/\s+/).filter((t) => t.length >= 2 && !STOPWORDS.has(t)).join(' ');
 }
 
@@ -107,6 +126,17 @@ function normalizeQuery(raw) {
 }
 
 /**
+ * Filters out stopwords and problem/surface words from a string.
+ */
+function cleanSubstantiveKeywords(str) {
+  if (!str || typeof str !== 'string') return '';
+  const tokens = normalizeQuery(str)
+    .split(/\s+/)
+    .filter((t) => t.length >= 2 && !STOPWORDS.has(t) && !PROBLEM_AND_SURFACE_WORDS.has(t));
+  return tokens.join(' ');
+}
+
+/**
  * Intelligently enrich or restore the product query using the original user message.
  * LLMs frequently over-generalize to broad categories (e.g. calling buscar_productos with "hidrolavadora"
  * when the user explicitly said "hidrolavadora alpha-pro 1600w").
@@ -117,12 +147,13 @@ function normalizeQuery(raw) {
  */
 function extractEnrichedProductQuery(consulta, userMessage) {
   const baseQuery = (consulta || '').trim();
-  if (!userMessage || typeof userMessage !== 'string') return baseQuery;
+  const cleanBase = cleanSubstantiveKeywords(baseQuery);
+
+  if (!userMessage || typeof userMessage !== 'string' || !userMessage.trim()) {
+    return cleanBase || baseQuery;
+  }
 
   const rawUser = userMessage.trim();
-  if (!rawUser) return baseQuery;
-
-  // Split into sentences / clauses
   const sentences = rawUser
     .split(/[\n.;?!]|\by\s+ademas\b|\by\s+tambien\b/i)
     .map((s) => s.trim())
@@ -143,12 +174,19 @@ function extractEnrichedProductQuery(consulta, userMessage) {
     targetSentence = sentences[0] || rawUser;
   }
 
-  const cleanUserPart = stripStopwords(targetSentence);
-  if (!cleanUserPart) return baseQuery;
+  const cleanTokens = targetSentence
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[¿?¡!.,;:()]/g, ' ')
+    .split(/\s+/)
+    .filter((t) => t.length >= 2 && !STOPWORDS.has(t) && !PROBLEM_AND_SURFACE_WORDS.has(t));
 
-  // If the user's sentence contains more detail (brand, model, numbers, power specs)
-  if (cleanUserPart.length > baseQuery.length) {
-    const cleanTokens = cleanUserPart.toLowerCase().split(/\s+/);
+  const cleanUserPart = cleanTokens.join(' ');
+  if (!cleanUserPart) return cleanBase || baseQuery;
+
+  const referenceQuery = cleanBase || baseQuery;
+  if (cleanUserPart.length > referenceQuery.length) {
     const matchesAny =
       baseTokens.length === 0 ||
       baseTokens.some((t) => cleanTokens.some((ct) => ct.includes(t) || t.includes(ct)));
@@ -157,7 +195,7 @@ function extractEnrichedProductQuery(consulta, userMessage) {
     }
   }
 
-  return baseQuery;
+  return cleanBase || baseQuery;
 }
 
 /**
@@ -273,6 +311,15 @@ function extractAttributes(query) {
     attrs.uso = 'interior';
   }
 
+  // ── Surface / Application: techo, piso, pared
+  if (/\b(?:techo|techos|azotea|azoteas)\b/.test(normalized)) {
+    attrs.superficie = 'techo';
+  } else if (/\b(?:piso|pisos)\b/.test(normalized)) {
+    attrs.superficie = 'piso';
+  } else if (/\b(?:pared|paredes|muro|muros)\b/.test(normalized)) {
+    attrs.superficie = 'pared';
+  }
+
   // ── Brand
   for (const brand of KNOWN_BRANDS) {
     const pattern = new RegExp(`\\b${brand}\\b`, 'i');
@@ -349,6 +396,7 @@ module.exports = {
   tokenize,
   buildTsQuery,
   STOPWORDS,
+  PROBLEM_AND_SURFACE_WORDS,
   KNOWN_BRANDS,
   COLORS,
   CATEGORY_HINTS,

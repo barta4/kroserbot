@@ -3222,15 +3222,19 @@
         });
         const data = await res.json();
         if (data.models && data.models.length > 0) {
-          modelSelect.innerHTML = data.models.map(m => `<option value="${m.id}" ${m.id === curVal ? 'selected' : ''}>${m.name} (${m.id})</option>`).join('');
+          modelSelect.innerHTML = data.models.map(m => `<option value="${escHtml(m.id)}" ${m.id === curVal ? 'selected' : ''}>${escHtml(m.name)} (${escHtml(m.id)})</option>`).join('');
           if (curVal && !data.models.some(m => m.id === curVal)) {
-            modelSelect.insertAdjacentHTML('afterbegin', `<option value="${curVal}" selected>${curVal} (Actual)</option>`);
+            modelSelect.insertAdjacentHTML('afterbegin', `<option value="${escHtml(curVal)}" selected>${escHtml(curVal)} (Actual)</option>`);
           }
         } else {
-          modelSelect.innerHTML = `<option value="${curVal || (provider === 'gemini' ? 'gemini-1.5-flash' : 'gpt-4o-mini')}" selected>${curVal || (provider === 'gemini' ? 'Gemini 1.5 Flash' : 'GPT-4o Mini')}</option>`;
+          const defVal = curVal || (provider === 'gemini' ? 'gemini-1.5-flash' : 'gpt-4o-mini');
+          const defLabel = curVal || (provider === 'gemini' ? 'Gemini 1.5 Flash' : 'GPT-4o Mini');
+          modelSelect.innerHTML = `<option value="${escHtml(defVal)}" selected>${escHtml(defLabel)}</option>`;
         }
       } catch (err) {
-        modelSelect.innerHTML = `<option value="${curVal || 'gemini-1.5-flash'}" selected>${curVal || 'Gemini 1.5 Flash'}</option>`;
+        const fbVal = curVal || 'gemini-1.5-flash';
+        const fbLabel = curVal || 'Gemini 1.5 Flash';
+        modelSelect.innerHTML = `<option value="${escHtml(fbVal)}" selected>${escHtml(fbLabel)}</option>`;
       }
     }
 
@@ -3248,15 +3252,19 @@
         });
         const data = await res.json();
         if (data.models && data.models.length > 0) {
-          modelSelect.innerHTML = data.models.map(m => `<option value="${m.id}" ${m.id === curVal ? 'selected' : ''}>${m.name} (${m.id})</option>`).join('');
+          modelSelect.innerHTML = data.models.map(m => `<option value="${escHtml(m.id)}" ${m.id === curVal ? 'selected' : ''}>${escHtml(m.name)} (${escHtml(m.id)})</option>`).join('');
           if (curVal && !data.models.some(m => m.id === curVal)) {
-            modelSelect.insertAdjacentHTML('afterbegin', `<option value="${curVal}" selected>${curVal} (Actual)</option>`);
+            modelSelect.insertAdjacentHTML('afterbegin', `<option value="${escHtml(curVal)}" selected>${escHtml(curVal)} (Actual)</option>`);
           }
         } else {
-          modelSelect.innerHTML = `<option value="${curVal || (provider === 'gemini' ? 'gemini-1.5-flash' : 'gpt-4o-mini')}" selected>${curVal || (provider === 'gemini' ? 'Gemini 1.5 Flash' : 'GPT-4o Mini')}</option>`;
+          const defVal = curVal || (provider === 'gemini' ? 'gemini-1.5-flash' : 'gpt-4o-mini');
+          const defLabel = curVal || (provider === 'gemini' ? 'Gemini 1.5 Flash' : 'GPT-4o Mini');
+          modelSelect.innerHTML = `<option value="${escHtml(defVal)}" selected>${escHtml(defLabel)}</option>`;
         }
       } catch (err) {
-        modelSelect.innerHTML = `<option value="${curVal || 'gpt-4o-mini'}" selected>${curVal || 'GPT-4o Mini'}</option>`;
+        const fbVal = curVal || 'gpt-4o-mini';
+        const fbLabel = curVal || 'GPT-4o Mini';
+        modelSelect.innerHTML = `<option value="${escHtml(fbVal)}" selected>${escHtml(fbLabel)}</option>`;
       }
     }
 

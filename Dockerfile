@@ -21,7 +21,7 @@ LABEL org.opencontainers.image.title="KroserBot" \
       org.opencontainers.image.description="Asistente de IA, RAG y Gestión de Pedidos para Kroser Uruguay" \
       org.opencontainers.image.authors="alfredobartaburu" \
       org.opencontainers.image.source="https://github.com/barta4/kroserbot" \
-      org.opencontainers.image.version="2.1.1"
+      org.opencontainers.image.version="2.1.7"
 
 ENV NODE_ENV=production \
     PORT=3000

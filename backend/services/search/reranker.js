@@ -16,13 +16,13 @@ const WEIGHTS = {
   // Exact match
   EXACT_SKU: 1000,
 
-  // Text scores
-  TEXT_NOMBRE_FULL: 40,
-  TEXT_NOMBRE_PARTIAL: 20,
-  TEXT_NOMBRE_TOKEN: 10,
+  // Text scores (prioritize substantive text relevance over commercial metadata)
+  TEXT_NOMBRE_FULL: 60,
+  TEXT_NOMBRE_PARTIAL: 35,
+  TEXT_NOMBRE_TOKEN: 15,
   TEXT_MARCA: 30,
-  TEXT_CATEGORIA: 15,
-  TEXT_FTS_RANK: 15,
+  TEXT_CATEGORIA: 20,
+  TEXT_FTS_RANK: 20,
 
   // Vector similarity (scaled from [THRESHOLD..1] to [0..MAX])
   VECTOR_MAX: 50,
@@ -37,13 +37,13 @@ const WEIGHTS = {
   ATTR_POTENCIA: 15,
   ATTR_DIMENSION: 20,
 
-  // Business relevance
-  BIZ_IN_STOCK: 15,
-  BIZ_HAS_PRICE: 10,
-  BIZ_HAS_IMAGE: 5,
+  // Business relevance (tiebreakers only, cannot override text mismatch)
+  BIZ_IN_STOCK: 8,
+  BIZ_HAS_PRICE: 4,
+  BIZ_HAS_IMAGE: 2,
 
   // Coherence penalty (product from wrong category)
-  CATEGORY_INCOHERENCE_PENALTY: -35,
+  CATEGORY_INCOHERENCE_PENALTY: -60,
 };
 
 /**
@@ -185,6 +185,12 @@ function scoreProduct(product, normalizedQuery, attrs = {}, options = {}) {
     }
   }
 
+  if (attrs.superficie) {
+    if (searchable.includes(attrs.superficie)) {
+      breakdown.attribute += WEIGHTS.ATTR_USO;
+    }
+  }
+
   if (attrs.marca) {
     const attrMarca = normalizeQuery(attrs.marca);
     if (marca.includes(attrMarca) || nombre.includes(attrMarca)) {
@@ -213,24 +219,48 @@ function scoreProduct(product, normalizedQuery, attrs = {}, options = {}) {
   if (attrs.categoriaHint) {
     if (attrs.categoriaHint === 'pintura') {
       const isToolProduct = categoria.includes('herramienta') && !nombre.includes('pincel') && !nombre.includes('rodillo') && !nombre.includes('espatula') && !nombre.includes('bandeja') && !nombre.includes('pintar');
-      if (isToolProduct) {
+      const isUnrelatedCategory =
+        nombre.includes('ventilador') ||
+        nombre.includes('plafon') ||
+        nombre.includes('lampara') ||
+        nombre.includes('foco') ||
+        nombre.includes('estufa') ||
+        nombre.includes('caloventor') ||
+        categoria.includes('ventilacion') ||
+        categoria.includes('iluminacion') ||
+        categoria.includes('climatizacion') ||
+        categoria.includes('electricidad') ||
+        categoria.includes('sanitaria') ||
+        categoria.includes('bazar') ||
+        categoria.includes('electro');
+      if (isToolProduct || isUnrelatedCategory) {
         breakdown.penalty += WEIGHTS.CATEGORY_INCOHERENCE_PENALTY;
       }
     } else if (attrs.categoriaHint === 'hidrolavadoras') {
       // If customer asks for pressure washers, aspiradoras or unpowered tools get penalized
-      const isAspiradoraOrUnrelated = nombre.includes('aspiradora') && !nombre.includes('hidrolavadora');
+      const isAspiradoraOrUnrelated = (nombre.includes('aspiradora') && !nombre.includes('hidrolavadora')) || categoria.includes('climatizacion') || categoria.includes('iluminacion') || categoria.includes('pintura');
       if (isAspiradoraOrUnrelated) {
         breakdown.penalty += WEIGHTS.CATEGORY_INCOHERENCE_PENALTY;
       }
     } else if (attrs.categoriaHint === 'parrillas') {
-      const isToolOrAccProduct = categoria.includes('herramienta') || categoria.includes('fijacion') || categoria.includes('abrasivo') || categoria.includes('accesorio') || nombre.includes('mecha') || nombre.includes('broca') || nombre.includes('tarugo') || nombre.includes('tornillo') || nombre.includes('engrasadora');
+      const isToolOrAccProduct = categoria.includes('herramienta') || categoria.includes('fijacion') || categoria.includes('abrasivo') || categoria.includes('accesorio') || categoria.includes('iluminacion') || nombre.includes('mecha') || nombre.includes('broca') || nombre.includes('tarugo') || nombre.includes('tornillo') || nombre.includes('engrasadora');
       const isBaseOrStand = nombre.startsWith('base para') || nombre.startsWith('soporte para') || nombre.startsWith('funda para');
       if (isToolOrAccProduct || isBaseOrStand) {
         breakdown.penalty += WEIGHTS.CATEGORY_INCOHERENCE_PENALTY;
       }
     } else if (attrs.categoriaHint === 'sanitaria') {
-      const isGasOrMask = nombre.includes('gas') || nombre.includes('garrafa') || nombre.includes('mascarilla') || nombre.includes('respirador') || categoria.includes('gas') || categoria.includes('pintura');
+      const isGasOrMask = nombre.includes('gas') || nombre.includes('garrafa') || nombre.includes('mascarilla') || nombre.includes('respirador') || categoria.includes('gas') || categoria.includes('pintura') || categoria.includes('iluminacion') || categoria.includes('climatizacion');
       if (isGasOrMask) {
+        breakdown.penalty += WEIGHTS.CATEGORY_INCOHERENCE_PENALTY;
+      }
+    } else if (attrs.categoriaHint === 'herramientas') {
+      const isUnrelated = categoria.includes('iluminacion') || categoria.includes('pintura') || categoria.includes('climatizacion') || categoria.includes('bazar');
+      if (isUnrelated) {
+        breakdown.penalty += WEIGHTS.CATEGORY_INCOHERENCE_PENALTY;
+      }
+    } else if (attrs.categoriaHint === 'iluminacion') {
+      const isUnrelated = categoria.includes('pintura') || categoria.includes('sanitaria') || categoria.includes('herramienta') || categoria.includes('jardin');
+      if (isUnrelated) {
         breakdown.penalty += WEIGHTS.CATEGORY_INCOHERENCE_PENALTY;
       }
     }

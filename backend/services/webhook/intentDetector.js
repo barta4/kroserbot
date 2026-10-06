@@ -16,8 +16,8 @@ const FAREWELL_PATTERNS = [
 
 const CANCELLATION_PATTERNS = [
   'ya no lo quiero', 'cancelar mi pedido', 'cancela el pedido', 'cancelar pedido',
-  'no quiero mas', 'dejo sin efecto', 'dejalo sin efecto', 'sin efecto', 'anular pedido', 'anulen el pedido',
-  'anular mi pedido', 'no me interesa mas', 'olvidate del pedido', 'dejalo asi',
+  'no quiero mas', 'dejo sin efecto', 'dejalo sin efecto', 'dejar sin efecto mi compra', 'dejar sin efecto el pedido',
+  'anular pedido', 'anulen el pedido', 'anular mi pedido', 'no me interesa mas', 'olvidate del pedido', 'dejalo asi',
   'cancelen el pedido', 'deseo cancelar la compra',
 ];
 
@@ -34,10 +34,23 @@ const COMPLAINT_PATTERNS = [
   'pesimo servicio', 'defectuoso', 'vino roto', 'cobro mal', 'me cobraron de mas',
   'garantia rota', 'falla de fabrica', 'producto roto', 'vino fallado', 'vino fallada',
   'no funciona', 'no me funciona', 'no prende', 'no arranca', 'vino danado', 'vino danada',
-  'quiero devolver', 'devolucion', 'hacer un reclamo', 'hacer una queja',
-  'me vino roto', 'me vino fallado', 'garantia', 'atendieron mal', 'pesima atencion',
-  'tengo un problema con', 'el producto no anda', 'no me anda',
+  'quiero devolver', 'quiero hacer una devolucion', 'solicitar devolucion', 'hacer un reclamo', 'hacer una queja',
+  'me vino roto', 'me vino fallado', 'hacer valer garantia', 'reclamo de garantia', 'garantia por falla',
+  'atendieron mal', 'pesima atencion', 'tengo un problema con', 'el producto no anda', 'no me anda',
 ];
+
+const GREETING_WORDS = new Set([
+  'hola', 'buenas', 'buen', 'buenos', 'dia', 'dias', 'tarde', 'tardes', 'noche', 'noches',
+  'que', 'tal', 'como', 'estas', 'esta', 'va', 'kroser', 'saludos', 'opa',
+  'estimados', 'estimado', 'estimada', 'gente', 'todos', 'equipo'
+]);
+
+const FAREWELL_WORDS = new Set([
+  'muchas', 'gracias', 'chau', 'hasta', 'luego', 'nos', 'vemos', 'listo',
+  'perfecto', 'excelente', 'impecable', 'por', 'todo', 'la', 'atencion',
+  'muy', 'amable', 'buen', 'fin', 'de', 'semana', 'igualmente', 'saludos',
+  'pase', 'bien', 'kroser', 'genial', 'gracia'
+]);
 
 const REJECTION_PATTERNS = [
   'no me sirve', 'no me sirven', 'no me sirve ninguna', 'ninguna me sirve',
@@ -152,13 +165,27 @@ function detectIntent(text = '') {
   const matchedGreeting = GREETING_PATTERNS.find((pattern) => cleanText.includes(normalizeText(pattern)));
   const hasGreeting = Boolean(matchedGreeting);
 
-  // Pure Greeting
-  const isPureGreeting = hasGreeting && wordCount <= 4 && !cleanText.includes('precio') && !cleanText.includes('stock') && !cleanText.includes('taladro') && !cleanText.includes('pintura') && !cleanText.includes('donde') && !cleanText.includes('cuanto') && !isTracking;
+  // Pure Greeting: Must match a greeting AND all tokens must be greeting pleasantries
+  const isPureGreeting =
+    hasGreeting &&
+    words.length > 0 &&
+    words.every((w) => GREETING_WORDS.has(w)) &&
+    !isTracking &&
+    !isCancellation &&
+    !isComplaint;
 
   // Farewell Check
   const matchedFarewell = FAREWELL_PATTERNS.find((pattern) => cleanText.includes(normalizeText(pattern)));
   const hasFarewell = Boolean(matchedFarewell);
-  const isPureFarewell = hasFarewell && wordCount <= 6 && !cleanText.includes('pedido') && !cleanText.includes('comprar') && !cleanText.includes('precio') && !isTracking;
+
+  // Pure Farewell: Must match a farewell AND all tokens must be farewell pleasantries
+  const isPureFarewell =
+    hasFarewell &&
+    words.length > 0 &&
+    words.every((w) => FAREWELL_WORDS.has(w)) &&
+    !isTracking &&
+    !isCancellation &&
+    !isComplaint;
 
   // Emotion determination
   let emotion = 'neutral';

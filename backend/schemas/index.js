@@ -99,22 +99,48 @@ const formaPagoSchema = z.object({
   activo: z.boolean().optional().default(true),
 });
 
+const safeBaseUrlSchema = z
+  .string()
+  .trim()
+  .refine(
+    (val) => {
+      if (!val || val === '') return true;
+      try {
+        const parsed = new URL(val);
+        if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return false;
+        const hostname = parsed.hostname.toLowerCase();
+        if (
+          hostname === '169.254.169.254' ||
+          hostname === 'metadata.google.internal' ||
+          hostname === 'instance-data'
+        ) {
+          return false;
+        }
+        return true;
+      } catch {
+        return false;
+      }
+    },
+    { message: 'baseUrl debe ser una URL válida (http/https) y no apuntar a endpoints de metadata' }
+  )
+  .optional();
+
 const llmConfigSchema = z.object({
   provider: z.string().optional(),
   model: z.string().optional(),
   apiKey: z.string().optional(),
-  baseUrl: z.string().optional(),
+  baseUrl: safeBaseUrlSchema,
   fallbackProvider: z.string().optional(),
   fallbackModel: z.string().optional(),
   fallbackApiKey: z.string().optional(),
-  fallbackBaseUrl: z.string().optional(),
+  fallbackBaseUrl: safeBaseUrlSchema,
   fallbackEnabled: z.union([z.boolean(), z.string()]).optional(),
 });
 
 const llmModelsSchema = z.object({
   provider: z.string().optional(),
   apiKey: z.string().optional(),
-  baseUrl: z.string().optional(),
+  baseUrl: safeBaseUrlSchema,
 });
 
 const mercadopagoToggleSchema = z.object({

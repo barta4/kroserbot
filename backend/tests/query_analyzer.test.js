@@ -2,7 +2,7 @@
  * Tests for queryAnalyzer.js — Query preprocessing for hybrid search
  */
 
-const { normalizeQuery, detectCode, extractAttributes, tokenize, buildTsQuery } = require('../utils/queryAnalyzer');
+const { normalizeQuery, detectCode, extractAttributes, tokenize, buildTsQuery, stripStopwords, extractEnrichedProductQuery } = require('../utils/queryAnalyzer');
 
 describe('queryAnalyzer', () => {
   // ─────────────────────────────────────── normalizeQuery
@@ -217,6 +217,71 @@ describe('queryAnalyzer', () => {
       // Mecha gets category incoherence penalty
       expect(ranked[1]._breakdown.penalty).toBeLessThan(0);
     });
+
+    it('should prioritize Membrana over ceiling fixtures and penalize unrelated categories', () => {
+      const { extractEnrichedProductQuery } = require('../utils/queryAnalyzer');
+      const consulta = 'membrana';
+      const userMsg = 'Hola, necesito membrana para el techo que se me llueve';
+      const effectiveQuery = extractEnrichedProductQuery(consulta, userMsg);
+      expect(effectiveQuery).toBe('membrana');
+
+      const attrs = extractAttributes(effectiveQuery);
+      const items = [
+        { sku: 'MEM-01', nombre: 'Membrana liquida fibrada 20kg', categoria: 'Pinturas > Impermeabilizantes', stock_status: 'in_stock', precio: '3900' },
+        { sku: 'VEN-02', nombre: 'Ventilador de techo 3 palas', categoria: 'Climatizacion', stock_status: 'in_stock', precio: '2500' },
+        { sku: 'PLA-03', nombre: 'Plafon LED de techo 20W', categoria: 'Iluminacion', stock_status: 'in_stock', precio: '690' },
+      ];
+
+      const ranked = rerank(items, effectiveQuery, attrs);
+      expect(ranked[0].sku).toBe('MEM-01');
+      expect(ranked[1]._score).toBeLessThan(0);
+      expect(ranked[2]._score).toBeLessThan(0);
+    });
+  });
+
+  // ─────────────────────────────────────── extractEnrichedProductQuery
+  describe('extractEnrichedProductQuery', () => {
+    const { extractEnrichedProductQuery } = require('../utils/queryAnalyzer');
+
+    it('should ignore symptom words like "llueve" and surface words like "techo"', () => {
+      const res = extractEnrichedProductQuery('membrana', 'Hola, necesito membrana para el techo que se me llueve');
+      expect(res).toBe('membrana');
+    });
+
+    it('should preserve technical qualifiers and weights from user message', () => {
+      const res = extractEnrichedProductQuery('membrana', 'buenas tenes membrana liquida 20 kilos?');
+      expect(res).toBe('membrana liquida 20 kilos');
+    });
+
+    it('should preserve brands and models from user message', () => {
+      const res = extractEnrichedProductQuery('hidrolavadora', 'HIDROLAVADORA ALPHA-PRO 1600W');
+      expect(res).toBe('hidrolavadora alpha-pro 1600w');
+    });
+
+    it('should clean surface words even when present in LLM consulta', () => {
+      const res = extractEnrichedProductQuery('membrana para techo', 'Hola, necesito membrana para el techo que se me llueve');
+      expect(res).toBe('membrana');
+    });
+
+    it('should enrich query when user provides model or volume and consulta has surface word', () => {
+      const res = extractEnrichedProductQuery('membrana para techo', 'Hola, busco membrana liquida fibrada 20kg para la azotea');
+      expect(res).toBe('membrana liquida fibrada 20kg');
+    });
+
+    it('should extract superficie attribute in extractAttributes', () => {
+      const attrs = extractAttributes('membrana para techo');
+      expect(attrs.superficie).toBe('techo');
+
+      const attrsPiso = extractAttributes('pintura para piso');
+      expect(attrsPiso.superficie).toBe('piso');
+    });
+
+    it('should strip problem/surface words in stripStopwords when substantive keywords exist', () => {
+      expect(stripStopwords('membrana para techo')).toBe('membrana');
+      expect(stripStopwords('ventilador de techo')).toBe('ventilador');
+      expect(stripStopwords('techo')).toBe('techo');
+    });
   });
 });
+
 

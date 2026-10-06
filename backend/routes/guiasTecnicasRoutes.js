@@ -3,13 +3,13 @@ const router = express.Router();
 const guiasController = require('../controllers/guiasTecnicasController');
 const { requireAuth, requireRole } = require('../middleware/requireAuth');
 
-// Public route for listing active technical guides / chat context
-router.get('/', guiasController.listGuias);
-router.get('/:id', guiasController.getGuia);
+// Authenticated routes for listing technical guides
+router.get('/', requireAuth, guiasController.listGuias);
+router.get('/:id', requireAuth, guiasController.getGuia);
 
-// Admin protected routes for modifying technical guides
-router.post('/', requireAuth, guiasController.createGuia);
-router.put('/:id', requireAuth, guiasController.updateGuia);
-router.delete('/:id', requireAuth, guiasController.deleteGuia);
+// Admin-only protected routes for modifying technical guides
+router.post('/', requireRole('admin'), guiasController.createGuia);
+router.put('/:id', requireRole('admin'), guiasController.updateGuia);
+router.delete('/:id', requireRole('admin'), guiasController.deleteGuia);
 
 module.exports = router;

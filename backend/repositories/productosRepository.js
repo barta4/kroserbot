@@ -150,20 +150,35 @@ module.exports = {
     }
 
     // 2. Tokenized multi-word search preserving technical measurements
-    const STOPWORDS = new Set(['de', 'la', 'el', 'en', 'para', 'con', 'un', 'una', 'y', 'o', 'del', 'los', 'las', 'al', 'por', 'que', 'qué', 'se', 'es', 'son', 'tenes', 'tienen', 'hola', 'cuanto', 'cuánto', 'cuesta', 'precio', 'tienen', 'venden']);
+    const STOPWORDS = new Set([
+      'de', 'la', 'el', 'en', 'para', 'con', 'un', 'una', 'y', 'o', 'del',
+      'los', 'las', 'al', 'por', 'que', 'qué', 'se', 'es', 'son', 'tenes',
+      'tienen', 'hola', 'cuanto', 'cuánto', 'cuesta', 'precio', 'venden',
+      'llueve', 'gotera', 'goteras', 'filtracion', 'filtraciones', 'humedad', 'humedades',
+      'roto', 'rota', 'arreglar', 'reparar'
+    ]);
     
     // Preserve fractional measurements (1/2, 3/4) and dimensions (8x50) before stripping
     const preserved = normalizedKw
       .replace(/(\d+)\/(\d+)/g, '$1FRAC$2')   // 1/2 → 1FRAC2
       .replace(/(\d+)\s*x\s*(\d+)/g, '$1DIM$2'); // 8x50 → 8DIM50
 
-    const tokens = preserved
+    const rawTokens = preserved
       .split(/\s+/)
       .map((t) => t.replace(/[^a-z0-9]/gi, ''))
       .map((t) => t.replace(/FRAC/g, '/').replace(/DIM/g, 'x'))
       .filter((t) => t.length >= 2 && !STOPWORDS.has(t));
 
-    if (tokens.length === 0) return [];
+    if (rawTokens.length === 0) return [];
+
+    const PROBLEM_SURFACE = new Set([
+      'techo', 'techos', 'piso', 'pisos', 'pared', 'paredes', 'azotea', 'azoteas',
+      'bano', 'baño', 'cocina', 'patio', 'jardin', 'fachada',
+      'llueve', 'lluvia', 'gotera', 'filtracion', 'humedad', 'grieta', 'fisura',
+      'roto', 'rota', 'arreglar', 'reparar'
+    ]);
+    const substantiveTokens = rawTokens.filter((t) => !PROBLEM_SURFACE.has(t));
+    const tokens = substantiveTokens.length > 0 ? substantiveTokens : rawTokens;
 
     // Construct ILIKE conditions and relevance score for each token with unaccented translation
     const conditions = tokens.map((_, i) => `(translate(lower(nombre), 'áéíóúü', 'aeiouu') ILIKE $${i + 1} OR translate(lower(categoria), 'áéíóúü', 'aeiouu') ILIKE $${i + 1} OR translate(lower(marca), 'áéíóúü', 'aeiouu') ILIKE $${i + 1} OR translate(lower(coalesce(descripcion, '')), 'áéíóúü', 'aeiouu') ILIKE $${i + 1})`).join(' OR ');

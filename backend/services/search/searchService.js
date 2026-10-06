@@ -86,9 +86,10 @@ async function hybridSearch(rawQuery, { limit = 5, skipVector = false } = {}) {
     }
 
     if (attrs.synonyms && attrs.synonyms.length > 0) {
-      const synQuery = attrs.synonyms.join(' ');
-      textPromises.push(productosRepo.searchByKeyword(synQuery, limit * 2));
-      textPromises.push(_searchFTS(synQuery, limit * 2));
+      for (const syn of attrs.synonyms) {
+        textPromises.push(productosRepo.searchByKeyword(syn, limit * 2));
+        textPromises.push(_searchFTS(syn, limit * 2));
+      }
     }
 
     const textResults = await Promise.all(textPromises);
@@ -148,7 +149,9 @@ async function hybridSearch(rawQuery, { limit = 5, skipVector = false } = {}) {
   }
 
   const ranked = rerank(candidates, query, attrs);
-  return ranked.slice(0, limit);
+  // Exclude products whose category was penalized to zero or below
+  const validRanked = ranked.filter((p) => (p._score || 0) > 0);
+  return validRanked.slice(0, limit);
 }
 
 /**

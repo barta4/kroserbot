@@ -67,6 +67,28 @@ describe('Humanización y Comportamiento Humano de KroserBot', () => {
       expect(rej3.isRejection).toBe(true);
       expect(rej3.intent).toBe('rechazo_producto');
     });
+
+    test('evita falsos positivos en consultas cortas de productos con saludo o agradecimiento', () => {
+      const q1 = intentDetector.detectIntent('Hola tienen membrana?');
+      expect(q1.hasGreeting).toBe(true);
+      expect(q1.isPureGreeting).toBe(false);
+      expect(q1.intent).toBe('consulta_general');
+
+      const q2 = intentDetector.detectIntent('muchas gracias tienen stock?');
+      expect(q2.hasFarewell).toBe(true);
+      expect(q2.isPureFarewell).toBe(false);
+      expect(q2.intent).toBe('consulta_general');
+    });
+
+    test('evita falsos positivos de reclamo o cancelación en consultas de compra previa', () => {
+      const g = intentDetector.detectIntent('Tiene garantía el taladro Bosch?');
+      expect(g.isComplaint).toBe(false);
+      expect(g.intent).not.toBe('reclamo');
+
+      const c = intentDetector.detectIntent('Tienen barniz sin efecto brillante?');
+      expect(c.isCancellation).toBe(false);
+      expect(c.intent).not.toBe('cancelacion');
+    });
   });
 
   describe('2. Constructor de Prompt Formal y Humanizado (promptBuilder)', () => {

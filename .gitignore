@@ -12,6 +12,7 @@ __pycache__/
 docker-compose.override.yml
 *.override.yml
 *.pem
+cookies.txt
 
 # Build & Cache
 dist/
