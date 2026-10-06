@@ -13,6 +13,7 @@ Actualizar esta tabla ANTES de empezar una tarea y ANTES de mergear el resultado
 | 06-panel-admin | 00, 01 | done | barta4 | tarea/06-panel-admin |
 | 07-deploy | 04, 06 | done | barta4 | tarea/07-deploy |
 | 08-observabilidad | 04 | done | barta4 | tarea/08-observabilidad |
+| 09-busqueda-interpretacion-v2.1.7 | 04, 07 | done | antigravity | main |
 
 Estados posibles: `pendiente` → `en_progreso` → `done`.
 
