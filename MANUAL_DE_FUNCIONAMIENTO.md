@@ -275,13 +275,16 @@ sequenceDiagram
     end
 
     rect rgb(250, 250, 250)
-    Note over WH,CW: Fase 4: Sanitización & Envío
+    Note over WH,CW: Fase 4: Fragmentación Conversacional, Pacing & Despacho
     WH->>WH: Guardrails de salida (anti-fugas)
-    WH->>WH: Simulación de delay de tipeo humano (15ms/carácter)
-    WH->>CW: Desactiva indicador "Escribiendo..." (Typing off)
-    WH->>CW: Envía respuesta final al cliente
-    WH->>Redis: Guarda nuevo turno en historial conv_memory (TTL 24h)
-    WH->>DB: Registra mensaje en tabla conversaciones
+    WH->>WH: Message Splitter: divide en hasta 2 globos naturales (anti-libro)
+    WH->>CW: Desactiva typing y envía Globo 1 (información directa)
+    opt Si hay 2 globos (pregunta de cierre / CTA)
+        WH->>CW: Activa "Escribiendo..." durante 1.2s - 2.4s (tipeo humano)
+        WH->>CW: Envía Globo 2 al cliente
+    end
+    WH->>Redis: Guarda nuevo turno consolidado en historial conv_memory (TTL 24h)
+    WH->>DB: Registra cada globo en tabla conversaciones
     end
 ```
 
@@ -344,12 +347,23 @@ El LLM dispone de las siguientes 7 funciones declaradas en esquema JSON para res
 | `consultar_pedido` | `referencia: string` | Permite el autoservicio de clientes consultando el estado de preparación o despacho de un pedido existente. |
 | `registrar_pedido` | `cliente: object, items: array` | **Formaliza una orden de compra** en la base de datos una vez que el cliente validó todos sus datos de entrega. |
 
-### 4.3. Algoritmo de Humanización y Delay de Tipeo
+### 4.3. Fragmentación Conversacional (Message Chunking) y Simulación de Tipeo Humano
 
-Para erradicar la sensación de hablar con un bot genérico, la función `cleanAndHumanizeReply()` aplica filtros automáticos:
-- Elimina muletillas robotizadas (*"Como modelo de lenguaje...", "Espero haberle sido de ayuda..."*).
-- Si la conversación ya está avanzada, remueve saludos iniciales redundantes (*"Hola de nuevo", "Buen día"*).
-- **Simulación de tipeo biológico**: Calcula una demora basada en la extensión de la respuesta (~15ms por carácter, acotado entre 800ms y 3000ms), manteniendo activo el indicador de *"Escribiendo..."* en Chatwoot para una experiencia conversacional fluida y natural.
+Para erradicar la sensación de hablar con un bot genérico y evitar el síndrome del "libro" (paredes de texto abrumadoras en WhatsApp):
+- **Fragmentación en Globos Naturales (`messageSplitter.js`)**:
+  - Si la respuesta supera los 80 caracteres y contiene una estructura de respuesta + pregunta de cierre, o párrafos separados, divide el contenido en **máximo 2 globos de chat independientes**.
+  - **Preservación estricta**: No fragmenta dentro de precios con separador de miles (`$2.490`), medidas (`1.5mm`) ni enlaces web.
+  - Sanea y descarta divisores markdown (`---`, `***`) convirtiéndolos en saltos limpios.
+- **Pacing y Simulación de Tipeo en Vivo (`webhookService.js`)**:
+  - Despacha el **Globo 1** de forma inmediata.
+  - Activa en Uruchat el estado **"Escribiendo..."** durante **1.2 a 2.4 segundos** (proporcional a la longitud del segundo globo), simulando de manera creíble que un asesor humano está redactando la pregunta complementaria.
+  - Despacha el **Globo 2** al concluir el intervalo.
+- **Regla Anti-Testamento en Prompt (`promptBuilder.js`)**:
+  - Límite estricto de **30 a 45 palabras** por turno.
+  - Prohibición de redactar fichas técnicas exhaustivas o parrafadas enciclopédicas a menos que el usuario lo solicite expresamente.
+- **Filtro Post-Procesamiento (`cleanAndHumanizeReply()`)**:
+  - Elimina muletillas robotizadas (*"Como modelo de lenguaje...", "Espero haberle sido de ayuda..."*).
+  - Remueve saludos iniciales redundantes en conversaciones avanzadas (*"Hola de nuevo", "Buen día"*).
 
 ---
 
