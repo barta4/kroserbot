@@ -1,6 +1,6 @@
 # Guía de Contexto y Reglas de Desarrollo para Agentes de IA — Kroserbot
 
-Bienvenido al repositorio de **Kroserbot** (Versión actual: **v2.1.8**).  
+Bienvenido al repositorio de **Kroserbot** (Versión actual: **v2.1.9**).  
 Este documento define la arquitectura general, las reglas de oro del negocio, los patrones de código obligatorios y los flujos de prueba y despliegue que cualquier agente de IA o desarrollador humano debe respetar al modificar este codebase.
 
 ---
@@ -119,7 +119,7 @@ npx jest backend/tests/llm_failsafe.test.js
 * **Regla de Etiquetado Incremental**: Dokploy y Easypanel cachean imágenes localmente en el servidor. **Siempre incrementa la versión semántica** (ej. `v2.1.5` ➔ `v2.1.6`) al compilar nuevas imágenes.
 * **Comando de Build y Push**:
   ```bash
-  docker buildx build --platform linux/amd64 -t alfredobartaburu/kroserbot:v2.1.8 -t alfredobartaburu/kroserbot:latest . --push
+  docker buildx build --platform linux/amd64 -t alfredobartaburu/kroserbot:v2.1.9 -t alfredobartaburu/kroserbot:latest . --push
   ```
 * **Git**: Sincronizar siempre a la rama `main` en `https://github.com/barta4/kroserbot.git`.
 * **Desarrollo local**: Mantener bind-mounts y claves dummy en `docker-compose.override.yml` (ignorado en `.gitignore` para no sobreescribir producción).
@@ -153,7 +153,7 @@ kroserbot/
 │   │   ├── media/                # Audio transcribers y gestión de adjuntos
 │   │   ├── pedidos/              # Lógica de pedidos y tracking
 │   │   └── webhook/              # Webhook processor, debounce, intent detector, toolExecutor
-│   ├── tests/                    # Suites de Jest (306 tests)
+│   ├── tests/                    # Suites de Jest (314 tests)
 │   └── utils/                    # Criptografía, negocio, cross-selling, normalizadores
 ├── db/                           # Scripts de migración y backups
 │   ├── migrations/               # Migraciones SQL incrementales
@@ -165,10 +165,10 @@ kroserbot/
 ├── docker-compose.dokploy.yml    # Configuración de despliegue Dokploy con Traefik
 ├── docker-compose.override.yml   # Overrides para desarrollo local (ignorado en Git)
 ├── Dockerfile                    # Multi-stage build no-root optimizado (Node 20 Alpine)
-├── package.json                  # Dependencias y scripts del proyecto (v2.1.8)
+├── package.json                  # Dependencias y scripts del proyecto (v2.1.9)
 └── README.md                     # Documentación de inicio rápido
 ```
 
 ---
 
-*Última actualización de contexto: Release v2.1.8 (Búsqueda Híbrida Paralela, Dashboard de Embeddings, Desambiguación H6/H8 y Automatización Post-Scraping).*
+*Última actualización de contexto: Release v2.1.9 (Fragmentación Conversacional, Simulación de Tipeo Humano y Reglas Anti-Libro).*

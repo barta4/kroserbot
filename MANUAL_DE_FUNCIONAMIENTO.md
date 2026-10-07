@@ -553,9 +553,22 @@ Para mantener sincronizados los más de 10.000 artículos de ferretería, Kroser
 - **Conector SQL Directo (`scraper/importers/sql_importer.py`)**: Conexión de solo lectura a la base de datos central de Kroser (PostgreSQL, MySQL o SQL Server) para sincronizaciones instantáneas de stock y listas de precios.
 - **Conector API REST (`scraper/importers/api_importer.py`)**: Consumo periódico de endpoints JSON con autenticación Bearer provistos por el departamento de sistemas de Kroser.
 
-### 10.3. Generación Programada de Embeddings
+### 10.3. Generación y Automatización de Embeddings (v2.1.8)
 
-El script [`backend/services/embeddings/generateEmbeddings.js`](file:///c:/Users/usuario/Desktop/kroserbot/backend/services/embeddings/generateEmbeddings.js) toma todos los productos con `embedding IS NULL` o con modificaciones recientes y genera sus vectores en lotes de 50 ítems, calculando el embedding sobre la concatenación normalizada de: `nombre + marca + categoria + descripcion`.
+El motor de vectorización de Kroserbot opera con una dimensionalidad estricta de **768 dimensiones** (`vector(768)` en PostgreSQL pgvector), compatible tanto con Google Gemini (`text-embedding-004`) como con OpenAI (`text-embedding-3-small` con truncado nativo a 768d):
+
+1. **Automatización Post-Scraping**:
+   - Cuando el contenedor o proceso del scraper (`alfredobartaburu/kroserbot-scraper:v1.4`) finaliza exitosamente con código `0`, el backend (`scraperController.js`) detecta automáticamente el evento `close` e inicia de inmediato la indexación de productos pendientes en segundo plano sin requerir intervención manual.
+2. **Control Operativo por API / CLI**:
+   - `GET /api/scraper/embeddings/status`: Devuelve el total de productos, cuántos están vectorizados, cuántos pendientes, el porcentaje de avance y si hay un proceso de generación activo en ese momento.
+   - `POST /api/scraper/embeddings/generate`: Dispara el lote asíncrono de vectorización con control de concurrencia (evita corridas solapadas).
+   - Comandos de terminal:
+     ```bash
+     npm run embeddings:status
+     npm run embeddings:generate
+     ```
+3. **Estructura Semántica Indexada**:
+   - El vector embedding se calcula a partir de la concatenación normalizada de: `[Categoría] [Marca] [Nombre] — [Descripción]`, optimizado para emparejar tanto consultas técnicas de ferretería como búsquedas coloquiales de clientes uruguayos.
 
 ---
 
@@ -589,9 +602,10 @@ El panel accesible en `http://localhost:3000/admin` o en el dominio de producci�
 5. **🤖 Conector de Agente IA**:
    - Selección dinámica de proveedor (Gemini, OpenAI, Compatible).
    - Ajuste de temperatura creativa (recomendado: 0.3 a 0.5 para ferretería).
-6. **🕷️ Control del Scraper**:
+6. **🕷️ Control del Scraper & Motor de Embeddings**:
    - Estado de la última corrida (productos agregados, actualizados, fallas).
    - Botón de **"Iniciar Scraping Manual"** y **"Detener Scraper"**.
+   - **Consola de Embeddings Vectoriales (v2.1.8)**: visualización del total de productos vectorizados vs pendientes, barra dinámica de progreso y botón para forzar indexación de lotes en segundo plano sin interrumpir el bot.
 7. **🛒 Catálogo de Productos**:
    - Buscador de productos con filtros por categoría, marca y estado de vectorización.
 8. **🏪 Gestión de Sucursales**:

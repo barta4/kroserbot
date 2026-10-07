@@ -1,12 +1,12 @@
-# Bot Kroser — RAG + Pedidos + Scraper + Panel Admin
+# Bot Kroser (v2.1.9) — RAG + Pedidos + Scraper + Panel Admin
 
-Sistema integral de atención automatizada, catálogo de productos con RAG y módulo de gestión de pedidos para Kroser Uruguay.
+Sistema integral de atención inteligente, recomendación técnica, búsqueda híbrida de catálogo (Full-Text + Vectorial RAG) y módulo de gestión de pedidos para **Kroser Uruguay**.
 
 ---
 
 ## 🚀 Requisitos Previos
 
-- **Node.js**: `v18` o superior
+- **Node.js**: `v20` o superior
 - **Python**: `3.10` o superior (para el scraper)
 - **Docker** y **Docker Compose**
 - **Git**
@@ -20,15 +20,15 @@ Sistema integral de atención automatizada, catálogo de productos con RAG y mó
 ```bash
 cp .env.example .env
 ```
-Edita `.env` con tus credenciales locales (OpenAI/Gemini, Chatwoot, etc.).
+Edita `.env` con tus credenciales locales (OpenAI/Gemini, Uruchat, PostgreSQL, Redis, etc.).
 
-### 2. Levantar la infraestructura (PostgreSQL + pgvector y Redis)
+### 2. Levantar la infraestructura (PostgreSQL 16 + pgvector y Redis 7)
 
 ```bash
 docker-compose up -d
 ```
 
-Verifica que los contenedores estén activos:
+Verifica que los contenedores estén activos y saludables:
 ```bash
 docker-compose ps
 ```
@@ -45,47 +45,67 @@ npm install
 npm run migrate:up
 ```
 
+### 5. Control de Embeddings y Vectorización
+
+```bash
+# Ver estado actual de productos vectorizados vs pendientes
+npm run embeddings:status
+
+# Generar embeddings para productos pendientes (lotes de 50 ítems)
+npm run embeddings:generate
+```
+
 ---
 
 ## 🐳 Docker Hub & Despliegue en Producción
 
-### Publicar imágenes en Docker Hub (`alfredobartaburu/kroserbot`):
-```powershell
-# En Windows (PowerShell):
-.\scripts\build-and-push.ps1 -Tag "1.0.0"
+### Imágenes Oficiales en Docker Hub (`alfredobartaburu/kroserbot`):
+- `alfredobartaburu/kroserbot:v2.1.9`
+- `alfredobartaburu/kroserbot:latest`
 
-# En Linux / Mac (Bash):
-chmod +x ./scripts/build-and-push.sh
-./scripts/build-and-push.sh "1.0.0"
+### Despliegue en Dokploy / Easypanel / Servidores Linux:
+```bash
+docker compose -f docker-compose.dokploy.yml pull
+docker compose -f docker-compose.dokploy.yml up -d
 ```
 
-### Desplegar en servidor con imágenes de Docker Hub:
+---
+
+## 🧪 Pruebas Automatizadas
+
 ```bash
-docker compose -f docker-compose.prod.yml up -d
+# Ejecutar suite completa de backend (24 suites, 314 tests)
+npm test
+
+# Ejecutar tests del scraper en Python (22 tests)
+npm run test:python
 ```
 
 ---
 
 ## 📂 Estructura del Proyecto
 
-```
+```text
 kroserbot/
 ├── /scraper                  # Scraper de catálogo en Python (Fenicio)
-├── /backend                  # Servidor Express.js (Webhook Chatwoot, RAG, Pedidos)
+├── /backend                  # Servidor Express.js (Webhook Uruchat, RAG, Pedidos)
+│   ├── /controllers          # Controladores REST (Auth, Config, Scraper, Embeddings)
 │   ├── /services
-│   │   ├── /embeddings       # Búsqueda vectorial y generación de embeddings
-│   │   ├── /webhook          # Procesamiento de eventos Chatwoot & debounce
-│   │   └── /pedidos          # Lógica de estados y carritos de compra
-│   └── /routes               # Rutas API
-├── /admin                    # Panel administrativo Next.js
+│   │   ├── /embeddings       # Búsqueda vectorial, RAG y generación de embeddings 768d
+│   │   ├── /search           # Búsqueda híbrida paralela, RRF y reranking
+│   │   ├── /chatwoot         # API Uruchat, notas privadas y auto-resolve
+│   │   ├── /webhook          # Procesamiento de webhooks, debounce e intent detector
+│   │   └── /pedidos          # Lógica de pedidos y desambiguación de ferretería
+│   └── /routes               # Rutas API REST
+├── /admin                    # Panel administrativo (Vanilla HTML5 / CSS3 / ES6)
 ├── /db
 │   ├── /migrations           # Migraciones SQL versionadas
 │   ├── migrate.js            # Runner de migraciones (node-pg-migrate)
 │   └── backup.sh             # Script de backup de PostgreSQL
-├── /coordinacion-multi-agente# Skill y guía de coordinación multi-agente
 ├── docker-compose.yml        # Servicios PostgreSQL (pgvector) + Redis
-├── .env.example              # Plantilla de variables de entorno
-└── ESTADO-TAREAS.md          # Control de estado de tareas
+├── docker-compose.dokploy.yml# Despliegue en Dokploy con Traefik
+├── CHANGELOG.md              # Registro histórico de versiones y cambios
+└── AGENTS.md                 # Guía arquitectónica y mandamientos para agentes
 ```
 
 ---
@@ -100,13 +120,4 @@ kroserbot/
 - `test:` adición o corrección de tests
 - `chore:` tareas auxiliares (configuración, dependencias)
 
-Ejemplo: `git commit -m "feat(db): add productos and pedidos tables migration"`
-
----
-
-## 🤖 Coordinación Multi-Agente
-
-Para trabajar con múltiples agentes o instancias en paralelo:
-1. Revisa `ESTADO-TAREAS.md` antes de empezar.
-2. Sigue las normas descritas en `coordinacion-multi-agente/SKILL.md`.
-3. Marca tu tarea como `en_progreso` en tu propia rama `tarea/<numero>-<slug>`.
+Ejemplo: `git commit -m "feat(embeddings): integracion de dashboard y post-scraper trigger"`

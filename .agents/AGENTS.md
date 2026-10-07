@@ -9,5 +9,5 @@ Consulta el archivo maestro completo en la raíz del repositorio: [`AGENTS.md`](
 4. **Módulos comunes**: Usar `crossSellingMap.js`, `formatCurrency.js`, `textNormalizer.js` y `secretKeys.js`.
 5. **Multimodal**: Audios WhatsApp (`.opus`/`.oga`) e Imágenes (`analyzeImage`) se envían en Base64 con fail-safe bidireccional Gemini <-> OpenAI.
 6. **Scraper en Dokploy/Easypanel**: `restart: "no"`. Se programa con cron `0 3 * * * docker start kroserbot-scraper`.
-7. **Tests obligatorios**: `npm test` (306 tests) y `npm run test:python` (22 tests) deben pasar al 100%.
-8. **Docker Hub**: `alfredobartaburu/kroserbot` con versión incremental (`v2.1.8`) y dual-tag `:latest`.
+7. **Tests obligatorios**: `npm test` (314 tests) y `npm run test:python` (22 tests) deben pasar al 100%.
+8. **Docker Hub**: `alfredobartaburu/kroserbot` con versión incremental (`v2.1.9`) y dual-tag `:latest`.

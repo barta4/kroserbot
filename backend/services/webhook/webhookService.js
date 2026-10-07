@@ -20,6 +20,7 @@ const derivationNoteService = require('../chatwoot/derivationNoteService');
 const autoResolveService = require('../chatwoot/autoResolveService');
 const businessHours = require('../../utils/businessHours');
 const urlInterpreterService = require('../media/urlInterpreterService');
+const messageSplitter = require('../../utils/messageSplitter');
 
 const IDEMPOTENCY_TTL = 3600; // 1 hour
 const HUMAN_ACTIVE_TTL = 86400; // 24 hours
@@ -1063,25 +1064,49 @@ module.exports = {
       });
     }
 
-    // 21. Human Typing Delay: calculate natural pacing based on response length
-    // (e.g., ~15-20ms per character, bounded between 1s and 3.5s total typing illusion)
-    const targetTypingDelay = Math.min(Math.max(safeReply.length * 15, 800), 3000) + Math.floor(Math.random() * 300);
-    const remainingDelay = targetTypingDelay - llmElapsed;
-    if (remainingDelay > 0 && process.env.NODE_ENV !== 'test') {
-      await new Promise((resolve) => setTimeout(resolve, remainingDelay));
+    // 21. Human Typing Pacing & Message Chunking (Anti-"Libro" Natural WhatsApp Delivery)
+    let replyToSend = (safeReply || '').trim();
+    if (!replyToSend) {
+      replyToSend = 'Disculpe, ¿en qué producto o consulta técnica podemos ayudarle?';
+    }
+    const rawChunks = messageSplitter.splitIntoChunks(replyToSend, 2);
+    const chunks = rawChunks.length > 0 ? rawChunks : [replyToSend];
+
+    // Initial human pacing before first message (if LLM was unusually fast)
+    const initialDelay = process.env.NODE_ENV !== 'test'
+      ? Math.max(0, Math.min((chunks[0] || '').length * 15, 1200) - llmElapsed)
+      : 0;
+    if (initialDelay > 0) {
+      await new Promise((resolve) => setTimeout(resolve, initialDelay));
     }
 
-    // Turn off typing indicator
+    // Turn off typing indicator right before sending chunk 1
     await chatwootService.toggleTypingStatus(accountId, conversationId, 'off');
 
-    // 22. Send Assistant Response to Chatwoot & Persist Session
-    await chatwootService.sendMessage(accountId, conversationId, safeReply);
-    await conversacionesRepo.logMessage(conversationId, safeReply, 'assistant');
+    // Send primary message chunk
+    await chatwootService.sendMessage(accountId, conversationId, chunks[0]);
+    await conversacionesRepo.logMessage(conversationId, chunks[0], 'assistant');
+
+    // If there is a natural follow-up chunk (e.g. closing question / CTA), simulate human typing in between
+    if (chunks.length > 1 && chunks[1]) {
+      await chatwootService.toggleTypingStatus(accountId, conversationId, 'on');
+
+      const interChunkDelay = process.env.NODE_ENV !== 'test'
+        ? Math.min(Math.max((chunks[1] || '').length * 18, 1200), 2400)
+        : 0;
+      if (interChunkDelay > 0) {
+        await new Promise((resolve) => setTimeout(resolve, interChunkDelay));
+      }
+
+      await chatwootService.toggleTypingStatus(accountId, conversationId, 'off');
+      await chatwootService.sendMessage(accountId, conversationId, chunks[1]);
+      await conversacionesRepo.logMessage(conversationId, chunks[1], 'assistant');
+    }
 
     // Schedule inactivity auto-resolve for this conversation
     await autoResolveService.scheduleAutoResolve(accountId, conversationId);
 
-    // Save updated history in Redis with 24h TTL
+    // Save consolidated response in Redis history with 24h TTL
     history.push({ role: 'assistant', content: safeReply });
     if (history.length > CONTEXT_WINDOW_LIMIT) {
       history = history.slice(-CONTEXT_WINDOW_LIMIT);
@@ -1094,6 +1119,6 @@ module.exports = {
     // Release debounce lock and drain any pending messages buffered during processing
     await releaseLockAndDrainBuffer(lockKey, bufferKey, conversationId, payload, module.exports.processWebhookEvent);
 
-    return { status: 'processed', reply: safeReply };
+    return { status: 'processed', reply: safeReply, chunks };
   },
 };
