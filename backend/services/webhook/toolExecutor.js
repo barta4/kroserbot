@@ -154,7 +154,7 @@ function getOpenAITools({ enableOrders = true } = {}) {
   }));
 }
 
-const EMPTY_SEARCH_DIRECTIVE = 'NO se encontraron artículos coincidentes en catálogo. Informe con total franqueza y cordialidad que no disponemos de ese producto en este momento. Facilite los teléfonos de Central (2218 5987 / 2218 5988 o consulte su zona para sucursal cercana) y ofrezca derivarlo con un asesor de ventas por este chat para verificar disponibilidad en depósito central. NO fuerce la venta de artículos no relacionados.';
+const EMPTY_SEARCH_DIRECTIVE = 'NO se encontraron artículos coincidentes en catálogo. DIRECTIVA OBLIGATORIA (OPTIMIZADO WHATSAPP / META): Responda en UN SOLO MENSAJE informando que no tenemos en el catálogo y solicitando ubicación para sucursal cercana. PROHIBIDO ofrecer productos similares o alternativos. Fórmula exacta: "Hola, no tenemos en el catálogo. Si desea, páseme su ubicación y le envío datos de la sucursal más cercana."';
 
 /**
  * Tool Executors
@@ -168,8 +168,6 @@ async function executeBuscarProductos({ consulta = '' }, context = {}) {
   if (!effectiveQuery) {
     return {
       productos: [],
-      alternativas: [],
-      complementarios_sugeridos: [],
       total_coincidencias: 0,
       directiva_vendedor: EMPTY_SEARCH_DIRECTIVE,
     };
@@ -195,16 +193,17 @@ async function executeBuscarProductos({ consulta = '' }, context = {}) {
     logger.error('Error in hybrid search tool', { error: pErr.message });
   }
 
-  // 2. Smart substitutions if out of stock
+  // 2. Smart substitutions: ONLY if a specific searched item was found but is out of stock.
+  // NEVER offer alternatives when 0 products match the search (as requested to avoid unwanted similar suggestions)
   try {
     const outOfStockItem = productos.find((p) => p.stock_status === 'out_of_stock');
-    if (outOfStockItem || productos.length === 0) {
-      const targetCategory = outOfStockItem ? outOfStockItem.categoria : effectiveQuery;
-      const targetBrand = outOfStockItem ? outOfStockItem.marca : '';
+    if (outOfStockItem) {
+      const targetCategory = outOfStockItem.categoria || effectiveQuery;
+      const targetBrand = outOfStockItem.marca || '';
       alternativas = await productosRepo.getAlternatives({
         categoria: targetCategory,
         marca: targetBrand,
-        excludeSku: outOfStockItem ? outOfStockItem.sku : '',
+        excludeSku: outOfStockItem.sku || '',
         limit: 3,
       });
     }
@@ -212,18 +211,20 @@ async function executeBuscarProductos({ consulta = '' }, context = {}) {
     logger.warn('Error in getAlternatives tool', { error: aErr.message });
   }
 
-  // 3. Cross-selling suggestions
+  // 3. Cross-selling suggestions (only if products were found)
   try {
-    const searchTargets = [lowerQ, ...productos.map((p) => `${p.categoria || ''} ${p.nombre || ''}`.toLowerCase())].join(' ');
-    const matchedComplementaryTerms = new Set();
-    Object.keys(CROSS_SELLING_MAP).forEach((key) => {
-      if (searchTargets.includes(key)) {
-        CROSS_SELLING_MAP[key].forEach((term) => matchedComplementaryTerms.add(term));
-      }
-    });
+    if (productos.length > 0) {
+      const searchTargets = [lowerQ, ...productos.map((p) => `${p.categoria || ''} ${p.nombre || ''}`.toLowerCase())].join(' ');
+      const matchedComplementaryTerms = new Set();
+      Object.keys(CROSS_SELLING_MAP).forEach((key) => {
+        if (searchTargets.includes(key)) {
+          CROSS_SELLING_MAP[key].forEach((term) => matchedComplementaryTerms.add(term));
+        }
+      });
 
-    if (matchedComplementaryTerms.size > 0) {
-      complementarios = await productosRepo.getComplementaryItems(Array.from(matchedComplementaryTerms), 3);
+      if (matchedComplementaryTerms.size > 0) {
+        complementarios = await productosRepo.getComplementaryItems(Array.from(matchedComplementaryTerms), 3);
+      }
     }
   } catch (cErr) {
     logger.warn('Error in getComplementaryItems tool', { error: cErr.message });

@@ -1,4 +1,4 @@
-# Bot Kroser (v2.1.9) — RAG + Pedidos + Scraper + Panel Admin
+# Bot Kroser (v2.2.0) — RAG + Pedidos + Scraper + Panel Admin
 
 Sistema integral de atención inteligente, recomendación técnica, búsqueda híbrida de catálogo (Full-Text + Vectorial RAG) y módulo de gestión de pedidos para **Kroser Uruguay**.
 
@@ -60,7 +60,7 @@ npm run embeddings:generate
 ## 🐳 Docker Hub & Despliegue en Producción
 
 ### Imágenes Oficiales en Docker Hub (`alfredobartaburu/kroserbot`):
-- `alfredobartaburu/kroserbot:v2.1.9`
+- `alfredobartaburu/kroserbot:v2.2.0`
 - `alfredobartaburu/kroserbot:latest`
 
 ### Despliegue en Dokploy / Easypanel / Servidores Linux:

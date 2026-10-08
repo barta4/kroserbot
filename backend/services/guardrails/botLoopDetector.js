@@ -101,6 +101,173 @@ const ASSISTANT_FAREWELL_SIGNALS = [
 
 
 
+// Patrones y remitentes específicos de correos No-Reply (notificaciones automáticas sin respuesta)
+const NO_REPLY_EXACT_EMAILS = [
+  'noreply@business-updates.facebook.com',
+];
+
+const NO_REPLY_EMAIL_PREFIXES = [
+  'noreply@',
+  'no-reply@',
+  'no_reply@',
+  'donotreply@',
+  'do-not-reply@',
+  'do_not_reply@',
+  'naoresponda@',
+  'nao-responda@',
+  'automated@',
+  'notification@',
+  'notifications@',
+];
+
+const NO_REPLY_EMAIL_DOMAINS = [
+  'business-updates.facebook.com',
+  'facebookmail.com',
+];
+
+const NO_REPLY_SENDER_NAMES = [
+  'no-reply',
+  'noreply',
+  'do not reply',
+  'no responder',
+  'nao responda',
+  'notificaciones automaticas',
+];
+
+const NO_REPLY_BODY_PATTERNS = [
+  'noreply@business-updates.facebook.com',
+  'from: noreply@',
+  'from: no-reply@',
+  'de: noreply@',
+  'de: no-reply@',
+  'este es un correo automatico por favor no responda',
+  'este es un mensaje automatico por favor no responda',
+  'correo generado automaticamente no responder',
+  'mensaje generado automaticamente no responder',
+  'direccion no monitoreada',
+  'casilla no monitoreada',
+  'do not reply to this email',
+  'do not reply to this message',
+  'this email was sent from a notification-only address',
+  'please do not reply to this email',
+];
+
+// Patrones y remitentes específicos de rebote de servidor (MTA / Delivery Failure)
+const SERVER_BOUNCE_EXACT_EMAILS = [
+  'mailer-daemon@host.kroser.com.uy',
+];
+
+const SERVER_BOUNCE_EMAIL_PREFIXES = [
+  'mailer-daemon@',
+  'mail-daemon@',
+  'mailerd-daemon@',
+  'postmaster@',
+  'bounce@',
+  'bounces@',
+  'bounce-',
+  'auto-reply@',
+  'mail-delivery@',
+];
+
+const SERVER_BOUNCE_SENDER_NAMES = [
+  'mailer-daemon',
+  'mail delivery subsystem',
+  'mail delivery system',
+  'postmaster',
+];
+
+const SERVER_BOUNCE_SUBJECT_PATTERNS = [
+  'mail delivery failed',
+  'undelivered mail',
+  'delivery status notification',
+  'failure notice',
+  'returned to sender',
+  'returned mail',
+  'undeliverable',
+  'delivery failure',
+];
+
+const SERVER_BOUNCE_BODY_PATTERNS = [
+  'mailer-daemon',
+  'mail delivery failed',
+  'undelivered mail',
+  'delivery status notification',
+  'failure notice',
+  'returned to sender',
+  'message could not be delivered',
+  'delivery has failed',
+  'mailbox unavailable',
+  'recipient address rejected',
+  'user unknown',
+  '550 5.1.1',
+  '554 5.7.1',
+  '550-5.1.1',
+  'host host.kroser.com.uy',
+  'host.kroser.com.uy said: 550',
+];
+
+/**
+ * Extrae datos normalizados de correo electrónico desde un payload de webhook o estructura similar
+ */
+function extractEmailData(payload = {}) {
+  if (!payload || typeof payload !== 'object') {
+    return { email: '', senderName: '', subject: '', content: '' };
+  }
+
+  const message = payload.message || payload || {};
+  const sender = message.sender || payload.sender || {};
+  const conversation = payload.conversation || {};
+  const content = (message.content || payload.content || '').trim();
+
+  let email = '';
+  if (sender.email && typeof sender.email === 'string') {
+    email = sender.email.trim();
+  } else if (message.sender?.email && typeof message.sender.email === 'string') {
+    email = message.sender.email.trim();
+  } else if (payload.sender?.email && typeof payload.sender.email === 'string') {
+    email = payload.sender.email.trim();
+  } else if (conversation.meta?.sender?.email && typeof conversation.meta.sender.email === 'string') {
+    email = conversation.meta.sender.email.trim();
+  } else if (conversation.contact?.email && typeof conversation.contact.email === 'string') {
+    email = conversation.contact.email.trim();
+  } else if (payload.meta?.sender?.email && typeof payload.meta.sender.email === 'string') {
+    email = payload.meta.sender.email.trim();
+  }
+
+  const contentAttrs = message.content_attributes || payload.content_attributes || {};
+  const emailAttr = contentAttrs.email || {};
+
+  if (!email && emailAttr.from) {
+    if (typeof emailAttr.from === 'string') {
+      email = emailAttr.from.trim();
+    } else if (Array.isArray(emailAttr.from) && emailAttr.from[0]) {
+      const first = emailAttr.from[0];
+      email = typeof first === 'string' ? first.trim() : (first.address || '').trim();
+    }
+  }
+
+  if (!email && content) {
+    const fromMatch = content.match(/^(?:from|de):\s*<?([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})>?/im);
+    if (fromMatch && fromMatch[1]) {
+      email = fromMatch[1].trim();
+    }
+  }
+
+  let senderName = sender.name || message.sender?.name || payload.sender?.name || conversation.contact?.name || '';
+  if (!senderName && emailAttr.from && Array.isArray(emailAttr.from) && emailAttr.from[0]?.name) {
+    senderName = emailAttr.from[0].name;
+  }
+
+  const subject = emailAttr.subject || contentAttrs.subject || '';
+
+  return {
+    email: email.toLowerCase(),
+    senderName: String(senderName || '').trim(),
+    subject: String(subject || '').trim(),
+    content,
+  };
+}
+
 /**
  * Genera un hash SHA256 corto del texto normalizado
  */
@@ -275,5 +442,154 @@ module.exports = {
     } catch (err) {
       logger.warn('BotLoopDetector: Error resetting turns', { conversationId, error: err.message });
     }
+  },
+
+  /**
+   * Extrae datos normalizados de correo electrónico desde un payload o mensaje
+   */
+  extractEmailData,
+
+  /**
+   * Detecta si un correo entrante proviene de una casilla No-Reply (notificaciones automáticas sin respuesta)
+   */
+  isNoReply(input, optContent = '', optSenderName = '') {
+    let email = '';
+    let content = '';
+    let senderName = '';
+
+    if (input && typeof input === 'object') {
+      if (input.email !== undefined) {
+        email = (input.email || '').toLowerCase().trim();
+        content = input.content || '';
+        senderName = input.senderName || '';
+      } else {
+        const extracted = extractEmailData(input);
+        email = extracted.email;
+        content = extracted.content;
+        senderName = extracted.senderName;
+      }
+    } else if (typeof input === 'string') {
+      email = input.toLowerCase().trim();
+      content = optContent || '';
+      senderName = optSenderName || '';
+    }
+
+    if (!email && !content && !senderName) return false;
+
+    // 1. Coincidencia exacta o por patrón de email (ej: noreply@business-updates.facebook.com)
+    if (email) {
+      if (NO_REPLY_EXACT_EMAILS.includes(email)) {
+        logger.info('BotLoopDetector: Exact No-Reply email address detected', { email });
+        return { isNoReply: true, reason: 'noreply_exact_address', email };
+      }
+      if (NO_REPLY_EMAIL_PREFIXES.some((pre) => email.startsWith(pre))) {
+        logger.info('BotLoopDetector: No-Reply email prefix detected', { email });
+        return { isNoReply: true, reason: 'noreply_prefix', email };
+      }
+      if (NO_REPLY_EMAIL_DOMAINS.some((dom) => email.endsWith(`@${dom}`) || email.endsWith(`.${dom}`))) {
+        logger.info('BotLoopDetector: No-Reply email domain detected', { email });
+        return { isNoReply: true, reason: 'noreply_domain', email };
+      }
+    }
+
+    // 2. Coincidencia en nombre del remitente
+    if (senderName) {
+      const cleanSender = normalize(senderName);
+      if (NO_REPLY_SENDER_NAMES.some((name) => cleanSender.includes(normalize(name)))) {
+        logger.info('BotLoopDetector: No-Reply sender name detected', { senderName });
+        return { isNoReply: true, reason: 'noreply_sender_name', senderName };
+      }
+    }
+
+    // 3. Indicador explícito en cuerpo o cabeceras
+    if (content) {
+      const cleanContent = normalize(content);
+      const matchedPattern = NO_REPLY_BODY_PATTERNS.find((pattern) => cleanContent.includes(normalize(pattern)));
+      if (matchedPattern) {
+        logger.info('BotLoopDetector: No-Reply indicator detected in email body/headers', { matchedPattern });
+        return { isNoReply: true, reason: 'noreply_body_indicator', matchedPattern };
+      }
+    }
+
+    return false;
+  },
+
+  /**
+   * Detecta si un correo entrante corresponde a un rebote del servidor (MTA / Delivery Failed / Mailer-Daemon)
+   */
+  isServerBounce(input, optContent = '', optSenderName = '', optSubject = '') {
+    let email = '';
+    let content = '';
+    let senderName = '';
+    let subject = '';
+
+    if (input && typeof input === 'object') {
+      if (input.email !== undefined) {
+        email = (input.email || '').toLowerCase().trim();
+        content = input.content || '';
+        senderName = input.senderName || '';
+        subject = input.subject || '';
+      } else {
+        const extracted = extractEmailData(input);
+        email = extracted.email;
+        content = extracted.content;
+        senderName = extracted.senderName;
+        subject = extracted.subject;
+      }
+    } else if (typeof input === 'string') {
+      email = input.toLowerCase().trim();
+      content = optContent || '';
+      senderName = optSenderName || '';
+      subject = optSubject || '';
+    }
+
+    if (!email && !content && !senderName && !subject) return false;
+
+    // 1. Coincidencia exacta o por patrón en email (ej: mailer-daemon@host.kroser.com.uy)
+    if (email) {
+      if (SERVER_BOUNCE_EXACT_EMAILS.includes(email)) {
+        logger.warn('BotLoopDetector: Exact server bounce email address detected', { email });
+        return { isBounce: true, reason: 'server_bounce_exact_address', email };
+      }
+      if (SERVER_BOUNCE_EMAIL_PREFIXES.some((pre) => email.startsWith(pre))) {
+        logger.warn('BotLoopDetector: Server bounce email prefix detected', { email });
+        return { isBounce: true, reason: 'server_bounce_prefix', email };
+      }
+      if (email.includes('mailer-daemon') || (email.includes('daemon') && email.includes('kroser.com.uy'))) {
+        logger.warn('BotLoopDetector: Server bounce daemon keyword in email', { email });
+        return { isBounce: true, reason: 'server_bounce_daemon_email', email };
+      }
+    }
+
+    // 2. Coincidencia en nombre de remitente (MTA / Subsistema de correo)
+    if (senderName) {
+      const cleanSender = normalize(senderName);
+      if (SERVER_BOUNCE_SENDER_NAMES.some((name) => cleanSender.includes(normalize(name)))) {
+        logger.warn('BotLoopDetector: Server bounce sender name detected', { senderName });
+        return { isBounce: true, reason: 'server_bounce_sender_name', senderName };
+      }
+    }
+
+    // 3. Coincidencia en asunto del email
+    if (subject) {
+      const cleanSubject = normalize(subject);
+      const matchedSubject = SERVER_BOUNCE_SUBJECT_PATTERNS.find((pattern) => cleanSubject.includes(normalize(pattern)));
+      if (matchedSubject) {
+        logger.warn('BotLoopDetector: Server bounce detected by subject', { subject, matchedSubject });
+        return { isBounce: true, reason: 'server_bounce_subject', matchedSubject };
+      }
+    }
+
+    // 4. Coincidencia en cuerpo del email (delivery report)
+    if (content) {
+      const cleanContent = normalize(content);
+      const matchedBody = SERVER_BOUNCE_BODY_PATTERNS.find((pattern) => cleanContent.includes(normalize(pattern)));
+      if (matchedBody) {
+        logger.warn('BotLoopDetector: Server bounce detected by body pattern', { matchedBody });
+        return { isBounce: true, reason: 'server_bounce_body_pattern', matchedBody };
+      }
+    }
+
+    return false;
   },
 };

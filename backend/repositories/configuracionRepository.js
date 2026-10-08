@@ -28,6 +28,7 @@ const DEFAULTS = Object.freeze({
   business_hours_saturday_end: '13:00',
   contact_alternative_email: 'atencion@kroser.com.uy',
   msg_fuera_de_horario: '',
+  message_chunking_enabled: 'false',
 });
 
 const ENCRYPTED_KEYS = require('../config/secretKeys');

@@ -293,10 +293,16 @@ sequenceDiagram
 1. **Idempotencia (TTL 1 Hora)**:
    - Almacena la clave `msg_processed:${messageId}` en Redis con un TTL de 3600 segundos. Si el webhook de Uruchat reintenta el envío por latencia de red, se descarta de forma transparente para no duplicar respuestas.
 
-2. **Escudo Anti-Bucles (Event Shield)**:
+2. **Escudo Anti-Bucles (Event Shield, No-Reply & Rebotes de Servidor)**:
    - Solo atiende el evento `message_created`.
    - Si `message.message_type === 'outgoing'` o el remitente tiene `sender.type === 'bot'`, se ignora inmediatamente para imposibilitar bucles infinitos.
-   - Filtro de rebotes automáticos de correo: ignora cuerpos con `mailer-daemon`, `mail delivery failed` o `undelivered mail`.
+   - **Correos No-Reply ("No Contestar")**: Si el remitente o cuerpo proviene de casillas automáticas sin respuesta (ej. `noreply@business-updates.facebook.com`, `no-reply@...`, `donotreply@...`, `automated@...`), el bot descarta el mensaje en silencio sin responder, evitando generar respuestas a remitentes no monitoreados.
+   - **Rebotes de Servidor ("Aplicar el Shield")**: Si el correo es un rebote del servidor de correo o MTA (ej. `mailer-daemon@host.kroser.com.uy`, `postmaster@...`, o con asunto/cuerpo `Mail delivery failed`, `Undelivered Mail`, `Delivery Status Notification`, `550 5.1.1`), el sistema activa de inmediato el **Bot Loop Shield**:
+     - Silencia al bot para esa conversación mediante `human_active:${conversationId}` en Redis (24 horas).
+     - Cancela cualquier temporizador de debounce y vacía buffers en memoria.
+     - Publica una nota privada interna en Uruchat notificando a los asesores: `🛑 [Auto-Shield] Rebote de servidor detectado...`.
+     - Aplica etiquetas automáticas `rebote-email` y `auto-shield` en Uruchat.
+   - Tanto los correos No-Reply como los Rebotes omiten el tiempo de espera de debounce (8s) en el controlador, procesándose de forma inmediata.
 
 3. **Control Granular de Canales e Inboxes (`isChannelDisabled`)**:
    - En la pestaña *Uruchat Integración* del panel admin se pueden suspender canales específicos (ej. Instagram, correo o un inbox numérico).

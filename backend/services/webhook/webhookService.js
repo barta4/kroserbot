@@ -332,6 +332,64 @@ module.exports = {
       }
     }
 
+    // 6b. Bot Loop Shield: Server Bounce & No-Reply Filter (noreply & bounce handling)
+    const emailData = botLoopDetector.extractEmailData(payload);
+
+    // 1) Si es No-Reply: NO CONTESTAR (descartar en silencio para evitar respuestas a casillas automáticas)
+    const noReplyCheck = botLoopDetector.isNoReply(emailData);
+    if (noReplyCheck) {
+      logger.info('No-Reply email detected. Bot will not respond (ignoring).', {
+        correlationId,
+        conversationId,
+        reason: noReplyCheck.reason,
+        email: emailData.email,
+      });
+      if (conversationId) {
+        debounceService.cancel(conversationId);
+      }
+      return {
+        status: 'ignored',
+        reason: 'noreply_email',
+        senderEmail: emailData.email,
+        matchedReason: noReplyCheck.reason,
+      };
+    }
+
+    // 2) Si rebota del servidor (Mailer-Daemon / Delivery Failure): APLICAR EL SHIELD
+    const bounceCheck = botLoopDetector.isServerBounce(emailData);
+    if (bounceCheck) {
+      logger.warn('Server bounce detected. Applying Bot Loop Shield to prevent bounce loops.', {
+        correlationId,
+        conversationId,
+        reason: bounceCheck.reason,
+        email: emailData.email,
+      });
+      if (conversationId) {
+        await redis.set(`human_active:${conversationId}`, '1', 'EX', HUMAN_ACTIVE_TTL);
+        debounceService.cancel(conversationId);
+        await redis.del(`conv_buffer:${conversationId}`);
+        await botLoopDetector.resetTurns(conversationId);
+        autoResolveService.cancelScheduledResolve(conversationId);
+      }
+      if (conversationId && accountId) {
+        const bounceDetail = emailData.email || bounceCheck.email || bounceCheck.matchedBody || bounceCheck.reason || 'Mailer-Daemon';
+        await chatwootService.addPrivateNote(
+          accountId,
+          conversationId,
+          `🛑 [Auto-Shield] Rebote de servidor detectado (${bounceDetail}). El bot ha sido silenciado para evitar un bucle de rebotes.`
+        );
+        await chatwootService.addLabels(accountId, conversationId, ['rebote-email', 'auto-shield']);
+      }
+      return {
+        status: 'ignored',
+        reason: 'server_bounce_shield_applied',
+        shieldApplied: true,
+        conversationId,
+        matchedReason: bounceCheck.reason,
+        senderEmail: emailData.email,
+      };
+    }
+
     // 7. Process Attachments (Multimodal: Audio voice notes & Images / Visual Parts Finder)
     let visualKeywords = [];
     if (attachments && attachments.length > 0) {
@@ -381,14 +439,31 @@ module.exports = {
       }
     }
 
-    // 8. Mailer Daemon / Bounce Filter
-    if (
-      content.toLowerCase().includes('mailer-daemon') ||
-      content.toLowerCase().includes('mail delivery failed') ||
-      content.toLowerCase().includes('undelivered mail')
-    ) {
-      logger.info('Bounce email ignored', { correlationId });
-      return { status: 'ignored', reason: 'bounce_email' };
+    // 8. Mailer Daemon / Bounce Filter (Fallback)
+    const secondaryBounceCheck = botLoopDetector.isServerBounce(content);
+    if (secondaryBounceCheck) {
+      logger.info('Bounce email ignored by fallback filter. Applying Shield.', { correlationId, conversationId });
+      if (conversationId) {
+        await redis.set(`human_active:${conversationId}`, '1', 'EX', HUMAN_ACTIVE_TTL);
+        debounceService.cancel(conversationId);
+        await redis.del(`conv_buffer:${conversationId}`);
+        await botLoopDetector.resetTurns(conversationId);
+        autoResolveService.cancelScheduledResolve(conversationId);
+      }
+      if (conversationId && accountId) {
+        await chatwootService.addPrivateNote(
+          accountId,
+          conversationId,
+          `🛑 [Auto-Shield] Rebote de servidor detectado en cuerpo de mensaje. Bot silenciado.`
+        );
+        await chatwootService.addLabels(accountId, conversationId, ['rebote-email', 'auto-shield']);
+      }
+      return {
+        status: 'ignored',
+        reason: 'server_bounce_shield_applied',
+        shieldApplied: true,
+        conversationId,
+      };
     }
 
     // 8b. Bot Loop Shield: Auto-responder & IVR Menu Early Drop Filter
@@ -1064,12 +1139,18 @@ module.exports = {
       });
     }
 
-    // 21. Human Typing Pacing & Message Chunking (Anti-"Libro" Natural WhatsApp Delivery)
+    // 21. WhatsApp Cost-Optimized Single Message Delivery (Anti-Spam & Meta Pricing Optimization)
     let replyToSend = (safeReply || '').trim();
     if (!replyToSend) {
       replyToSend = 'Disculpe, ¿en qué producto o consulta técnica podemos ayudarle?';
     }
-    const rawChunks = messageSplitter.splitIntoChunks(replyToSend, 2);
+
+    const chunkingConfig = await configuracionRepo.get('message_chunking_enabled');
+    const isChunkingEnabled = chunkingConfig === 'true';
+
+    const rawChunks = isChunkingEnabled
+      ? messageSplitter.splitIntoChunks(replyToSend, 2)
+      : [replyToSend];
     const chunks = rawChunks.length > 0 ? rawChunks : [replyToSend];
 
     // Initial human pacing before first message (if LLM was unusually fast)
@@ -1080,15 +1161,15 @@ module.exports = {
       await new Promise((resolve) => setTimeout(resolve, initialDelay));
     }
 
-    // Turn off typing indicator right before sending chunk 1
+    // Turn off typing indicator right before sending message
     await chatwootService.toggleTypingStatus(accountId, conversationId, 'off');
 
-    // Send primary message chunk
+    // Send primary message (by default exactly 1 single message bubble per turn to minimize Meta charges)
     await chatwootService.sendMessage(accountId, conversationId, chunks[0]);
     await conversacionesRepo.logMessage(conversationId, chunks[0], 'assistant');
 
-    // If there is a natural follow-up chunk (e.g. closing question / CTA), simulate human typing in between
-    if (chunks.length > 1 && chunks[1]) {
+    // If chunking is explicitly enabled and there is a second chunk
+    if (isChunkingEnabled && chunks.length > 1 && chunks[1]) {
       await chatwootService.toggleTypingStatus(accountId, conversationId, 'on');
 
       const interChunkDelay = process.env.NODE_ENV !== 'test'

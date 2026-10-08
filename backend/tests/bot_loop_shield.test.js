@@ -1,5 +1,7 @@
 const botLoopDetector = require('../services/guardrails/botLoopDetector');
 const webhookService = require('../services/webhook/webhookService');
+const debounceService = require('../services/webhook/debounceService');
+const webhookController = require('../controllers/webhookController');
 const redis = require('../config/redis');
 
 describe('Protección contra Bucles Infinitos de Bots (Bot Loop Shield)', () => {
@@ -234,6 +236,212 @@ describe('Protección contra Bucles Infinitos de Bots (Bot Loop Shield)', () => 
       // Verificar que se silenció al bot en Redis
       const isHumanActive = await redis.get(`human_active:${convId}`);
       expect(isHumanActive).toBe('1');
+    });
+  });
+
+  describe('8. Detección y Filtrado de Correos No-Reply ("No Contestar")', () => {
+    test('detecta correo exacto de Facebook noreply@business-updates.facebook.com', () => {
+      const res = botLoopDetector.isNoReply('noreply@business-updates.facebook.com');
+      expect(res).toBeTruthy();
+      expect(res.isNoReply).toBe(true);
+      expect(res.reason).toBe('noreply_exact_address');
+    });
+
+    test('detecta variantes comunes de direcciones no-reply (no-reply@, donotreply@, automated@)', () => {
+      const emails = [
+        'no-reply@mercadolibre.com.uy',
+        'donotreply@sistema.com',
+        'automated@alertas.com',
+        'notifications@facebookmail.com',
+      ];
+      for (const email of emails) {
+        const res = botLoopDetector.isNoReply(email);
+        expect(res).toBeTruthy();
+        expect(res.isNoReply).toBe(true);
+      }
+    });
+
+    test('detecta no-reply por nombre de remitente o cabecera en el cuerpo', () => {
+      const byName = botLoopDetector.isNoReply({
+        email: 'info@empresa.com',
+        senderName: 'No-Reply Automatico',
+        content: 'Notificación de estado',
+      });
+      expect(byName).toBeTruthy();
+      expect(byName.isNoReply).toBe(true);
+      expect(byName.reason).toBe('noreply_sender_name');
+
+      const byBody = botLoopDetector.isNoReply({
+        email: 'avisos@empresa.com',
+        content: 'Este es un correo automatico por favor no responda a este mensaje.',
+      });
+      expect(byBody).toBeTruthy();
+      expect(byBody.isNoReply).toBe(true);
+      expect(byBody.reason).toBe('noreply_body_indicator');
+    });
+
+    test('webhook descarta en silencio el correo noreply@business-updates.facebook.com sin contestar', async () => {
+      const convId = 8904;
+      const payload = {
+        event: 'message_created',
+        conversation: { id: convId, account_id: 1 },
+        message: {
+          id: 99114,
+          content: 'Tu cuenta comercial de Facebook ha sido actualizada.',
+          sender: { email: 'noreply@business-updates.facebook.com', name: 'Meta Business Updates' },
+        },
+        sender: { email: 'noreply@business-updates.facebook.com', name: 'Meta Business Updates' },
+      };
+
+      const result = await webhookService.processWebhookEvent(payload);
+      expect(result.status).toBe('ignored');
+      expect(result.reason).toBe('noreply_email');
+      expect(result.senderEmail).toBe('noreply@business-updates.facebook.com');
+
+      // Verificar que NO se generó human_active indebidamente ni respuestas salientes
+      const isHumanActive = await redis.get(`human_active:${convId}`);
+      expect(isHumanActive).toBeNull();
+    });
+  });
+
+  describe('9. Detección de Rebotes de Servidor y Aplicación del Shield ("Aplicar el Shield")', () => {
+    test('detecta rebote exacto mailer-daemon@host.kroser.com.uy', () => {
+      const res = botLoopDetector.isServerBounce('mailer-daemon@host.kroser.com.uy');
+      expect(res).toBeTruthy();
+      expect(res.isBounce).toBe(true);
+      expect(res.reason).toBe('server_bounce_exact_address');
+    });
+
+    test('detecta variantes de remitente de rebote (postmaster@, bounce@, daemon@)', () => {
+      const bounceEmails = [
+        'mailer-daemon@googlemail.com',
+        'postmaster@host.kroser.com.uy',
+        'bounce@mailservice.net',
+        'daemon@host.kroser.com.uy',
+      ];
+      for (const email of bounceEmails) {
+        const res = botLoopDetector.isServerBounce(email);
+        expect(res).toBeTruthy();
+        expect(res.isBounce).toBe(true);
+      }
+    });
+
+    test('detecta rebote por asunto o cuerpo de entrega fallida (Delivery Status Notification / Mail delivery failed)', () => {
+      const bySubject = botLoopDetector.isServerBounce({
+        email: 'relay@servidor.com',
+        subject: 'Mail delivery failed: returning message to sender',
+        content: 'Your message could not be delivered to recipient.',
+      });
+      expect(bySubject).toBeTruthy();
+      expect(bySubject.isBounce).toBe(true);
+      expect(bySubject.reason).toBe('server_bounce_subject');
+
+      const byContent = botLoopDetector.isServerBounce({
+        content: 'Delivery Status Notification (Failure): 550 5.1.1 User unknown host.kroser.com.uy said: 550',
+      });
+      expect(byContent).toBeTruthy();
+      expect(byContent.isBounce).toBe(true);
+    });
+
+    test('webhook aplica el Shield ante rebote del servidor mailer-daemon@host.kroser.com.uy', async () => {
+      const convId = 8905;
+      await redis.del(`human_active:${convId}`);
+
+      const payload = {
+        event: 'message_created',
+        conversation: { id: convId, account_id: 1 },
+        message: {
+          id: 99115,
+          content: 'Mail delivery failed: returning message to sender. Recipient address rejected: User unknown',
+          sender: { email: 'mailer-daemon@host.kroser.com.uy', name: 'Mailer-Daemon' },
+        },
+        sender: { email: 'mailer-daemon@host.kroser.com.uy', name: 'Mailer-Daemon' },
+      };
+
+      const result = await webhookService.processWebhookEvent(payload);
+      expect(result.status).toBe('ignored');
+      expect(result.reason).toBe('server_bounce_shield_applied');
+      expect(result.shieldApplied).toBe(true);
+
+      // 1. Verificar que el Shield activó el silencio del bot (human_active) en Redis
+      const isHumanActive = await redis.get(`human_active:${convId}`);
+      expect(isHumanActive).toBe('1');
+    });
+  });
+
+  describe('10. Prevención de Falsos Positivos en Correos de Clientes Humanos', () => {
+    test('NO bloquea correos legítimos de clientes con consultas o pedidos', () => {
+      const normalEmailPayloads = [
+        {
+          email: 'carlos.rodriguez@gmail.com',
+          senderName: 'Carlos Rodríguez',
+          content: 'Hola buenas tardes, quería consultar el precio de un taladro percutor Bosch y si hacen envíos a Pocitos.',
+        },
+        {
+          email: 'marianaperez@hotmail.com',
+          senderName: 'Mariana Pérez',
+          content: 'Hola, ayer intenté mandar el comprobante y no sé si llegó, tienen pintura látex para cielorraso?',
+        },
+      ];
+
+      for (const p of normalEmailPayloads) {
+        expect(botLoopDetector.isNoReply(p)).toBe(false);
+        expect(botLoopDetector.isServerBounce(p)).toBe(false);
+      }
+    });
+  });
+
+  describe('11. Omisión de Debounce en WebhookController para Rebotes y No-Reply', () => {
+    test('webhookController procesa correos noreply y rebotes de inmediato sin retener en debounce', async () => {
+      const addMessageSpy = jest.spyOn(debounceService, 'addMessage').mockImplementation(() => {});
+      const processEventSpy = jest.spyOn(webhookService, 'processWebhookEvent').mockResolvedValue({ status: 'ignored' });
+
+      // 1. Mensaje de No-Reply
+      const reqNoReply = {
+        body: {
+          event: 'message_created',
+          message: { id: 99116, content: 'Notificación automática de Meta' },
+          sender: { email: 'noreply@business-updates.facebook.com' },
+          conversation: { id: 8906 },
+        },
+      };
+      const res1 = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn(),
+      };
+
+      await webhookController.handleWebhook(reqNoReply, res1, () => {});
+      expect(res1.status).toHaveBeenCalledWith(200);
+      expect(addMessageSpy).not.toHaveBeenCalled();
+      expect(processEventSpy).toHaveBeenCalledWith(expect.objectContaining({
+        event: 'message_created',
+        conversation: expect.objectContaining({ id: 8906 }),
+      }));
+
+      // 2. Mensaje de Rebote de Servidor
+      const reqBounce = {
+        body: {
+          event: 'message_created',
+          message: { id: 99117, content: 'Mail delivery failed: User unknown' },
+          sender: { email: 'mailer-daemon@host.kroser.com.uy' },
+          conversation: { id: 8907 },
+        },
+      };
+      const res2 = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn(),
+      };
+
+      await webhookController.handleWebhook(reqBounce, res2, () => {});
+      expect(res2.status).toHaveBeenCalledWith(200);
+      expect(addMessageSpy).not.toHaveBeenCalled();
+      expect(processEventSpy).toHaveBeenCalledWith(expect.objectContaining({
+        event: 'message_created',
+        conversation: expect.objectContaining({ id: 8907 }),
+      }));
+
+      addMessageSpy.mockRestore();
+      processEventSpy.mockRestore();
     });
   });
 });

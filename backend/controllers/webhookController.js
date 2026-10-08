@@ -1,5 +1,6 @@
 const webhookService = require('../services/webhook/webhookService');
 const debounceService = require('../services/webhook/debounceService');
+const botLoopDetector = require('../services/guardrails/botLoopDetector');
 const { webhookPayloadSchema } = require('../schemas');
 const logger = require('../config/logger');
 
@@ -42,6 +43,9 @@ module.exports = {
           : [];
       const hasAttachments = attachments.length > 0;
 
+      // Check early if message is a server bounce or noreply to skip unnecessary ~8s debounce delay
+      const isEarlyDropEmail = !isAgentOrOutgoing && (botLoopDetector.isNoReply(payload) || botLoopDetector.isServerBounce(payload));
+
       // If incoming customer message has attachments (audio note, photo, document), flush any pending debounce text
       // and process immediately so media is never delayed, dropped, or desynchronized.
       if (hasAttachments && conversationId && !isAgentOrOutgoing) {
@@ -59,6 +63,9 @@ module.exports = {
           attachments,
         };
         await webhookService.processWebhookEvent(mediaPayload);
+      } else if (isEarlyDropEmail) {
+        // Direct non-debounced processing for server bounces and no-reply emails
+        await webhookService.processWebhookEvent(payload);
       } else if (conversationId && content && payload.event === 'message_created' && !isAgentOrOutgoing) {
         // Use debounce to aggregate user messages sent within ~8s
         debounceService.addMessage(conversationId, content, async (fullContent) => {

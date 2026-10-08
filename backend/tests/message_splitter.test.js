@@ -4,6 +4,7 @@ const webhookService = require('../services/webhook/webhookService');
 const chatwootService = require('../services/chatwoot/chatwootService');
 const redis = require('../config/redis');
 const conversacionesRepo = require('../repositories/conversacionesRepository');
+const configuracionRepo = require('../repositories/configuracionRepository');
 const llmService = require('../services/llm/llmService');
 
 describe('Message Splitter & Human Typing Pacing (Anti-Libro)', () => {
@@ -77,7 +78,12 @@ describe('Message Splitter & Human Typing Pacing (Anti-Libro)', () => {
       await redis.del(`human_active:${testConvId}`);
     });
 
-    test('envía múltiples mensajes y activa estado de tipeo entre fragmentos', async () => {
+    test('envía múltiples mensajes y activa estado de tipeo entre fragmentos cuando message_chunking_enabled es true', async () => {
+      const originalGet = configuracionRepo.get.bind(configuracionRepo);
+      const getSpy = jest.spyOn(configuracionRepo, 'get').mockImplementation(async (key) => {
+        if (key === 'message_chunking_enabled') return 'true';
+        return originalGet(key);
+      });
       const sendSpy = jest.spyOn(chatwootService, 'sendMessage').mockResolvedValue({ success: true, id: 9991 });
       const typingSpy = jest.spyOn(chatwootService, 'toggleTypingStatus').mockResolvedValue({ success: true });
       jest.spyOn(conversacionesRepo, 'logMessage').mockResolvedValue({});
@@ -113,6 +119,43 @@ describe('Message Splitter & Human Typing Pacing (Anti-Libro)', () => {
       // Verify typing status was toggled between chunks
       expect(typingSpy).toHaveBeenCalledWith(1, testConvId, 'on');
       expect(typingSpy).toHaveBeenCalledWith(1, testConvId, 'off');
+
+      getSpy.mockRestore();
+      sendSpy.mockRestore();
+      typingSpy.mockRestore();
+    });
+
+    test('envía un único mensaje consolidado por defecto para optimizar costos de WhatsApp cuando message_chunking_enabled es false', async () => {
+      const sendSpy = jest.spyOn(chatwootService, 'sendMessage').mockResolvedValue({ success: true, id: 9991 });
+      const typingSpy = jest.spyOn(chatwootService, 'toggleTypingStatus').mockResolvedValue({ success: true });
+      jest.spyOn(conversacionesRepo, 'logMessage').mockResolvedValue({});
+
+      // Mock LLM returning a 2-part message
+      jest.spyOn(llmService, 'generateWithTools').mockResolvedValue({
+        reply:
+          '¡Hola! Sí, disponemos de membrana líquida Sika de 20kg en stock a $3.890 pesos.\n\n¿Le gustaría coordinar el envío a domicilio o prefiere retirar en sucursal?',
+        toolsUsed: [],
+        createdOrder: null,
+      });
+
+      const payload = {
+        event: 'message_created',
+        message_type: 'incoming',
+        content: 'Tienen membrana sika de 20kg?',
+        conversation: { id: testConvId, channel: 'whatsapp' },
+        sender: { id: 50, name: 'Martín Test' },
+        account: { id: 1 },
+      };
+
+      const res = await webhookService.processWebhookEvent(payload);
+
+      expect(res.status).toBe('processed');
+      expect(res.chunks).toBeDefined();
+      expect(res.chunks).toHaveLength(1);
+
+      // Verify that sendMessage was called only once for cost optimization
+      expect(sendSpy).toHaveBeenCalledTimes(1);
+      expect(sendSpy).toHaveBeenCalledWith(1, testConvId, expect.stringContaining('$3.890 pesos.'));
 
       sendSpy.mockRestore();
       typingSpy.mockRestore();

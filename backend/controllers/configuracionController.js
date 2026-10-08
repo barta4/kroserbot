@@ -45,6 +45,7 @@ const ALLOWED_EXACT_KEYS = new Set([
   'contact_alternative_email',
   'msg_fuera_de_horario',
   'cotizacion_usd',
+  'message_chunking_enabled',
 ]);
 
 const ALLOWED_PREFIXES = ['msg_', 'assignee_id_'];

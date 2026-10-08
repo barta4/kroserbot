@@ -118,8 +118,23 @@ describe('ToolExecutor Test Suite (Herramientas de IA y Function Calling)', () =
       const res = await executeTool('buscar_productos', { consulta: '' });
       expect(res.productos).toEqual([]);
       expect(res.directiva_vendedor).toContain('NO se encontraron artículos coincidentes');
-      expect(res.directiva_vendedor).toContain('2218 5987');
-      expect(res.directiva_vendedor).toContain('asesor de ventas');
+      expect(res.directiva_vendedor).toContain('sucursal');
+      expect(res.directiva_vendedor).toContain('no tenemos en el catálogo');
+      expect(res.alternativas).toBeUndefined();
+    });
+
+    test('búsqueda con 0 resultados NO ofrece productos similares ni alternativas', async () => {
+      jest.spyOn(productosRepo, 'searchByKeyword').mockResolvedValue([]);
+      jest.spyOn(searchService, 'hybridSearch').mockResolvedValue([]);
+      const alternativesSpy = jest.spyOn(productosRepo, 'getAlternatives');
+
+      const res = await executeTool('buscar_productos', { consulta: 'martillo hidraulico inexistente' });
+      expect(res.productos).toEqual([]);
+      expect(alternativesSpy).not.toHaveBeenCalled();
+      expect(res.alternativas).toBeUndefined();
+      expect(res.directiva_vendedor).toContain('PROHIBIDO ofrecer productos similares');
+
+      alternativesSpy.mockRestore();
     });
 
     test('enriquecimiento de consulta con mensaje de usuario restaura modelo específico', async () => {
