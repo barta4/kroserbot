@@ -46,6 +46,8 @@ const ALLOWED_EXACT_KEYS = new Set([
   'msg_fuera_de_horario',
   'cotizacion_usd',
   'message_chunking_enabled',
+  'classifier_enabled',
+  'classifier_timeout_ms',
 ]);
 
 const ALLOWED_PREFIXES = ['msg_', 'assignee_id_'];
