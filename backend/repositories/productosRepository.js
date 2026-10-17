@@ -180,25 +180,92 @@ module.exports = {
     const substantiveTokens = rawTokens.filter((t) => !PROBLEM_SURFACE.has(t));
     const tokens = substantiveTokens.length > 0 ? substantiveTokens : rawTokens;
 
-    // Construct ILIKE conditions and relevance score for each token with unaccented translation
-    const conditions = tokens.map((_, i) => `(translate(lower(nombre), 'áéíóúü', 'aeiouu') ILIKE $${i + 1} OR translate(lower(categoria), 'áéíóúü', 'aeiouu') ILIKE $${i + 1} OR translate(lower(marca), 'áéíóúü', 'aeiouu') ILIKE $${i + 1} OR translate(lower(coalesce(descripcion, '')), 'áéíóúü', 'aeiouu') ILIKE $${i + 1})`).join(' OR ');
-    const scoreClauses = tokens.map((_, i) => `(CASE WHEN translate(lower(nombre), 'áéíóúü', 'aeiouu') ILIKE $${i + 1} THEN 5 WHEN translate(lower(marca), 'áéíóúü', 'aeiouu') ILIKE $${i + 1} THEN 4 WHEN translate(lower(categoria), 'áéíóúü', 'aeiouu') ILIKE $${i + 1} THEN 2 WHEN translate(lower(coalesce(descripcion, '')), 'áéíóúü', 'aeiouu') ILIKE $${i + 1} THEN 1 ELSE 0 END)`).join(' + ');
-    const params = tokens.map((t) => `%${t}%`);
-    params.push(limit);
+    // Helper: identify pure measurement/dimension/number tokens or generic adjectives
+    const isSpecOrAdjective = (t) =>
+      /^\d+([x/]\d+)?(mm|cm|m|kg|w|v|l|bar|hp)?$/i.test(t) ||
+      ['redonda', 'redondo', 'plana', 'plano', 'cuadrada', 'cuadrado', 'chico', 'chica', 'grande', 'largo', 'corta', 'corto', 'mini'].includes(t.toLowerCase());
 
-    const sqlTokens = `
+    const coreNounTokens = tokens.filter((t) => !isSpecOrAdjective(t));
+
+    const buildCondition = (tList, operator = 'AND') => {
+      const conds = tList
+        .map(
+          (_, i) =>
+            `(translate(lower(nombre), 'áéíóúü', 'aeiouu') ILIKE $${i + 1} OR translate(lower(categoria), 'áéíóúü', 'aeiouu') ILIKE $${i + 1} OR translate(lower(marca), 'áéíóúü', 'aeiouu') ILIKE $${i + 1} OR translate(lower(coalesce(descripcion, '')), 'áéíóúü', 'aeiouu') ILIKE $${i + 1})`
+        )
+        .join(` ${operator} `);
+      const scores = tList
+        .map(
+          (_, i) =>
+            `(CASE WHEN translate(lower(nombre), 'áéíóúü', 'aeiouu') ILIKE $${i + 1} THEN 5 WHEN translate(lower(marca), 'áéíóúü', 'aeiouu') ILIKE $${i + 1} THEN 4 WHEN translate(lower(categoria), 'áéíóúü', 'aeiouu') ILIKE $${i + 1} THEN 2 WHEN translate(lower(coalesce(descripcion, '')), 'áéíóúü', 'aeiouu') ILIKE $${i + 1} THEN 1 ELSE 0 END)`
+        )
+        .join(' + ');
+      return { conds, scores };
+    };
+
+    if (tokens.length > 1) {
+      // 2a. Strict match: ALL tokens must be present
+      const { conds: condsAnd, scores: scoresAnd } = buildCondition(tokens, 'AND');
+      const paramsAnd = tokens.map((t) => `%${t}%`);
+      paramsAnd.push(limit);
+      const sqlAnd = `
+        SELECT ${PRODUCT_COLUMNS}
+        FROM productos
+        WHERE discontinuado = FALSE AND (${condsAnd})
+        ORDER BY 
+          (${scoresAnd}) DESC,
+          (CASE WHEN stock_status = 'in_stock' THEN 1 ELSE 0 END) DESC,
+          precio ASC
+        LIMIT $${paramsAnd.length};
+      `;
+      const resAnd = await db.query(sqlAnd, paramsAnd);
+      if (resAnd.rows.length > 0) {
+        return resAnd.rows;
+      }
+
+      // If strict AND failed, only fall back if we have core substantive nouns (e.g. "taladro", "percutor")
+      // Never fall back using pure numbers (e.g. "16") or generic adjectives ("redonda") in isolation
+      if (coreNounTokens.length === 0) {
+        return [];
+      }
+
+      const { conds: condsCore, scores: scoresCore } = buildCondition(coreNounTokens, 'AND');
+      const paramsCore = coreNounTokens.map((t) => `%${t}%`);
+      paramsCore.push(limit);
+      const sqlCore = `
+        SELECT ${PRODUCT_COLUMNS}
+        FROM productos
+        WHERE discontinuado = FALSE AND (${condsCore})
+        ORDER BY 
+          (${scoresCore}) DESC,
+          (CASE WHEN stock_status = 'in_stock' THEN 1 ELSE 0 END) DESC,
+          precio ASC
+        LIMIT $${paramsCore.length};
+      `;
+      const resCore = await db.query(sqlCore, paramsCore);
+      return resCore.rows;
+    }
+
+    // Single token: if it's a pure number or generic adjective, do not search blindly
+    if (isSpecOrAdjective(tokens[0])) {
+      return [];
+    }
+
+    const { conds: condsSingle, scores: scoresSingle } = buildCondition(tokens, 'OR');
+    const paramsSingle = tokens.map((t) => `%${t}%`);
+    paramsSingle.push(limit);
+    const sqlSingle = `
       SELECT ${PRODUCT_COLUMNS}
       FROM productos
-      WHERE discontinuado = FALSE AND (${conditions})
+      WHERE discontinuado = FALSE AND (${condsSingle})
       ORDER BY 
-        (${scoreClauses}) DESC,
+        (${scoresSingle}) DESC,
         (CASE WHEN stock_status = 'in_stock' THEN 1 ELSE 0 END) DESC,
         precio ASC
-      LIMIT $${params.length};
+      LIMIT $${paramsSingle.length};
     `;
-
-    const resTokens = await db.query(sqlTokens, params);
-    return resTokens.rows;
+    const resSingle = await db.query(sqlSingle, paramsSingle);
+    return resSingle.rows;
   },
 
   async getBySku(sku) {
