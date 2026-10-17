@@ -1,6 +1,6 @@
 # Guía de Contexto y Reglas de Desarrollo para Agentes de IA — Kroserbot
 
-Bienvenido al repositorio de **Kroserbot** (Versión actual: **v2.3.1**).  
+Bienvenido al repositorio de **Kroserbot** (Versión actual: **v2.3.2**).  
 Este documento define la arquitectura general, las reglas de oro del negocio, los patrones de código obligatorios y los flujos de prueba y despliegue que cualquier agente de IA o desarrollador humano debe respetar al modificar este codebase.
 
 ---
@@ -63,7 +63,7 @@ Kroserbot es la plataforma omnicanal de atención inteligente, recomendación t�
 * **Concurrencia en Webhook**: Si el mensaje incluye audio + foto, se preservan ambos en el prompt para que el bot conozca la voz y el repuesto fotografiado.
 
 ### 2.7 Ciclo de Vida del Scraper y Cron Nocturno
-* **Contenedor**: `alfredobartaburu/kroserbot-scraper:v1.4` con `restart: "no"`. Al terminar el catálogo sale con código 0 y se apaga solo (liberando memoria).
+* **Contenedor**: `alfredobartaburu/kroserbot-scraper:v1.5` con `restart: "no"`. Al terminar el catálogo sale con código 0 y se apaga solo (liberando memoria).
 * **Ejecución Manual**: Desde el botón "Iniciar Scraping" en el panel admin o ejecutando `docker start kroserbot-scraper`.
 * **Ejecución Programada**: En Easypanel / Linux Crontab a las 03:00 AM mediante la expresión:
   ```bash
@@ -119,7 +119,7 @@ npx jest backend/tests/llm_failsafe.test.js
 * **Regla de Etiquetado Incremental**: Dokploy y Easypanel cachean imágenes localmente en el servidor. **Siempre incrementa la versión semántica** (ej. `v2.1.5` ➔ `v2.1.6`) al compilar nuevas imágenes.
 * **Comando de Build y Push**:
   ```bash
-  docker buildx build --platform linux/amd64 -t alfredobartaburu/kroserbot:v2.3.1 -t alfredobartaburu/kroserbot:latest . --push
+  docker buildx build --platform linux/amd64 -t alfredobartaburu/kroserbot:v2.3.2 -t alfredobartaburu/kroserbot:latest . --push
   ```
 * **Git**: Sincronizar siempre a la rama `main` en `https://github.com/barta4/kroserbot.git`.
 * **Desarrollo local**: Mantener bind-mounts y claves dummy en `docker-compose.override.yml` (ignorado en `.gitignore` para no sobreescribir producción).
@@ -166,10 +166,10 @@ kroserbot/
 ├── docker-compose.dokploy.yml    # Configuración de despliegue Dokploy con Traefik
 ├── docker-compose.override.yml   # Overrides para desarrollo local (ignorado en Git)
 ├── Dockerfile                    # Multi-stage build no-root optimizado (Node 20 Alpine)
-├── package.json                  # Dependencias y scripts del proyecto (v2.3.1)
+├── package.json                  # Dependencias y scripts del proyecto (v2.3.2)
 └── README.md                     # Documentación de inicio rápido
 ```
 
 ---
 
-*Última actualización de contexto: Release v2.3.1 (Corrección de falsos positivos en búsqueda sin stock de construcción, heurística estricta 1 mensaje WhatsApp y sugerencia de ubicación más cercana).*
+*Última actualización de contexto: Release v2.3.2 (Corrección del comando spawn del scraper en backend, soporte de SKUs alfanuméricos, detección y descontinuación automática de 404/410, auto-expiración de corridas zombis y soporte de ofertas).*

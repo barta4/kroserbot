@@ -66,6 +66,15 @@ class Database:
     def active_run(self) -> dict | None:
         with self.connect() as conn:
             with conn.cursor() as cur:
+                # Auto-expirar corridas zombies abandonadas hace más de 4 horas
+                cur.execute(
+                    """
+                    UPDATE scraper_runs
+                       SET status = 'failed', finished_at = NOW()
+                     WHERE status = 'running'
+                       AND started_at < NOW() - INTERVAL '4 hours'
+                    """
+                )
                 cur.execute("SELECT * FROM scraper_runs WHERE status = 'running' ORDER BY id DESC LIMIT 1")
                 return cur.fetchone()
 
@@ -191,12 +200,33 @@ class Database:
                 return "nuevo" if not existed else "actualizado"
 
     def mark_discontinued(self, sku: str):
+        """Marca un producto como discontinuado y sin stock."""
         with self.connect() as conn:
             with conn.cursor() as cur:
                 cur.execute(
-                    "UPDATE productos SET discontinuado = TRUE, updated_at = NOW() WHERE sku = %s",
+                    """
+                    UPDATE productos
+                       SET discontinuado = TRUE,
+                           stock_status = 'out_of_stock',
+                           updated_at = NOW()
+                     WHERE sku = %s
+                    """,
                     (sku,),
                 )
+
+    def delete_product(self, sku: str) -> bool:
+        """Elimina físicamente un producto inexistente de la base de datos."""
+        with self.connect() as conn:
+            with conn.cursor() as cur:
+                cur.execute("DELETE FROM productos WHERE sku = %s", (sku,))
+                return cur.rowcount > 0
+
+    def delete_discontinued(self) -> int:
+        """Elimina físicamente todos los productos que están marcados como discontinuados."""
+        with self.connect() as conn:
+            with conn.cursor() as cur:
+                cur.execute("DELETE FROM productos WHERE discontinuado = TRUE")
+                return cur.rowcount
 
     def active_skus(self) -> set[str]:
         with self.connect() as conn:

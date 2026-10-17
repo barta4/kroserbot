@@ -19,7 +19,7 @@ import time
 from .db import Database
 from .logger import log_event
 from .products import parse_product, sku_from_url
-from .site import BlockedError, SiteClient, robots_allows
+from .site import BlockedError, NotFoundError, SiteClient, robots_allows
 from .sitemap import discover_product_urls
 
 logger = logging.getLogger("kroker.scraper.runtime")
@@ -30,6 +30,7 @@ class _EmptyArgs:
     no_sleep = False
     resume = False
     fresh = False
+    delete_missing = False
 
 
 class ScraperRuntime:
@@ -41,6 +42,7 @@ class ScraperRuntime:
         self.no_sleep = bool(getattr(args, "no_sleep", False))
         self.resume = bool(getattr(args, "resume", False))
         self.fresh = bool(getattr(args, "fresh", False))
+        self.delete_missing = bool(getattr(args, "delete_missing", False))
         if self.no_sleep:
             self.site.no_sleep = True
 
@@ -165,6 +167,11 @@ class ScraperRuntime:
 
         # Standard Scraping Flow
         consecutive_errors = 0
+        seen_skus = set()
+        delete_missing_enabled = self.delete_missing or (
+            self.db.get_config("scraper_eliminar_inexistentes", "false").lower() in ("true", "1", "yes")
+        )
+
         try:
             for i in range(start, len(urls)):
                 if self.db.need_stop(run_id):
@@ -172,15 +179,23 @@ class ScraperRuntime:
                     log_event("stop_requested", {"run_id": run_id, "pos": i})
                     return 0
 
-
-                # NOTE: Micro-pausas humanas ahora gestionadas por IntelligentPacer en site.py
-
                 url = urls[i]
                 self.db.update_checkpoint(run_id, i, url, contadores)
 
                 try:
                     html = self.site.get_html(url)
                     consecutive_errors = 0
+                except NotFoundError:
+                    sku = sku_from_url(url)
+                    if sku:
+                        if delete_missing_enabled:
+                            self.db.delete_product(sku)
+                            log_event("eliminado_404", {"sku": sku, "url": url})
+                        else:
+                            self.db.mark_discontinued(sku)
+                            log_event("discontinuado_404", {"sku": sku, "url": url})
+                        contadores["discont"] += 1
+                    continue
                 except BlockedError as exc:
                     log_event("blocked_warning", {"url": url, "exc": str(exc)})
                     logger.warning("[Anti-Block Intel] Detección de estrangulamiento en %s. Enfriando 45s y rotando perfil...", url)
@@ -206,9 +221,21 @@ class ScraperRuntime:
 
                 product = parse_product(html, url)
                 if product is None:
-                    contadores["errores"] += 1
-                    log_event("error_parse", {"url": url})
+                    sku = sku_from_url(url)
+                    if sku:
+                        if delete_missing_enabled:
+                            self.db.delete_product(sku)
+                            log_event("eliminado_no_ficha", {"sku": sku, "url": url})
+                        else:
+                            self.db.mark_discontinued(sku)
+                            log_event("discontinuado_no_ficha", {"sku": sku, "url": url})
+                        contadores["discont"] += 1
+                    else:
+                        contadores["errores"] += 1
+                        log_event("error_parse", {"url": url})
                     continue
+
+                seen_skus.add(product.sku)
 
                 cached = self.db.fetch_hash(product.sku)
                 if cached == product.hash:
@@ -223,7 +250,7 @@ class ScraperRuntime:
             if self.db.need_stop(run_id):
                 self.db.finish_run(run_id, "stopped", contadores)
             else:
-                disc = self._mark_discontinued(urls)
+                disc = self._mark_discontinued(urls, seen_skus=seen_skus, delete_missing=delete_missing_enabled)
                 contadores["discont"] += disc
                 self.db.finish_run(run_id, "completed", contadores)
                 contadores["duracion_s"] = round(time.time() - start_ts, 1)
@@ -241,12 +268,21 @@ class ScraperRuntime:
             urls = urls[: self.limit]
         return urls
 
-    def _mark_discontinued(self, urls: list[str]) -> int:
-        seen = {sku_from_url(u) for u in urls}
+    def _mark_discontinued(self, urls: list[str], seen_skus: set[str] | None = None, delete_missing: bool = False) -> int:
+        if self.limit:
+            # Si se corrió con --limit (test/demo), NO descontinuar el resto del catálogo
+            return 0
+        valid = {sku_from_url(u) for u in urls}
+        if seen_skus:
+            valid = valid | seen_skus
         current = self.db.active_skus()
         n = 0
-        for sku in sorted(current - seen):
-            self.db.mark_discontinued(sku)
-            log_event("discontinuado", {"sku": sku})
+        for sku in sorted(current - valid):
+            if delete_missing:
+                self.db.delete_product(sku)
+                log_event("eliminado", {"sku": sku})
+            else:
+                self.db.mark_discontinued(sku)
+                log_event("discontinuado", {"sku": sku})
             n += 1
         return n

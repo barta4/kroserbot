@@ -3,7 +3,7 @@ const db = require('../config/db');
 module.exports = {
   async listProductos(req, res, next) {
     try {
-      const { search, categoria, limit = 50, offset = 0, page } = req.query;
+      const { search, categoria, limit = 50, offset = 0, page, include_discontinued } = req.query;
       const parsedLimit = Math.max(1, parseInt(limit, 10) || 50);
       let parsedOffset = Math.max(0, parseInt(offset, 10) || 0);
       if (page) {
@@ -14,6 +14,11 @@ module.exports = {
       let countSql = 'SELECT COUNT(*) as total FROM productos WHERE 1=1';
       let sql = 'SELECT id, sku, nombre, precio, precio_oferta, moneda, marca, categoria, imagen_url, producto_url, stock_status, discontinuado, updated_at FROM productos WHERE 1=1';
       const params = [];
+
+      if (include_discontinued !== 'true') {
+        countSql += ' AND discontinuado = FALSE';
+        sql += ' AND discontinuado = FALSE';
+      }
 
       if (search) {
         params.push(`%${search}%`);

@@ -65,6 +65,10 @@ class BlockedError(RuntimeError):
     """Bloqueo sostenido o captcha detectado; hay que detener la corrida o enfriar."""
 
 
+class NotFoundError(RuntimeError):
+    """Producto o recurso no existe (HTTP 404 / 410); el producto fue dado de baja."""
+
+
 # ---------------------------------------------------------------- Pacer Inteligente
 class IntelligentPacer:
     """Gestiona el ritmo y la cadencia de navegación humana orgánica."""
@@ -244,6 +248,11 @@ class SiteClient:
                 self._block_streak = 0
                 self.last_visited_url = url
                 return r.text
+
+            # Detección inmediata de producto eliminado / 404 / 410 sin reintentos lentos
+            if r.status_code in (404, 410):
+                logger.info("[SiteClient] Producto inexistente (status %d): %s", r.status_code, url)
+                raise NotFoundError(f"HTTP {r.status_code}: {url}")
 
             # Detección de Bloqueo / Rate-Limit (403, 429, 503 o Captcha)
             if r.status_code in (403, 429, 503) or self._looks_like_block(r.text):

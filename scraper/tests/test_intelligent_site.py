@@ -104,6 +104,18 @@ class TestSiteClientIntelligence(unittest.TestCase):
         self.assertEqual(mock_get.call_count, 2)
 
     @patch("requests.Session.get")
+    def test_not_found_raises_not_found_error(self, mock_get):
+        from scraper.site import NotFoundError
+        mock_response = MagicMock()
+        mock_response.status_code = 404
+        mock_get.return_value = mock_response
+
+        client = SiteClient(no_sleep=True)
+        with self.assertRaises(NotFoundError):
+            client.get_html("/catalogo/producto-inexistente_9999_9999")
+        self.assertEqual(mock_get.call_count, 1)
+
+    @patch("requests.Session.get")
     def test_robots_allows_graceful_on_error(self, mock_get):
         mock_get.side_effect = requests.exceptions.RequestException("DNS failure")
         self.assertTrue(robots_allows("https://www.kroser.com.uy"))
