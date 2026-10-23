@@ -3,6 +3,34 @@
 Todos los cambios notables en este proyecto están documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/), y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.4.html).
 
+## [2.3.2] - 2026-10-23
+
+### 🚀 Nuevas Funcionalidades
+* **Cotizador Kroser Martínez (Canal Web)**: landing pública oficial para **Kroser Uruguay** con catálogo, carrito, checkout, chat con Cotibot (texto, audio e imagen), seguimiento de pedidos y pago con MercadoPago.
+* **Cuentas de Cliente y Descuentos Dinámicos**: registro/login de clientes (`/api/auth/cliente`), categorías de descuento configurables (`categorias_descuento`) y cálculo de precios bonificados en servidor mediante `pricingCalculator.js`.
+* **Pedidos Web Blindados**: recálculo obligatorio de precios desde catálogo, validación de stock y control de montos pagados en MercadoPago.
+* **Promociones Especiales**: gestión completa de promociones y control total de productos promocionados desde el panel admin.
+* **Multi-Scraper de Proveedores**: sincronización de proveedores externos (Equus) con prefijo de SKU, margen, IVA y moneda configurables (`multiScraperSyncService.js` + `scraequus/`).
+* **Traductor Técnico de 3 Roles**: normalización de modismos ferreteros uruguayos a terminología de catálogo y detección de datos técnicos faltantes (`traductorTecnico.js`).
+* **Panel Admin Modular**: separación de `admin/css/admin.css` y `admin/js/admin.js`; nuevas pestañas de Clientes, Promociones, Guías y Proveedores.
+
+### 🛡️ Seguridad y Hardening (H1–H10 / S1–S6)
+* Registro de clientes blindado contra autoasignación de categorías y descuentos.
+* Precios recalculados desde catálogo en pedidos web y en `registrar_pedido` (anti-manipulación del LLM).
+* Protección IDOR y sanitización de PII en el tracking de pedidos.
+* Tokens de cliente rechazados en rutas administrativas; JWT restringido a `HS256`.
+* Bloqueo SSRF en descarga de adjuntos y sanción de `precio_costo`/margen en la API pública.
+* Comparaciones criptográficas en tiempo constante y validación HMAC de MercadoPago.
+* Validación de entradas con Zod y rate limiting específico para chat y pedidos web.
+
+### 🏗️ Arquitectura y Calidad
+* Webhook modularizado en `webhookLifecycleHandler.js`, `webhookMediaHandler.js` y `webhookEscalationHandler.js`.
+* `webhookService.js` reducido en ~471 líneas sin pérdida de funcionalidad.
+* Suite Jest ampliada a **30 suites / 403 tests** y Pytest a **22 tests**, todos en verde.
+* CI actualizado a Node 20 y ejecución de Jest + Pytest.
+
+---
+
 ## [2.1.9] - 2026-10-06
 
 ### 🚀 Nuevas Funcionalidades

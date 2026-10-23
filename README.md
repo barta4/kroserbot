@@ -1,6 +1,8 @@
-# Bot Kroser (v2.2.0) — RAG + Pedidos + Scraper + Panel Admin
+# Cotizador Kroser Martínez (Kroserbot v2.3.2) — RAG + Pedidos + Scraper + Panel Admin
 
-Sistema integral de atención inteligente, recomendación técnica, búsqueda híbrida de catálogo (Full-Text + Vectorial RAG) y módulo de gestión de pedidos para **Kroser Uruguay**.
+Sistema integral de atención inteligente, recomendación técnica, búsqueda híbrida de catálogo (Full-Text + Vectorial RAG), cotización web y módulo de gestión de pedidos para **Kroser Uruguay**.
+
+> **Cotizador Kroser Martínez** es el canal web público del proyecto, desarrollado para **Kroser Uruguay**. El nombre técnico del repositorio y de las imágenes Docker sigue siendo `kroserbot` por compatibilidad.
 
 ---
 
@@ -55,12 +57,18 @@ npm run embeddings:status
 npm run embeddings:generate
 ```
 
+### 6. Canal Web — Cotizador Kroser Martínez
+
+Con el backend levantado, el cotizador público queda disponible en `http://localhost:3000/` y el panel administrativo en `http://localhost:3000/admin`.
+
+Las cuentas de prueba (`*@cotibot.uy`) y el autocompletado de login **solo se muestran en local o agregando `?demo=1`**, para no exponer credenciales compartidas en producción.
+
 ---
 
 ## 🐳 Docker Hub & Despliegue en Producción
 
 ### Imágenes Oficiales en Docker Hub (`alfredobartaburu/kroserbot`):
-- `alfredobartaburu/kroserbot:v2.2.0`
+- `alfredobartaburu/kroserbot:v2.3.2`
 - `alfredobartaburu/kroserbot:latest`
 
 ### Despliegue en Dokploy / Easypanel / Servidores Linux:
@@ -74,7 +82,7 @@ docker compose -f docker-compose.dokploy.yml up -d
 ## 🧪 Pruebas Automatizadas
 
 ```bash
-# Ejecutar suite completa de backend (24 suites, 314 tests)
+# Ejecutar suite completa de backend (30 suites, 403 tests)
 npm test
 
 # Ejecutar tests del scraper en Python (22 tests)
@@ -87,14 +95,17 @@ npm run test:python
 
 ```text
 kroserbot/
+├── /public                   # Cotizador Kroser Martínez (landing web, login de clientes y chat Cotibot)
 ├── /scraper                  # Scraper de catálogo en Python (Fenicio)
+├── /scraequus                # Scraper y API de proveedor Equus (TypeScript + Fastify)
 ├── /backend                  # Servidor Express.js (Webhook Uruchat, RAG, Pedidos)
-│   ├── /controllers          # Controladores REST (Auth, Config, Scraper, Embeddings)
+│   ├── /controllers          # Controladores REST (Auth, Cotibot, Clientes, Promos, Scraper)
 │   ├── /services
 │   │   ├── /embeddings       # Búsqueda vectorial, RAG y generación de embeddings 768d
 │   │   ├── /search           # Búsqueda híbrida paralela, RRF y reranking
 │   │   ├── /chatwoot         # API Uruchat, notas privadas y auto-resolve
-│   │   ├── /webhook          # Procesamiento de webhooks, debounce e intent detector
+│   │   ├── /webhook          # Webhooks, debounce, intent detector y handlers modulares
+│   │   ├── /scraper          # Sincronización multi-proveedor y cálculo de precios
 │   │   └── /pedidos          # Lógica de pedidos y desambiguación de ferretería
 │   └── /routes               # Rutas API REST
 ├── /admin                    # Panel administrativo (Vanilla HTML5 / CSS3 / ES6)

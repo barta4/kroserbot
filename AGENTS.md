@@ -1,6 +1,6 @@
 # Guía de Contexto y Reglas de Desarrollo para Agentes de IA — Kroserbot
 
-Bienvenido al repositorio de **Kroserbot** (Versión actual: **v2.2.0**).  
+Bienvenido al repositorio de **Kroserbot** (Versión actual: **v2.3.2**), nombre técnico del **Cotizador Kroser Martínez**, canal web público desarrollado para **Kroser Uruguay**.  
 Este documento define la arquitectura general, las reglas de oro del negocio, los patrones de código obligatorios y los flujos de prueba y despliegue que cualquier agente de IA o desarrollador humano debe respetar al modificar este codebase.
 
 ---
@@ -18,8 +18,10 @@ Kroserbot es la plataforma omnicanal de atención inteligente, recomendación t�
 | **Memoria & Sesión** | `backend/config/redis.js` | Redis 7 (Alpine) | Buffer de debounce, control de concurrencia, bloqueo de bucles y memoria conversacional de 24h. |
 | **Integración Omnicanal** | `backend/services/chatwoot/` | Uruchat / Chatwoot v1 API | Bandejas de WhatsApp Oficial, Instagram y Web. Enrutamiento y notas privadas a agentes humanos. |
 | **Motor LLM con Fail-Safe** | `backend/services/llm/` | Google Gemini 1.5/2.0 & OpenAI GPT-4o | Function Calling de 7 herramientas, conmutación automática de alta disponibilidad y contingencia heurística. |
+| **Canal Web Cotizador** | `public/` | Vanilla HTML5 / CSS3 / ES6 | Landing pública **Cotizador Kroser Martínez**: catálogo, login de clientes, descuentos por categoría, carrito, pedidos web y chat Cotibot. |
 | **Panel de Administración** | `admin/` | Vanilla HTML5 / CSS3 / ES6 | Tablero operativo, visor de pedidos, gestión de business hours, simulador RAG y control de scraper. |
 | **Scraper de Catálogo** | `scraper/` | Python 3.10 + BeautifulSoup4 + Async | Extracción automatizada desde `kroser.com.uy`, normalización de categorías e indexación de embeddings. |
+| **Scraper Multi-Proveedor** | `scraequus/` + `backend/services/scraper/` | TypeScript + Fastify | Ingesta de proveedores externos (Equus) con margen, IVA y prefijo SKU configurables. |
 
 ---
 
@@ -45,17 +47,18 @@ Kroserbot es la plataforma omnicanal de atención inteligente, recomendación t�
 * **Formateo de Precios (UYU / USD / Ofertas)**: Usa [`backend/utils/formatCurrency.js`](backend/utils/formatCurrency.js).
 * **Normalización de Texto (Sin tildes ni caracteres raros)**: Usa [`backend/utils/textNormalizer.js`](backend/utils/textNormalizer.js).
 
-### 2.5 Ciclo de Vida del Webhook (`webhookService.js`)
+### 2.5 Ciclo de Vida del Webhook (`webhookService.js` y Handlers Modulares)
 1. **Filtro de eventos**: Solo procesar `message_created` entrantes (`incoming`). Ignorar `outgoing` y bots para evitar loops infinitos.
 2. **Deduplicación atómica**: Control en Redis con clave `msg_processed:${messageId}` (TTL 3600s).
-3. **Intervención humana**: Si existe `human_active:${conversationId}` en Redis, el bot se silencia al 100% y se cancelan debounce y auto-cierre.
+3. **Intervención humana**: Si existe `human_active:${conversationId}` en Redis, el bot se silencia al 100% y se cancelan debounce y auto-cierre. Gestionado por [`webhookLifecycleHandler.js`](backend/services/webhook/webhookLifecycleHandler.js).
 4. **Debounce asíncrono**: Agrupación de mensajes ráfaga (4 a 8 segundos) mediante `debounceService.js`.
 5. **Detección de Derivación (`DERIVAR:[area]`)**:
+   - Gestionado por [`webhookEscalationHandler.js`](backend/services/webhook/webhookEscalationHandler.js).
    - NUNCA auto-resolver una conversación si fue derivada a un humano.
    - Asignar agente en Uruchat, publicar nota interna privada (`derivationNoteService.js`) y enviar alerta por email.
 6. **Auto-cierre**: Se ejecuta inmediatamente ante despedidas (`isPureFarewell`) o tras 15 minutos de inactividad (`autoResolveService.js`).
 
-### 2.6 Multimodal: Notas de Voz y Visual Parts Finder (`mediaService.js`)
+### 2.6 Multimodal: Notas de Voz y Visual Parts Finder (`webhookMediaHandler.js` y `mediaService.js`)
 * **Audios WhatsApp**: Soporte para `.opus`, `.oga` y códec `codecs=opus`. Mime type sanitizado antes de enviar a Gemini o Whisper. Resuelve URLs relativas de ActiveStorage (`/rails/active_storage/...`) con el dominio base oficial (`https://omnicanal.kroser.uy`).
 * **Visión de Repuestos y Ferretería**: Reconocimiento estructurado (`IDENTIFICACIÓN`, `KEYWORDS`, `DETALLE`). Soporte para `.heic`, `.heif`, `.webp`, `.png`, `.jpg`, `.jpeg`.
 * **Regla Crítica de OpenAI Vision**: Siempre enviar la imagen como Data URI Base64 (`data:${mime};base64,...`) descargada localmente, NUNCA la URL cruda de ActiveStorage (OpenAI fallaría al requerir sesión o firmas privadas).
@@ -87,7 +90,7 @@ El servicio [`backend/services/llm/llmService.js`](backend/services/llm/llmServi
 Antes de dar por finalizada cualquier tarea o cambio, **todos** los tests deben pasar en verde:
 
 ```bash
-# Ejecutar suite completa de backend (21 suites, 282 tests)
+# Ejecutar suite completa de backend (30 suites, 403 tests)
 npm test
 
 # Ejecutar tests del Scraper en Python (22 tests)
@@ -116,10 +119,10 @@ npx jest backend/tests/llm_failsafe.test.js
 * **Usuario Docker Hub**: `alfredobartaburu`
 * **Imagen Backend**: `alfredobartaburu/kroserbot:<VERSION>` y `alfredobartaburu/kroserbot:latest`
 * **Arquitectura obligatoria**: `--platform linux/amd64`
-* **Regla de Etiquetado Incremental**: Dokploy y Easypanel cachean imágenes localmente en el servidor. **Siempre incrementa la versión semántica** (ej. `v2.1.5` ➔ `v2.1.6`) al compilar nuevas imágenes.
+* **Regla de Etiquetado Incremental**: Dokploy y Easypanel cachean imágenes localmente en el servidor. **Siempre incrementa la versión semántica** (ej. `v2.3.1` ➔ `v2.3.2`) al compilar nuevas imágenes.
 * **Comando de Build y Push**:
   ```bash
-  docker buildx build --platform linux/amd64 -t alfredobartaburu/kroserbot:v2.2.0 -t alfredobartaburu/kroserbot:latest . --push
+  docker buildx build --platform linux/amd64 -t alfredobartaburu/kroserbot:v2.3.2 -t alfredobartaburu/kroserbot:latest . --push
   ```
 * **Git**: Sincronizar siempre a la rama `main` en `https://github.com/barta4/kroserbot.git`.
 * **Desarrollo local**: Mantener bind-mounts y claves dummy en `docker-compose.override.yml` (ignorado en `.gitignore` para no sobreescribir producción).
@@ -132,15 +135,15 @@ npx jest backend/tests/llm_failsafe.test.js
 kroserbot/
 ├── .agents/                      # Skills y configuraciones para agentes AI
 │   └── skills/kroserbot/         # Skill maestro del proyecto
-├── admin/                        # Panel administrativo (Vanilla HTML/CSS/JS)
+├── admin/                        # Panel administrativo (Vanilla HTML5 / CSS3 / ES6)
 │   ├── index.html                # Interfaz principal (Cumple regla de rebranding Uruchat)
-│   ├── css/                      # Estilos del panel
-│   └── js/                       # Controladores frontend del panel
+│   ├── css/admin.css             # Estilos del panel desacoplados (Modular)
+│   └── js/admin.js               # Controladores frontend del panel (Modular)
 ├── backend/                      # API Express Node.js
 │   ├── config/                   # Logger, PostgreSQL, Redis, secretKeys
 │   ├── controllers/              # Controladores REST (auth, config, scraper, simulator)
-│   ├── middleware/               # Auth, rate-limiting, error handler, MP webhook validator
-│   ├── repositories/             # Capa de datos (productos, locales, pedidos, config)
+│   ├── middleware/               # Auth, validateRequest (Zod), rate-limiting, error handler
+│   ├── repositories/             # Capa de datos (productos, categoriasDescuento, pedidos, config)
 │   ├── schemas/                  # Validación con Zod
 │   ├── services/
 │   │   ├── chatwoot/             # Uruchat API, auto-resolve, derivation notes
@@ -152,8 +155,8 @@ kroserbot/
 │   │   ├── llm/                  # Motor LLM, Function Calling y Fail-Safe
 │   │   ├── media/                # Audio transcribers y gestión de adjuntos
 │   │   ├── pedidos/              # Lógica de pedidos y tracking
-│   │   └── webhook/              # Webhook processor, debounce, intent detector, toolExecutor
-│   ├── tests/                    # Suites de Jest (326 tests)
+│   │   └── webhook/              # Webhook orchestrator, lifecycleHandler, mediaHandler, escalationHandler
+│   ├── tests/                    # Suites de Jest (30 suites, 403 tests)
 │   └── utils/                    # Criptografía, negocio, cross-selling, normalizadores
 ├── db/                           # Scripts de migración y backups
 │   ├── migrations/               # Migraciones SQL incrementales
@@ -161,14 +164,16 @@ kroserbot/
 ├── scraper/                      # Scraper en Python para catálogo Kroser
 │   ├── tests/                    # Pruebas de Pytest (22 tests)
 │   └── products.py               # Lógica de extracción y sanitización de datos
+├── scraequus/                    # Scraper y API de proveedor Equus (TypeScript + Fastify)
+├── public/                       # Cotizador Kroser Martínez (landing web y chat Cotibot)
 ├── docker-compose.yml            # Compose endurecido para producción
 ├── docker-compose.dokploy.yml    # Configuración de despliegue Dokploy con Traefik
 ├── docker-compose.override.yml   # Overrides para desarrollo local (ignorado en Git)
 ├── Dockerfile                    # Multi-stage build no-root optimizado (Node 20 Alpine)
-├── package.json                  # Dependencias y scripts del proyecto (v2.2.0)
+├── package.json                  # Dependencias y scripts del proyecto (v2.3.2)
 └── README.md                     # Documentación de inicio rápido
 ```
 
 ---
 
-*Última actualización de contexto: Release v2.2.0 (Filtrado No-Reply, Shield en Rebotes de Servidor, Optimización de Costos WhatsApp / 1 Mensaje).*
+*Última actualización de contexto: Release v2.3.2 — Cotizador Kroser Martínez (Canal web con login de clientes y descuentos dinámicos, promociones, multi-scraper de proveedores, hardening de seguridad H1–H10 / S1–S6, modularización del webhook y del panel admin).*
