@@ -233,6 +233,9 @@ function createFacturappSyncService(overrides = {}) {
     maxPages: Math.max(1, intEnv(env, 'FACTURAPP_SYNC_MAX_PAGES', 40)),
     expectedArticles: Math.max(0, intEnv(env, 'FACTURAPP_EXPECTED_ARTICLES', 0)),
     autoConfirmInitial: String(env.FACTURAPP_SYNC_AUTO_CONFIRM_INITIAL || 'false') === 'true',
+    // Una página con menos de 200 registros es la última. Si trae exactamente 200,
+    // se sigue paginando (nunca se asume completa una página llena).
+    partialPageCompletes: String(env.FACTURAPP_SYNC_PARTIAL_PAGE_COMPLETES || 'true') !== 'false',
     pageSize: PAGE_SIZE,
   };
 
@@ -862,6 +865,13 @@ function createFacturappSyncService(overrides = {}) {
           nextDesdeId: next,
         });
 
+        // Si la página vino incompleta, no hay más resultados que coincidan.
+        // Solo una página llena (200) obliga a pedir la siguiente.
+        if (config.partialPageCompletes && rows.length < PAGE_SIZE) {
+          completed = true;
+          break;
+        }
+
         if (next === null || next === undefined) {
           completed = true;
           break;
@@ -887,14 +897,21 @@ function createFacturappSyncService(overrides = {}) {
         await clearPendingState(cutoff || startedAt.toISOString());
 
         if (String(env.NODE_ENV || '') !== 'test' && String(env.FACTURAPP_SYNC_EMBEDDINGS || 'true') !== 'false') {
-          try {
-            const embeddings = require('../embeddings/generateEmbeddings');
-            if (embeddings && typeof embeddings.processIncrementalEmbeddings === 'function') {
-              await embeddings.processIncrementalEmbeddings();
-            }
-          } catch (embErr) {
-            logger.warn('[Facturapp] No se pudieron actualizar embeddings', { error: embErr.message });
-          }
+          // No bloquear la sync ni retener el lock durante una vectorización masiva
+          // (10.000 productos = 500 lotes de 20). El pipeline es reanudable por sí mismo.
+          setImmediate(() => {
+            Promise.resolve()
+              .then(() => require('../embeddings/generateEmbeddings'))
+              .then((embeddings) => {
+                if (embeddings && typeof embeddings.processIncrementalEmbeddings === 'function') {
+                  return embeddings.processIncrementalEmbeddings();
+                }
+                return null;
+              })
+              .catch((embErr) => {
+                logger.warn('[Facturapp] No se pudieron actualizar embeddings', { error: embErr.message });
+              });
+          });
         }
       } else {
         counters.status = 'paused';

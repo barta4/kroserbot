@@ -82,6 +82,7 @@ Respuesta observada:
 ### Comportamiento verificado
 
 - **Paginación:** `siguienteDesdeId` es el último `id` devuelto, no un número de página. Se debe reenviar como `desdeId`.
+- **Fin de página:** si la respuesta trae menos de 200 registros, no hay más coincidencias; solo una página llena (200) obliga a pedir la siguiente. Esto permite que un día con pocos cambios cueste **1 sola consulta**.
 - **IDs secuenciales en el maestro:** página 1 devolvió `id` 1..200 y página 2 devolvió 201..400.
 - **Inactivos:** con `soloActivos=false` se incluyen artículos con `activo:false` (22 en la segunda página). Con el valor por defecto quedan ocultos.
 - **Incremental:** `modificadosDesde` devuelve **todos los campos**, incluidos `precioVenta`, `precioCompra`, `stockActual` y `fechaUpdate`. No hace falta una consulta por producto para precio/stock.
@@ -114,7 +115,7 @@ Respuesta observada:
 
 1. `modificadosDesde = última sincronización exitosa - 1 día`.
 2. `cantidad=200`, `soloActivos=false`.
-3. Seguir `siguienteDesdeId` hasta una página vacía.
+3. Seguir `siguienteDesdeId` hasta una página **incompleta (<200)** o vacía. Solo una página llena (200) obliga a pedir la siguiente.
 4. Upsert por `facturapp_id`; insertar nuevos y actualizar existentes.
 5. No sobrescribir con `NULL` los campos ausentes (se usa `COALESCE`).
 6. Actualizar `last_success_at` **solo al completar todas las páginas**.
@@ -139,20 +140,50 @@ Plan actual observado: **Prueba, 50 créditos/mes**. Al cierre del análisis que
 
 **Si el maestro supera ~8.800 artículos, la inicial no cabe en el saldo actual.** Opciones: ampliar el plan, comprar créditos extra o reducir el alcance. No se recomienda una inicial parcial seguida de meses de espera: el catálogo quedaría incompleto.
 
+### Caso concreto: 10.000 artículos
+
+- Consultas iniciales: `ceil(10.000 / 200) + 1 = 51`.
+- Saldo actual: **45** (plan Prueba de 50, 5 consumidos en el análisis).
+- Con reserva de 5 créditos hacen falta **56** disponibles: **11 créditos extra**.
+- Sin reserva alcanzarían 6 extra, pero la inicial consumiría todo el saldo.
+
+Además, el primer ciclo incluye la incremental diaria: desde el 23/10 hasta la renovación del 21/11 hay 29 días, o sea **29–58 créditos** adicionales (1–2 por día). Total estimado del primer ciclo: **80–109 créditos**.
+
+**Recomendación:** ampliar el plan a ~120–150 créditos/mes, o comprar ~60 créditos extra para cubrir la inicial y el primer mes. Con el plan actual de 50/mes la inicial no puede completarse.
+
+### RAG después de la sincronización
+
+Al terminar cada página, los productos nuevos o modificados quedan con `updated_at = NOW()`. El pipeline de embeddings (`generateEmbeddings.processIncrementalEmbeddings`) los detecta y vectoriza en lotes de 20:
+
+- 10.000 productos = **500 lotes** secuenciales.
+- Corre en segundo plano para no bloquear la sincronización ni retener el lock.
+- Los productos sin cambios no se re-vectorizan.
+- Si se interrumpe, se reanuda desde los pendientes.
+- Estado y disparo manual:
+  - `GET /api/scraper/embeddings/status`
+  - `POST /api/scraper/embeddings/generate`
+
+La vectorización consume créditos del proveedor de embeddings (Gemini/OpenAI), no de Facturapp.
+
 ### Incremental
 
 | Cambios diarios | Consultas/día | Consultas/mes (30 días) |
 |---|---:|---:|
-| 0 | 1 | 30 |
-| 1–200 | 2 | 60 |
-| 201–400 | 3 | 90 |
-| 401–600 | 4 | 120 |
+| 0 | 1 (página vacía) | 30 |
+| 1–199 | 1 (página parcial) | 30 |
+| 200 | 2 (página llena + confirmación) | 60 |
+| 201–399 | 2 (llena + parcial) | 60 |
+| 400 | 3 | 90 |
+| 401–599 | 3 | 90 |
+| 600 | 4 | 120 |
+
+Fórmula: si hay `C` cambios, el costo es `ceil(C / 200)`, salvo que `C` sea múltiplo exacto de 200 (ahí se suma 1 para confirmar que no hay más). Con `C=0` es 1 consulta. En el día a día, si los cambios son pocos, alcanza con **1 consulta diaria**.
 
 ### Comparación
 
 | Escenario | Consultas/mes | Retraso máximo | Riesgo con plan 50/mes |
 |---|---:|---|---|
-| **A. Una incremental diaria** | 30–60 típico | 24 h | Bajo si los cambios diarios son ≤200 |
+| **A. Una incremental diaria** | 30–60 típico (1/día si hay <200 cambios) | 24 h | Bajo |
 | **B. Dos incrementales diarias** | 60–120 | 12 h | **Alto: supera el plan en casi todos los casos** |
 | **C. Una diaria + consultas puntuales** | 30–60 + 1 por consulta | 24 h (salvo consulta puntual) | Bajo y controlable |
 
@@ -204,6 +235,7 @@ FACTURAPP_SYNC_MAX_PAGES=40         # tope por corrida
 FACTURAPP_EXPECTED_ARTICLES=        # cantidad aproximada para estimar la inicial
 FACTURAPP_SYNC_EMBEDDINGS=true
 FACTURAPP_SYNC_AUTO_CONFIRM_INITIAL=false
+FACTURAPP_SYNC_PARTIAL_PAGE_COMPLETES=true   # página <200 = última
 ```
 
 ### Migración
@@ -289,6 +321,7 @@ Nunca se registra la API key ni el header `Authorization`.
 - Deduplicación por `id` y por código.
 - Respuesta vacía (1 crédito).
 - Múltiples páginas con `siguienteDesdeId`.
+- Página parcial (<200) finaliza sin consulta extra; página llena (200) exige confirmación.
 - Duplicados en la misma página.
 - Error en página intermedia → `paused` + reanudación desde el último `desdeId`.
 - Falta de créditos → no llama a la API.
@@ -299,7 +332,7 @@ Nunca se registra la API key ni el header `Authorization`.
 - Reintento de 503 y no reintento de 401 en el cliente HTTP.
 - Falta de `FACTURAPP_API_KEY` → error claro sin request.
 
-Resultado: **19 tests** dentro de la suite total (**31 suites / 422 tests**).
+Resultado: **20 tests** dentro de la suite total (**31 suites / 423 tests**).
 
 ---
 

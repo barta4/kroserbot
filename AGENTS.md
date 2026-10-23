@@ -91,7 +91,7 @@ El servicio [`backend/services/llm/llmService.js`](backend/services/llm/llmServi
 Antes de dar por finalizada cualquier tarea o cambio, **todos** los tests deben pasar en verde:
 
 ```bash
-# Ejecutar suite completa de backend (31 suites, 422 tests)
+# Ejecutar suite completa de backend (31 suites, 423 tests)
 npm test
 
 # Ejecutar tests del Scraper en Python (22 tests)
@@ -157,7 +157,7 @@ kroserbot/
 │   │   ├── media/                # Audio transcribers y gestión de adjuntos
 │   │   ├── pedidos/              # Lógica de pedidos y tracking
 │   │   └── webhook/              # Webhook orchestrator, lifecycleHandler, mediaHandler, escalationHandler
-│   ├── tests/                    # Suites de Jest (31 suites, 422 tests)
+│   ├── tests/                    # Suites de Jest (31 suites, 423 tests)
 │   └── utils/                    # Criptografía, negocio, cross-selling, normalizadores
 ├── db/                           # Scripts de migración y backups
 │   ├── migrations/               # Migraciones SQL incrementales

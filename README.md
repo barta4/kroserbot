@@ -96,7 +96,7 @@ docker compose -f docker-compose.dokploy.yml up -d
 ## 🧪 Pruebas Automatizadas
 
 ```bash
-# Ejecutar suite completa de backend (31 suites, 422 tests)
+# Ejecutar suite completa de backend (31 suites, 423 tests)
 npm test
 
 # Ejecutar tests del scraper en Python (22 tests)

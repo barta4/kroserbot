@@ -18,8 +18,8 @@ El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/
 * Clave exclusivamente desde `FACTURAPP_API_KEY`, solo en backend y nunca en logs.
 * Reintentos únicamente para 429/500/503; sin reintentos en 401/403/400/402.
 * Lock Redis, detección de corridas stale y una sola solicitud activa por vez.
-* 19 pruebas nuevas: páginas vacías, múltiples páginas, duplicados, errores, presupuesto y reanudación.
-* Suite completa: **31 suites / 422 tests** en verde.
+* 20 pruebas nuevas: páginas vacías, múltiples páginas, página parcial vs. llena, duplicados, errores, presupuesto y reanudación.
+* Suite completa: **31 suites / 423 tests** en verde.
 
 ---
 

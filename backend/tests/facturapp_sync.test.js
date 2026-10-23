@@ -419,9 +419,30 @@ describe('Facturapp — sincronización de catálogo', () => {
       expect(result.pages).toBe(2);
       expect(result.received).toBe(201);
       expect(result.inserted).toBe(201);
-      expect(result.creditsConsumed).toBe(3);
-      expect(api.calls.map((c) => c.desdeId)).toEqual([0, 200, 201]);
+      // La segunda página trae 1 artículo (<200): ya es la última, no hace falta la vacía.
+      expect(result.creditsConsumed).toBe(2);
+      expect(api.calls.map((c) => c.desdeId)).toEqual([0, 200]);
       expect(store.products.size).toBe(201);
+    });
+
+    test('una página llena de 200 sí exige la consulta de confirmación', async () => {
+      const store = createFakeStore();
+      const page1 = Array.from({ length: 200 }, (_, i) => art(i + 1));
+      const api = createFakeApi({
+        pages: [
+          { articles: page1, siguienteDesdeId: 200 },
+          { articles: [], siguienteDesdeId: null },
+        ],
+      });
+      const { service } = buildService(store, api, { FACTURAPP_EXPECTED_ARTICLES: '200' });
+
+      const result = await service.runSync({ mode: 'initial', confirmInitial: true });
+
+      expect(result.status).toBe('completed');
+      expect(result.pages).toBe(1);
+      expect(result.received).toBe(200);
+      expect(result.creditsConsumed).toBe(2); // 1 página llena + 1 confirmación vacía
+      expect(api.calls).toHaveLength(2);
     });
 
     test('no duplica artículos repetidos en la misma página', async () => {
@@ -543,15 +564,16 @@ describe('Facturapp — sincronización de catálogo', () => {
       expect(run.last_request_id).toBe('req-401');
     });
 
-    test('una respuesta con paginación estancada no se declara exitosa', async () => {
+    test('una página llena con paginación estancada no se declara exitosa', async () => {
       const store = createFakeStore();
+      const fullPage = Array.from({ length: 200 }, (_, i) => art(i + 1));
       const api = createFakeApi({
         pages: [
-          { articles: [art(1)], siguienteDesdeId: 0 },
+          { articles: fullPage, siguienteDesdeId: 0 },
           { articles: [], siguienteDesdeId: null },
         ],
       });
-      const { service } = buildService(store, api, { FACTURAPP_EXPECTED_ARTICLES: '1' });
+      const { service } = buildService(store, api, { FACTURAPP_EXPECTED_ARTICLES: '200' });
 
       const result = await service.runSync({ mode: 'initial', confirmInitial: true });
 
