@@ -13,7 +13,7 @@ async function testRAGSuite() {
   const queries = [
     'necesito una pintura para exterior',
     'tienen taladros Bosch',
-    'dónde queda el local de Portones y qué horario tienen?',
+    'dónde queda el local de Av. 8 de Octubre y qué horario tienen?',
     'busco algo para impermeabilizar techo',
   ];
 

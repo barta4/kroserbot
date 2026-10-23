@@ -86,7 +86,7 @@
     const TAB_TITLES = {
       dashboard: 'Dashboard de Operaciones & Chat IA',
       catalogo: 'Catálogo de Productos Scrapeados (USD)',
-      locales: 'Sucursales Kroser en Uruguay (50+)',
+      locales: 'Locales Kroser Martínez (2)',
       zonas: 'Zonas y Tarifas de Envío',
       pagos: 'Formas y Métodos de Pago',
       pedidos: 'Gestión de Pedidos & Vista Depósito',
