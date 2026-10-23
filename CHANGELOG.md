@@ -3,6 +3,23 @@
 Todos los cambios notables en este proyecto están documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/), y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.4.html).
 
+## [2.3.5] - 2026-10-23
+
+### 📍 Locales, teléfonos y horarios oficiales — Kroser Martínez
+* **Solo 2 locales**: reemplazo de los 5 puntos heredados por **Av. 8 de Octubre 3452 (local)** y **3451 (barraca)**, La Unión, Montevideo.
+* **Teléfonos oficiales**: `2508 3100 / 2509 7508` y WhatsApp `094 985 189 / 095 141 194` en landing, footer, prompt del bot, derivaciones y manuales.
+* **Horarios**: Lunes a Viernes **08:00–18:00**, Sábados **08:00–14:00**, Domingos cerrado. Actualizados en configuración, admin y mensajes de fuera de horario.
+* **Identidad**: el bot y la documentación pasan de “Kroser Uruguay” genérico a **Kroser Martínez**, con los 2 locales de La Unión.
+* **Migración**: `1786215500000_kroser_martinez_locales.sql` reemplaza el maestro de locales y ajusta horarios/prompt.
+* **Landing**: selector de retiro con 2 opciones, footer con locales/teléfonos/WhatsApp y JSON-LD con dirección y horarios.
+
+### ✅ Verificación
+* Suite completa: **31 suites / 423 tests** en verde.
+* Pytest: **22 tests** en verde.
+* Migraciones validadas.
+
+---
+
 ## [2.3.4] - 2026-10-23
 
 ### 🎨 Landing del Cotizador — Modernización

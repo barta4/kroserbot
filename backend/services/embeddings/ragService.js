@@ -100,7 +100,7 @@ module.exports = {
       guiasTecnicas = await guiasTecnicasRepo.searchRelevant(queryText, 2);
     } catch (_gErr) {}
 
-    // 5. Search Store Locations (50+ Sucursales Kroser)
+    // 5. Search Store Locations (2 locales Kroser Martínez en La Unión)
     if (
       lowerQ.includes('local') ||
       lowerQ.includes('sucursal') ||
@@ -205,7 +205,7 @@ module.exports = {
     }
 
     if (locales.length > 0) {
-      contextStr += 'SUCURSALES Y LOCALES KROSER (Para retiro o visita):\n';
+      contextStr += 'LOCALES KROSER MARTÍNEZ (Para retiro o visita):\n';
       locales.forEach((l) => {
         contextStr += `- ${l.nombre} (${l.zona}): ${l.direccion} | Tel: ${l.telefono} | Horario: ${l.horario}\n`;
       });

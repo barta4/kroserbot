@@ -1,6 +1,6 @@
 # 📘 Manual de Funcionamiento del Sistema — Bot Kroser
 
-**Plataforma Integral de Inteligencia Artificial para Kroser Uruguay**  
+**Plataforma Integral de Inteligencia Artificial para Kroser Martínez (Kroser Uruguay)**  
 *Atención Omnicanal Automatizada • Catálogo Híbrido RAG (pgvector) • Herramientas Agénticas (Tool Calling) • Gestión de Pedidos y Depósito • Pasarela Mercado Pago • Ingestión de Catálogo (Scraper & ERP)*
 
 ---
@@ -24,7 +24,7 @@
 
 ## 1. Ficha Técnica y Visión General del Sistema
 
-El **Bot Kroser** es una solución enterprise desarrollada a medida para modernizar y escalar la atención a clientes, las ventas consultivas de ferretería y la gestión logística de pedidos para las más de 50 sucursales físicas y la tienda web de **Kroser Uruguay**. Reemplaza workflows heredados de n8n por una arquitectura robusta, modular y de baja latencia con agentes de IA autónomos.
+El **Bot Kroser** es una solución enterprise desarrollada a medida para modernizar y escalar la atención a clientes, las ventas consultivas de ferretería y la gestión logística de pedidos para los **2 locales de Kroser Martínez en La Unión, Montevideo** (Av. 8 de Octubre 3452 y barraca 3451) y su tienda web. Reemplaza workflows heredados de n8n por una arquitectura robusta, modular y de baja latencia con agentes de IA autónomos.
 
 ### 1.1. Especificaciones Principales
 
@@ -346,7 +346,7 @@ El LLM dispone de las siguientes 7 funciones declaradas en esquema JSON para res
 | Nombre de la Herramienta | Parámetros | Propósito Operativo |
 | :--- | :--- | :--- |
 | `buscar_productos` | `consulta: string` | Búsqueda semántica y por palabras clave en el catálogo de Kroser. Devuelve SKU, precios, stock y kits de consumibles. |
-| `buscar_sucursales` | `zona?: string` | Localiza tiendas físicas, direcciones, números de teléfono y horarios de apertura en todo el Uruguay. |
+| `buscar_sucursales` | `zona?: string` | Localiza los 2 locales de Kroser Martínez en La Unión, Montevideo, con direcciones, teléfonos y horarios. |
 | `buscar_envio` | `zona?: string` | Consulta costos de envío a domicilio por departamento y políticas de envío sin costo. |
 | `formas_pago` | *(sin parámetros)* | Proporciona medios de pago vigentes, planes de cuotas con tarjetas y promociones comerciales. |
 | `consultar_guia_tecnica` | `tema: string` | Consulta fórmulas de rendimiento de materiales (ej. m² por litro de pintura), tratamiento de patologías y sanitarias. |
@@ -629,7 +629,7 @@ El panel accesible en `http://localhost:3000/admin` o en el dominio de producci�
 7. **🛒 Catálogo de Productos**:
    - Buscador de productos con filtros por categoría, marca y estado de vectorización.
 8. **🏪 Gestión de Sucursales**:
-   - Alta, baja y modificación de las 50+ sucursales físicas de Kroser en Uruguay (dirección, teléfonos y horarios de retiro).
+   - Alta, baja y modificación de los 2 locales de Kroser Martínez en La Unión (Av. 8 de Octubre 3452 y 3451), con dirección, teléfonos y horarios de retiro.
 9. **🚚 Zonas y Costos de Envío**:
    - Tarifario de fletes por departamento y localidad, y monto mínimo para envío gratuito.
 10. **💳 Formas de Pago & Mercado Pago**:
@@ -683,4 +683,4 @@ docker compose logs --tail=100 backend
 
 ---
 
-**Kroser Uruguay — 2026** • *Manual Oficial de Arquitectura y Operación del Sistema Bot Kroser AI*
+**Kroser Martínez (Kroser Uruguay) - 2026** • *Manual Oficial de Arquitectura y Operación del Sistema Bot Kroser AI*

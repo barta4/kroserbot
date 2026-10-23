@@ -46,12 +46,12 @@ async function runTests() {
     const mockPedidoPreparacion = {
       id: 2050,
       estado: 'en_preparacion',
-      cliente: { nombre: 'Carlos Rodríguez', sucursal_retiro: 'Portones' },
+      cliente: { nombre: 'Carlos Rodríguez', sucursal_retiro: 'Av. 8 de Octubre' },
       items: [{ nombre: 'Amoladora DeWalt 115mm', cantidad: 1, precio: 89.00 }],
     };
     const replyPrep = orderTrackingService.formatStatusMessage(mockPedidoPreparacion);
     assert(replyPrep.includes('En Preparación en Depósito'), 'Debe indicar estado en preparación');
-    assert(replyPrep.includes('Portones'), 'Debe indicar sucursal de retiro');
+    assert(replyPrep.includes('Av. 8 de Octubre'), 'Debe indicar sucursal de retiro');
     console.log('  ✅ Estado En Preparación & Retiro formateado correctamente');
 
     passed++;

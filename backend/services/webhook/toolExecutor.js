@@ -156,7 +156,7 @@ function getOpenAITools({ enableOrders = true } = {}) {
   }));
 }
 
-const EMPTY_SEARCH_DIRECTIVE = 'NO se encontraron artículos coincidentes en catálogo. DIRECTIVA OBLIGATORIA (OPTIMIZADO WHATSAPP / META): Responda en UN SOLO MENSAJE informando que no tenemos en el catálogo y solicitando ubicación para sucursal cercana. PROHIBIDO ofrecer productos similares o alternativos. Fórmula exacta: "Hola, no tenemos en el catálogo. Si desea, páseme su ubicación y le envío datos de la sucursal más cercana."';
+const EMPTY_SEARCH_DIRECTIVE = 'NO se encontraron artículos coincidentes en catálogo. DIRECTIVA OBLIGATORIA (OPTIMIZADO WHATSAPP / META): Responda en UN SOLO MENSAJE informando que no tenemos en el catálogo y solicitando ubicación para indicar el local. PROHIBIDO ofrecer productos similares o alternativos. Fórmula exacta: "Hola, no tenemos en el catálogo. Si desea, páseme su ubicación y le envío los datos de nuestros locales."';
 
 /**
  * Tool Executors
@@ -381,7 +381,7 @@ async function executeBuscarSucursales({ zona = '' } = {}) {
     };
   } catch (err) {
     logger.error('Error in executeBuscarSucursales', { error: err.message });
-    return { sucursales: [], error: 'No se pudieron consultar las sucursales' };
+    return { sucursales: [], error: 'No se pudieron consultar los locales' };
   }
 }
 
@@ -471,7 +471,7 @@ async function executeRegistrarPedido({ cliente = {}, items = [] }, context = {}
     logger.warn('Attempt to register order while orders are disabled');
     return {
       status: 'disabled',
-      mensaje: 'La toma y registro de pedidos por este canal de chat está temporalmente deshabilitada en el sistema. Por favor indique al cliente que puede realizar su compra a través del sitio web oficial https://kroser.com.uy o acercándose a cualquiera de nuestras sucursales.',
+      mensaje: 'La toma y registro de pedidos por este canal de chat está temporalmente deshabilitada en el sistema. Por favor indique al cliente que puede realizar su compra a través del sitio web oficial https://kroser.com.uy o acercándose a nuestros locales de Av. 8 de Octubre 3452 / 3451.',
       createdOrder: null,
     };
   }

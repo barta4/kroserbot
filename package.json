@@ -1,6 +1,6 @@
 {
   "name": "kroserbot",
-  "version": "2.3.4",
+  "version": "2.3.5",
   "description": "Cotibot — Asistente de Cotizaciones, Catálogo y RAG (Kroser Uruguay)",
   "main": "backend/index.js",
   "scripts": {

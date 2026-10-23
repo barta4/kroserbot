@@ -118,7 +118,7 @@ describe('ToolExecutor Test Suite (Herramientas de IA y Function Calling)', () =
       const res = await executeTool('buscar_productos', { consulta: '' });
       expect(res.productos).toEqual([]);
       expect(res.directiva_vendedor).toContain('NO se encontraron artículos coincidentes');
-      expect(res.directiva_vendedor).toContain('sucursal');
+      expect(res.directiva_vendedor).toContain('local');
       expect(res.directiva_vendedor).toContain('no tenemos en el catálogo');
       expect(res.alternativas).toBeUndefined();
     });
@@ -197,33 +197,33 @@ describe('ToolExecutor Test Suite (Herramientas de IA y Function Calling)', () =
     test('búsqueda con zona específica', async () => {
       jest.spyOn(localesRepo, 'search').mockResolvedValue([
         {
-          nombre: 'Kroser Pocitos',
-          zona: 'Pocitos',
-          direccion: 'Av. Brasil 2500',
-          telefono: '2708 0000',
-          horario: 'Lun a Vie 8:30 a 18:30, Sáb 8:30 a 13:00',
+          nombre: 'Kroser Martínez — Local 8 de Octubre',
+          zona: 'La Unión, Montevideo',
+          direccion: 'Av. 8 de Octubre 3452',
+          telefono: '2508 3100 / 2509 7508',
+          horario: 'Lun a Vie 08:00 a 18:00, Sáb 08:00 a 14:00, Dom cerrado',
         },
       ]);
 
-      const res = await executeTool('buscar_sucursales', { zona: 'Pocitos' });
+      const res = await executeTool('buscar_sucursales', { zona: 'La Unión' });
       expect(res).toHaveProperty('sucursales');
       expect(res.sucursales.length).toBe(1);
-      expect(res.sucursales[0].nombre).toBe('Kroser Pocitos');
+      expect(res.sucursales[0].nombre).toBe('Kroser Martínez — Local 8 de Octubre');
     });
 
     test('búsqueda sin zona retorna todas las sucursales', async () => {
       jest.spyOn(localesRepo, 'getAll').mockResolvedValue([
         {
-          nombre: 'Kroser Centro',
-          zona: 'Centro',
-          direccion: '18 de Julio 1200',
-          telefono: '2900 0000',
+          nombre: 'Kroser Martínez — Local 8 de Octubre',
+          zona: 'La Unión, Montevideo',
+          direccion: 'Av. 8 de Octubre 3452',
+          telefono: '2508 3100 / 2509 7508',
         },
       ]);
 
       const res = await executeTool('buscar_sucursales', {});
       expect(res.sucursales.length).toBe(1);
-      expect(res.sucursales[0].nombre).toBe('Kroser Centro');
+      expect(res.sucursales[0].nombre).toBe('Kroser Martínez — Local 8 de Octubre');
     });
   });
 

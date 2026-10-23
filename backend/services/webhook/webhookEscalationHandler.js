@@ -57,8 +57,8 @@ async function handleEscalation({
   const isOutOfHours = !hoursStatus.isWithin;
 
   let msgToSend = defaultMsgDerivacion;
-  if (normArea === 'administracion' && !msgToSend.includes('2218 5987')) {
-    msgToSend += ' También puede comunicarse directamente con nuestra Central de Reclamos a los teléfonos 2218 5987 / 2218 5988.';
+  if (normArea === 'administracion' && !msgToSend.includes('2508 3100')) {
+    msgToSend += ' También puede comunicarse directamente con nuestra atención al cliente a los teléfonos 2508 3100 / 2509 7508 (WhatsApp 094 985 189 / 095 141 194).';
   }
   if (isOutOfHours) {
     msgToSend = businessHours.getOutHoursMessage({

@@ -2,7 +2,7 @@
 
 ![Bot Kroser](file:///C:/Users/usuario/.gemini/antigravity-ide/brain/a787afaf-a6bb-4c31-9ac7-68296a315e41/manual_cover_kroser_1787447510092.jpg)
 
-**Sistema Integral de Inteligencia Artificial para Kroser Uruguay**  
+**Sistema Integral de Inteligencia Artificial para Kroser Martínez (Kroser Uruguay)**  
 *Atención Automatizada Multicanal • Catálogo RAG Vectorial • Gestión de Pedidos • Pasarela Mercado Pago • Panel Administrativo y de Depósito*
 
 ---
@@ -30,7 +30,7 @@
 
 ## 🌟 1. Visión General del Sistema
 
-El **Bot Kroser** es una solución enterprise diseñada para automatizar la atención a clientes, brindar recomendaciones de productos con búsqueda semántica (RAG) y gestionar pedidos de extremo a extremo para las tiendas de **Kroser Uruguay**.
+El **Bot Kroser** es una solución enterprise diseñada para automatizar la atención a clientes, brindar recomendaciones de productos con búsqueda semántica (RAG) y gestionar pedidos de extremo a extremo para los **2 locales de Kroser Martínez** en La Unión, Montevideo (Av. 8 de Octubre 3452 y barraca 3451).
 
 ```mermaid
 graph LR
@@ -181,7 +181,7 @@ Permite alternar entre proveedores de Inteligencia Artificial:
 ---
 
 ### 🏪 Gestión de Sucursales y Envíos
-- **Sucursales (Locales)**: Administra direcciones, teléfonos, horarios de atención y zonas de los 50+ locales de Kroser en todo el país.
+- **Locales**: Administra los 2 locales de Kroser Martínez en La Unión, Montevideo (Av. 8 de Octubre 3452 y 3451), con teléfonos y horarios de atención.
 - **Zonas de Envío**: Configura costos de envío a domicilio por departamento y localidad (Montevideo, Canelones, Interior, etc.).
 
 ---
@@ -248,4 +248,4 @@ stateDiagram-v2
 
 ---
 
-**Kroser Uruguay — 2026** • *Bot Kroser AI Architecture*
+**Kroser Martínez (Kroser Uruguay) - 2026** • *Bot Kroser AI Architecture*

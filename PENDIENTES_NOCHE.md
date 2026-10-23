@@ -15,7 +15,7 @@ Este documento resume la totalidad de causas analizadas, diagnósticos de raíz,
 | **v2.1.3** | Tagging Dokploy y sinónimos para asadores/parrillas (`parrillero`/`parrillera`). Verificado en vivo vía API remota. | ✅ Desplegado |
 | **v2.1.4** | Migración SQL para reactivar productos discontinuados con stock (`1786214800000_reactivate_catalog_products.sql`) y desambiguación de "cueritos" de canilla vs. válvulas de gas. | ✅ Desplegado |
 | **v2.1.5** | **Protocolo Híbrido Inteligente:** Detección de rechazo de opciones (`rechazo_producto`) y reclamos (`reclamo`), prohibición de venta invasiva y directivas para derivación o teléfonos de sucursales. | ✅ Desplegado |
-| **v2.1.6** | Integración de los teléfonos oficiales de la **Central de Reclamos** (**`2218 5987 / 2218 5988`**) en prompt, derivaciones Uruchat y respuestas de asistencia. | ✅ **Versión Final de Cierre** |
+| **v2.1.6** | Integración de los teléfonos oficiales de atención de **Kroser Martínez** (**`2508 3100 / 2509 7508`** · WhatsApp **`094 985 189 / 095 141 194`**) en prompt, derivaciones Uruchat y respuestas de asistencia. | ✅ **Versión Final de Cierre** |
 
 ---
 
@@ -51,8 +51,9 @@ Este documento resume la totalidad de causas analizadas, diagnósticos de raíz,
 
 ### Caso 6: Teléfonos Oficiales de Atención y Reclamos
 * **Configuración aplicada**:
-  - **Central de Reclamos:** **`2218 5987 / 2218 5988`**
-  - **Sucursales Físicas:** Disponibles vía tool `buscar_sucursales` (Centro: `2900 1122`, Portones: `2601 0000`, Pocitos: `2708 3344`, Carrasco: `2600 5566`, Ciudad de la Costa: `2682 7788`).
+  - **Atención y reclamos:** **`2508 3100 / 2509 7508`** · WhatsApp **`094 985 189 / 095 141 194`**
+  - **Locales:** Av. 8 de Octubre 3452 (local) y 3451 (barraca), La Unión, Montevideo. Disponibles vía tool `buscar_sucursales`.
+  - **Horarios:** Lunes a Viernes 08:00 a 18:00 hs · Sábados 08:00 a 14:00 hs · Domingos cerrado.
 
 ---
 
@@ -74,7 +75,7 @@ Al retomar la operativa:
    - Abrir: `https://venta.urufile.duckdns.org/api/health` ➔ Debe responder `200 OK`.
 5. **Prueba en Vivo**:
    - Probar consultas en el chat de Uruchat o en el panel admin:
-     - *"Tengo un reclamo, la hidrolavadora vino fallada"* ➔ El bot se disculpa cordialmente, proporciona `2218 5987 / 2218 5988` y deriva a administración.
+     - *"Tengo un reclamo, la hidrolavadora vino fallada"* ➔ El bot se disculpa cordialmente, proporciona `2508 3100 / 2509 7508` (WhatsApp `094 985 189 / 095 141 194`) y deriva a administración.
      - Consulta de artículo no comercializado ➔ El bot informa con honestidad que no está en catálogo web y ofrece los teléfonos de Central o derivar con un asesor.
 
 ---

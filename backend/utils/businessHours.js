@@ -122,16 +122,16 @@ function getNextBusinessDayString(date = new Date(), config = {}) {
   const uru = getUruguayDate(date);
   const { dayOfWeek, totalMinutes } = uru;
 
-  const weekdayStartStr = config.business_hours_weekday_start || '09:00';
-  const weekdayStart = parseTimeToMinutes(weekdayStartStr, 9 * 60);
+  const weekdayStartStr = config.business_hours_weekday_start || '08:00';
+  const weekdayStart = parseTimeToMinutes(weekdayStartStr, 8 * 60);
   const weekdayEnd = parseTimeToMinutes(config.business_hours_weekday_end, 18 * 60);
 
   const satEnabled =
     config.business_hours_saturday_enabled !== 'false' &&
     config.business_hours_saturday_enabled !== false;
-  const satStartStr = config.business_hours_saturday_start || '09:00';
-  const satStart = parseTimeToMinutes(satStartStr, 9 * 60);
-  const satEnd = parseTimeToMinutes(config.business_hours_saturday_end, 13 * 60);
+  const satStartStr = config.business_hours_saturday_start || '08:00';
+  const satStart = parseTimeToMinutes(satStartStr, 8 * 60);
+  const satEnd = parseTimeToMinutes(config.business_hours_saturday_end, 14 * 60);
 
   // Sunday
   if (dayOfWeek === 0) {
@@ -185,13 +185,13 @@ function getOutHoursMessage({ channel = '', nextBusinessDay = '', alternativeEma
   }
 
   if (isMeta) {
-    return `¡Hola! En este momento nuestro equipo de atención humana se encuentra fuera de horario comercial (horario de atención: lunes a viernes de 09:00 a 18:00 hs y sábados de 09:00 a 13:00 hs).
+    return `¡Hola! En este momento nuestro equipo de atención humana se encuentra fuera de horario comercial (horario de atención: lunes a viernes de 08:00 a 18:00 hs y sábados de 08:00 a 14:00 hs).
 
 ⚠️ IMPORTANTE: Por políticas de privacidad y mensajería de WhatsApp e Instagram, la ventana de conversación se cierra si transcurren más de 24 horas. Para que un asesor humano pueda responderle directamente, por favor vuelva a escribirnos ${nextBusinessDay}.
 
 ✉️ Si prefiere no aguardar, puede enviarnos su consulta detallada por correo a ${alternativeEmail} y le responderemos por esa vía a primera hora.
 
-Mientras tanto, yo sigo aquí a su completa disposición para ayudarle a consultar productos, precios en catálogo, disponibilidad de stock o sucursales abiertas.`;
+Mientras tanto, yo sigo aquí a su completa disposición para ayudarle a consultar productos, precios en catálogo, disponibilidad de stock o locales abiertos.`;
   }
 
   return `¡Hola! En este momento nuestro equipo de atención personalizada se encuentra fuera del horario comercial. Retomaremos la atención humana ${nextBusinessDay}.
@@ -200,7 +200,7 @@ Su consulta ha quedado registrada en nuestro sistema para que un asesor le respo
 
 ✉️ También puede escribirnos a ${alternativeEmail}.
 
-Mientras tanto, yo sigo disponible aquí en el chat para ayudarle a consultar artículos, precios en catálogo o datos de sucursales físicas.`;
+Mientras tanto, yo sigo disponible aquí en el chat para ayudarle a consultar artículos, precios en catálogo o datos de nuestros locales.`;
 }
 
 /**

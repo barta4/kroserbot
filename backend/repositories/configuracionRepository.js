@@ -3,7 +3,7 @@ const { encrypt, decrypt } = require('../utils/cryptoUtils');
 const logger = require('../config/logger');
 
 const DEFAULTS = Object.freeze({
-  system_prompt: 'Sos el asistente virtual de Kroser Uruguay. Tu objetivo es ayudar a los clientes a encontrar productos del catálogo, responder consultas sobre sucursales, precios y envíos, y asistir en la toma de pedidos.',
+  system_prompt: 'Sos el asistente virtual de Kroser Martínez, ferretería en La Unión, Montevideo (Av. 8 de Octubre 3452 y barraca 3451). Tu objetivo es ayudar a los clientes a encontrar productos del catálogo, responder consultas sobre locales, precios y envíos, y asistir en la toma de pedidos.',
   msg_pedido_pendiente: 'Tu pedido pasó a revisión humana, en breve te confirmamos.',
   msg_pedido_listo: '¡Tu pedido fue confirmado! Te contactamos para coordinar la entrega.',
   msg_pedido_rechazado: 'Lamentamos informarte que no pudimos procesar tu pedido. Un asesor te contactará.',
@@ -21,11 +21,11 @@ const DEFAULTS = Object.freeze({
   llm_fallback_provider: 'openai',
   llm_fallback_model: 'gpt-4o-mini',
   llm_fallback_base_url: '',
-  business_hours_weekday_start: '09:00',
+  business_hours_weekday_start: '08:00',
   business_hours_weekday_end: '18:00',
   business_hours_saturday_enabled: 'true',
-  business_hours_saturday_start: '09:00',
-  business_hours_saturday_end: '13:00',
+  business_hours_saturday_start: '08:00',
+  business_hours_saturday_end: '14:00',
   contact_alternative_email: 'atencion@kroser.com.uy',
   msg_fuera_de_horario: '',
   message_chunking_enabled: 'false',

@@ -511,7 +511,7 @@ function buildHeuristicFallback(userMessages = []) {
   } else if (hour >= 20 || hour < 6) {
     greeting = '¡Buenas noches!';
   }
-  return `${greeting} Bienvenido a Kroser Uruguay. ¿En qué producto o consulta le podemos colaborar hoy?`;
+  return `${greeting} Bienvenido a Kroser Martínez. ¿En qué producto o consulta le podemos colaborar hoy?`;
 }
 
 module.exports = {
@@ -643,7 +643,7 @@ module.exports = {
                 return `• *${p.nombre}* - ${formattedPrice} (SKU: ${p.sku})`;
               })
               .join('\n');
-            const synReply = `Contamos con las siguientes opciones disponibles en Kroser:\n\n${listText}\n\n¿Desea consultar stock en alguna sucursal específica o coordinar el retiro/envío?`;
+            const synReply = `Contamos con las siguientes opciones disponibles en Kroser:\n\n${listText}\n\n¿Desea consultar stock en algún local específico o coordinar el retiro/envío?`;
             return {
               reply: synReply,
               toolsUsed,
@@ -669,7 +669,7 @@ module.exports = {
               .slice(0, 4)
               .map((s) => `• *${s.nombre}* (${s.direccion || ''}, ${s.ciudad || s.departamento || ''}) - Tel: ${s.telefono || 'Central'}`)
               .join('\n');
-            const sucReply = `Nuestras principales sucursales a su disposición son:\n\n${listText}\n\n¿En cuál de ellas le gustaría realizar su retiro o visita?`;
+            const sucReply = `Nuestros locales a su disposición son:\n\n${listText}\n\n¿En cuál de ellos le gustaría realizar su retiro o visita?`;
             return {
               reply: sucReply,
               toolsUsed,
@@ -694,7 +694,7 @@ module.exports = {
         const pedidosConfig = await configuracionRepo.get('pedidos_enabled');
         if (pedidosConfig === 'false') {
           return {
-            reply: 'Por el momento la toma de pedidos por este canal de chat se encuentra temporalmente deshabilitada. Con gusto le brindamos información sobre productos, precios y sucursales, o puede adquirir sus artículos en nuestro sitio web oficial https://kroser.com.uy.',
+            reply: 'Por el momento la toma de pedidos por este canal de chat se encuentra temporalmente deshabilitada. Con gusto le brindamos información sobre productos, precios y locales, o puede adquirir sus artículos en nuestro sitio web oficial https://kroser.com.uy.',
             toolsUsed: [],
             createdOrder: null,
             rawReply: '',

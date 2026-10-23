@@ -11,8 +11,22 @@ module.exports = {
         locales = await localesRepo.getAll();
       } catch (_err) {
         locales = [
-          { id: 1, nombre: 'Kroser Portones', zona: 'Portones', direccion: 'Av. Italia 5775', telefono: '2601 0000', horario: '10:00 a 22:00' },
-          { id: 2, nombre: 'Kroser Centro', zona: 'Centro', direccion: 'Av. 18 de Julio 1234', telefono: '2900 1122', horario: '09:00 a 19:00' },
+          {
+            id: 1,
+            nombre: 'Kroser Martínez — Local 8 de Octubre 3452',
+            zona: 'La Unión, Montevideo',
+            direccion: 'Av. 8 de Octubre 3452',
+            telefono: '2508 3100 / 2509 7508',
+            horario: 'Lunes a Viernes 08:00 a 18:00 hs · Sábados 08:00 a 14:00 hs · Domingos cerrado',
+          },
+          {
+            id: 2,
+            nombre: 'Kroser Martínez — Barraca 8 de Octubre 3451',
+            zona: 'La Unión, Montevideo',
+            direccion: 'Av. 8 de Octubre 3451',
+            telefono: '2508 3100 / 2509 7508',
+            horario: 'Lunes a Viernes 08:00 a 18:00 hs · Sábados 08:00 a 14:00 hs · Domingos cerrado',
+          },
         ];
       }
       res.json(locales);

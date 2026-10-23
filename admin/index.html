@@ -55,7 +55,7 @@
               </button>
               <button class="dropdown-item-btn" id="nav-btn-locales" onclick="switchTab('locales', event)">
                 <span>🏪</span>
-                <span>Sucursales Kroser (50+)</span>
+                <span>Locales Kroser Martínez (2)</span>
               </button>
               <button class="dropdown-item-btn" id="nav-btn-zonas" onclick="switchTab('zonas', event)">
                 <span>🚚</span>
@@ -185,7 +185,7 @@
         <span>📦</span> <span>Catálogo (3.4k USD)</span>
       </button>
       <button class="mobile-nav-link" id="mob-btn-locales" onclick="switchTab('locales', event)">
-        <span>🏪</span> <span>Sucursales (50+)</span>
+        <span>🏪</span> <span>Locales (2)</span>
       </button>
       <button class="mobile-nav-link" id="mob-btn-zonas" onclick="switchTab('zonas', event)">
         <span>🚚</span> <span>Zonas de Envío</span>
@@ -291,10 +291,10 @@
           <span style="font-size:0.8rem; font-weight:700; color:var(--text-muted);">Pruebas Rápidas:</span>
           <button class="chip-btn" onclick="sendQuickPrompt('¿La placa de yeso estándar sirve para el baño?')">🛠️ Yeso para Baño</button>
           <button class="chip-btn" onclick="sendQuickPrompt('¿Qué pintura me recomiendan para pared con humedad y qué rodillo llevo?')">🎨 Pintura Humedad + Rodillo</button>
-          <button class="chip-btn" onclick="sendQuickPrompt('¿Dónde queda la sucursal de Pocitos y qué horario tienen?')">🏪 Sucursal Pocitos</button>
-          <button class="chip-btn" onclick="sendQuickPrompt('¿Cuánto cuesta el envío a Ciudad de la Costa o al Interior?')">🚚 Costos de Envío</button>
+          <button class="chip-btn" onclick="sendQuickPrompt('¿Dónde queda el local de Av. 8 de Octubre y qué horario tienen?')">🏪 Local 8 de Octubre</button>
+          <button class="chip-btn" onclick="sendQuickPrompt('¿Cuánto cuesta el envío a La Unión o al Interior?')">🚚 Costos de Envío</button>
           <button class="chip-btn" onclick="sendQuickPrompt('¿Qué tarjetas y medios de pago aceptan?')">💳 Medios de Pago</button>
-          <button class="chip-btn" onclick="sendQuickPrompt('Quiero comprar 2 taladros 21v para entregar en Pocitos')">🛒 Tomar Pedido</button>
+          <button class="chip-btn" onclick="sendQuickPrompt('Quiero comprar 2 taladros 21v para retirar en Av. 8 de Octubre')">🛒 Tomar Pedido</button>
         </div>
 
         <!-- Mobile Segmented Switch (Chat vs Telemetry) -->
@@ -321,7 +321,7 @@
 
             <div id="sim-messages-container" class="conversation-messages">
               <div class="chat-bubble-bot">
-                👋 ¡Hola! Soy el asesor virtual de <strong>Kroser Uruguay</strong>. Puede consultarme por artículos, precios en dólares (U$S), asesoramiento técnico, sucursales o costos de envío. ¿En qué le podemos ayudar hoy?
+                👋 ¡Hola! Soy el asesor virtual de <strong>Kroser Martínez</strong> (Av. 8 de Octubre 3452 y 3451, La Unión). Puede consultarme por artículos, precios, asesoramiento técnico, locales u horarios. ¿En qué le podemos ayudar hoy?
               </div>
             </div>
 
@@ -384,7 +384,7 @@
 
               <!-- Stores & Shipping -->
               <div class="prop-card">
-                <div class="prop-title">🏪 Sucursales & Envíos Inyectados</div>
+                <div class="prop-title">🏪 Locales & Envíos Inyectados</div>
                 <div id="insp-extra-info" style="color:var(--text-muted); font-size:0.8rem; margin-top:0.2rem;">
                   Sin información complementaria inyectada.
                 </div>
@@ -455,7 +455,7 @@
         <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap:1rem; margin-top:1rem;">
           <div>
             <label style="font-weight:700;">Lunes a Viernes — Hora Apertura</label>
-            <input type="time" id="bh-weekday-start" value="09:00" style="width:100%; padding:0.55rem; border-radius:4px; border:1px solid var(--border-subtle);">
+            <input type="time" id="bh-weekday-start" value="08:00" style="width:100%; padding:0.55rem; border-radius:4px; border:1px solid var(--border-subtle);">
           </div>
           <div>
             <label style="font-weight:700;">Lunes a Viernes — Hora Cierre</label>
@@ -471,11 +471,11 @@
           <div id="bh-sat-hours-group" style="display:flex; gap:0.5rem;">
             <div style="flex:1;">
               <label style="font-weight:700;">Sábado Desde</label>
-              <input type="time" id="bh-sat-start" value="09:00" style="width:100%; padding:0.55rem; border-radius:4px; border:1px solid var(--border-subtle);">
+              <input type="time" id="bh-sat-start" value="08:00" style="width:100%; padding:0.55rem; border-radius:4px; border:1px solid var(--border-subtle);">
             </div>
             <div style="flex:1;">
               <label style="font-weight:700;">Sábado Hasta</label>
-              <input type="time" id="bh-sat-end" value="13:00" style="width:100%; padding:0.55rem; border-radius:4px; border:1px solid var(--border-subtle);">
+              <input type="time" id="bh-sat-end" value="14:00" style="width:100%; padding:0.55rem; border-radius:4px; border:1px solid var(--border-subtle);">
             </div>
           </div>
         </div>
@@ -907,7 +907,7 @@
     <section id="tab-locales" class="tab-view-section">
       <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;">
         <div>
-          <h3>Sucursales y Locales Kroser (50+)</h3>
+          <h3>Locales Kroser Martínez (2)</h3>
           <p style="color:var(--text-muted); font-size:0.85rem;">Locales inyectados en las respuestas del Agente IA para consultas de ubicación y horarios.</p>
         </div>
         <button class="btn-action btn-success" onclick="openLocalModal()">➕ Agregar Sucursal</button>
@@ -1328,15 +1328,15 @@
       </div>
       <input type="hidden" id="local-id">
       <label>Nombre de Sucursal</label>
-      <input type="text" id="local-nombre" placeholder="Kroser Carrasco">
+      <input type="text" id="local-nombre" placeholder="Kroser Martínez — Local 8 de Octubre">
       <label>Departamento / Zona</label>
-      <input type="text" id="local-zona" placeholder="Montevideo - Carrasco">
+      <input type="text" id="local-zona" placeholder="La Unión, Montevideo">
       <label>Dirección</label>
-      <input type="text" id="local-direccion" placeholder="Av. Arocena 1580">
+      <input type="text" id="local-direccion" placeholder="Av. 8 de Octubre 3452">
       <label>Teléfono</label>
-      <input type="text" id="local-telefono" placeholder="2600 5566">
+      <input type="text" id="local-telefono" placeholder="2508 3100 / 2509 7508">
       <label>Horario de Atención</label>
-      <input type="text" id="local-horario" placeholder="Lunes a Sábados 10:00 a 20:00">
+      <input type="text" id="local-horario" placeholder="Lun a Vie 08:00 a 18:00 · Sáb 08:00 a 14:00 · Dom cerrado">
       <div style="margin-top:1.25rem;">
         <button class="btn-action btn-success" onclick="saveLocal()">💾 Guardar Sucursal</button>
       </div>

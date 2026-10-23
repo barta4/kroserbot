@@ -16,7 +16,7 @@ Migración del workflow n8n actual a una aplicación propia: scraper de catálog
 - [ ] Tabla `configuracion`: key/value → acá vive el `system_prompt` editable y reglas (envíos, crédito, mails de derivación)
 - [ ] Tabla `pedidos`: id, conversation_id, cliente (jsonb), items (jsonb), estado, created_at
 - [ ] Tabla `conversaciones` (opcional, log de mensajes por si quieren histórico fuera de Redis)
-- [ ] Tabla `locales`: nombre, zona/ciudad (Portones, Geant, Carrasco, Centro, Pocitos, Buceo, Colón, Cerro, Ciudad de la Costa, Maldonado, Pando, Las Piedras), dirección, teléfono, horario
+- [ ] Tabla `locales`: nombre, zona/ciudad (La Unión, Montevideo), dirección (Av. 8 de Octubre 3452 y barraca 3451), teléfono, horario
 - [ ] Índice vectorial (ivfflat o hnsw) sobre `productos.embedding`
 
 ## FASE 2 — Scraper Kroser (Fenicio)

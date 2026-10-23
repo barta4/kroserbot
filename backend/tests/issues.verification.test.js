@@ -157,7 +157,7 @@ describe('Verificación y no-regresión de los 25 problemas corregidos', () => {
       });
       expect(typeof fallback).toBe('string');
       // Debe contener el nombre de la empresa y saludo apropiado
-      expect(fallback).toContain('Kroser Uruguay');
+      expect(fallback).toContain('Kroser Martínez');
     });
   });
 

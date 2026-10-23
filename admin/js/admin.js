@@ -274,7 +274,7 @@
       if (container) {
         container.innerHTML = `
           <div class="chat-bubble-bot">
-            👋 ¡Hola! Soy el asesor virtual de <strong>Kroser Uruguay</strong>. Puede consultarme por artículos, precios en dólares (U$S), asesoramiento técnico, sucursales o costos de envío. ¿En qué le podemos ayudar hoy?
+            👋 ¡Hola! Soy el asesor virtual de <strong>Kroser Martínez</strong> (Av. 8 de Octubre 3452 y 3451, La Unión). Puede consultarme por artículos, precios, asesoramiento técnico, locales u horarios. ¿En qué le podemos ayudar hoy?
           </div>
         `;
       }
@@ -528,7 +528,7 @@
 
         // Business hours & out-of-hours (Meta 24h window)
         const elWStart = document.getElementById('bh-weekday-start');
-        if (elWStart) elWStart.value = cfg.business_hours_weekday_start || '09:00';
+        if (elWStart) elWStart.value = cfg.business_hours_weekday_start || '08:00';
         const elWEnd = document.getElementById('bh-weekday-end');
         if (elWEnd) elWEnd.value = cfg.business_hours_weekday_end || '18:00';
         const elSatEn = document.getElementById('bh-sat-enabled');
@@ -537,9 +537,9 @@
           toggleSaturdayHoursFields();
         }
         const elSatStart = document.getElementById('bh-sat-start');
-        if (elSatStart) elSatStart.value = cfg.business_hours_saturday_start || '09:00';
+        if (elSatStart) elSatStart.value = cfg.business_hours_saturday_start || '08:00';
         const elSatEnd = document.getElementById('bh-sat-end');
-        if (elSatEnd) elSatEnd.value = cfg.business_hours_saturday_end || '13:00';
+        if (elSatEnd) elSatEnd.value = cfg.business_hours_saturday_end || '14:00';
         const elAltMail = document.getElementById('bh-alt-email');
         if (elAltMail) elAltMail.value = cfg.contact_alternative_email || 'atencion@kroser.com.uy';
         const elCustomMsg = document.getElementById('bh-custom-msg');
