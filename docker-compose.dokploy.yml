@@ -35,7 +35,7 @@ services:
 
   # ─── Backend Node.js (API + RAG + Panel Admin) ────────────
   backend:
-    image: alfredobartaburu/kroserbot:v2.3.2
+    image: alfredobartaburu/kroserbot:v2.3.3
     container_name: kroserbot-backend
     restart: unless-stopped
     dns:
@@ -71,6 +71,16 @@ services:
       # Inteligencia Artificial
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - GEMINI_API_KEY=${GEMINI_API_KEY}
+      # Facturapp (catálogo)
+      - FACTURAPP_API_KEY=${FACTURAPP_API_KEY}
+      - FACTURAPP_API_URL=${FACTURAPP_API_URL:-https://mcp.facturapp.com.uy}
+      - FACTURAPP_SYNC_ENABLED=${FACTURAPP_SYNC_ENABLED:-false}
+      - FACTURAPP_SYNC_HOUR=${FACTURAPP_SYNC_HOUR:-4}
+      - FACTURAPP_SYNC_MINUTE=${FACTURAPP_SYNC_MINUTE:-0}
+      - FACTURAPP_SYNC_RESERVE_CREDITS=${FACTURAPP_SYNC_RESERVE_CREDITS:-5}
+      - FACTURAPP_SYNC_MAX_PAGES=${FACTURAPP_SYNC_MAX_PAGES:-40}
+      - FACTURAPP_EXPECTED_ARTICLES=${FACTURAPP_EXPECTED_ARTICLES}
+      - FACTURAPP_SYNC_EMBEDDINGS=${FACTURAPP_SYNC_EMBEDDINGS:-true}
       # Chatwoot / Uruchat
       - CHATWOOT_API_URL=${CHATWOOT_API_URL:-https://omnicanal.kroser.uy}
       - CHATWOOT_API_TOKEN=${CHATWOOT_API_TOKEN}

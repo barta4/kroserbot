@@ -70,10 +70,24 @@ app.use(errorHandler);
 if (require.main === module) {
   const server = app.listen(PORT, () => {
     logger.info(`[Bot Kroser Backend] Server running on port ${PORT} (env: ${process.env.NODE_ENV || 'development'})`);
+
+    try {
+      const { startFacturappScheduler } = require('./services/facturapp/facturappScheduler');
+      global.__facturappScheduler = startFacturappScheduler();
+    } catch (schedulerErr) {
+      logger.error('[Facturapp] No se pudo iniciar el scheduler', { error: schedulerErr.message });
+    }
   });
 
   const shutdown = async (signal) => {
     logger.info(`[Shutdown] Received ${signal}. Starting graceful shutdown...`);
+    try {
+      const { stopFacturappScheduler } = require('./services/facturapp/facturappScheduler');
+      stopFacturappScheduler(global.__facturappScheduler);
+      global.__facturappScheduler = null;
+    } catch (_schedulerErr) {
+      // ignore
+    }
     server.close(async () => {
       try {
         const db = require('./config/db');

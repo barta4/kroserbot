@@ -1,4 +1,4 @@
-# Cotizador Kroser Martínez (Kroserbot v2.3.2) — RAG + Pedidos + Scraper + Panel Admin
+# Cotizador Kroser Martínez (Kroserbot v2.3.3) — RAG + Pedidos + Scraper + Panel Admin
 
 Sistema integral de atención inteligente, recomendación técnica, búsqueda híbrida de catálogo (Full-Text + Vectorial RAG), cotización web y módulo de gestión de pedidos para **Kroser Uruguay**.
 
@@ -63,12 +63,26 @@ Con el backend levantado, el cotizador público queda disponible en `http://loca
 
 Las cuentas de prueba (`*@cotibot.uy`) y el autocompletado de login **solo se muestran en local o agregando `?demo=1`**, para no exponer credenciales compartidas en producción.
 
+### 7. Sincronización del catálogo Facturapp
+
+La integración mantiene el catálogo local actualizado con **una sincronización incremental diaria**, protegida por un presupuesto de créditos y con reanudación automática. El análisis completo, la comparación de costos (una vs. dos sincronizaciones) y las instrucciones de operación están en [`FACTURAPP_SYNC.md`](FACTURAPP_SYNC.md).
+
+```bash
+# Estado, saldo y últimas corridas
+curl -b admin_cookie.txt http://localhost:3000/api/facturapp/status
+
+# Estimación sin consumir créditos
+curl -b admin_cookie.txt "http://localhost:3000/api/facturapp/estimate?mode=initial"
+```
+
+> La sincronización inicial **no se ejecuta automáticamente**: requiere `confirmInitial=true` y valida el saldo antes de consumir créditos.
+
 ---
 
 ## 🐳 Docker Hub & Despliegue en Producción
 
 ### Imágenes Oficiales en Docker Hub (`alfredobartaburu/kroserbot`):
-- `alfredobartaburu/kroserbot:v2.3.2`
+- `alfredobartaburu/kroserbot:v2.3.3`
 - `alfredobartaburu/kroserbot:latest`
 
 ### Despliegue en Dokploy / Easypanel / Servidores Linux:
@@ -82,7 +96,7 @@ docker compose -f docker-compose.dokploy.yml up -d
 ## 🧪 Pruebas Automatizadas
 
 ```bash
-# Ejecutar suite completa de backend (30 suites, 403 tests)
+# Ejecutar suite completa de backend (31 suites, 422 tests)
 npm test
 
 # Ejecutar tests del scraper en Python (22 tests)
@@ -106,6 +120,7 @@ kroserbot/
 │   │   ├── /chatwoot         # API Uruchat, notas privadas y auto-resolve
 │   │   ├── /webhook          # Webhooks, debounce, intent detector y handlers modulares
 │   │   ├── /scraper          # Sincronización multi-proveedor y cálculo de precios
+│   │   ├── /facturapp        # Catálogo Facturapp: sync, presupuesto y scheduler
 │   │   └── /pedidos          # Lógica de pedidos y desambiguación de ferretería
 │   └── /routes               # Rutas API REST
 ├── /admin                    # Panel administrativo (Vanilla HTML5 / CSS3 / ES6)
@@ -116,6 +131,7 @@ kroserbot/
 ├── docker-compose.yml        # Servicios PostgreSQL (pgvector) + Redis
 ├── docker-compose.dokploy.yml# Despliegue en Dokploy con Traefik
 ├── CHANGELOG.md              # Registro histórico de versiones y cambios
+├── FACTURAPP_SYNC.md         # Análisis y operación de la sincronización Facturapp
 └── AGENTS.md                 # Guía arquitectónica y mandamientos para agentes
 ```
 

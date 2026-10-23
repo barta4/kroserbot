@@ -22,11 +22,13 @@ const cotibotRoutes = require('./cotibotRoutes');
 const clientesAdminRoutes = require('./clientesAdminRoutes');
 const proveedoresScraperRoutes = require('./proveedoresScraperRoutes');
 const promocionesRoutes = require('./promocionesRoutes');
+const facturappRoutes = require('./facturappRoutes');
 
 router.use('/', healthRoutes);
 router.use('/auth/cliente', clienteAuthRoutes);
 router.use('/cotibot', cotibotRoutes);
 router.use('/promociones', promocionesRoutes);
+router.use('/facturapp', facturappRoutes);
 router.use('/clientes', clientesAdminRoutes);
 router.use('/proveedores-scraper', proveedoresScraperRoutes);
 router.use('/auth', authRoutes);

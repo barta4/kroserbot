@@ -3,6 +3,26 @@
 Todos los cambios notables en este proyecto están documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/), y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.4.html).
 
+## [2.3.3] - 2026-10-23
+
+### 🚀 Nuevas Funcionalidades
+* **Sincronización de catálogo Facturapp**: integración con la API MCP (`articulos/listar`) mediante `facturapp_id` como clave estable de sincronización.
+* **Sincronización inicial controlada**: cálculo de costo (`ceil(N/200)+1`), confirmación explícita y corte automático antes de agotar los créditos.
+* **Incremental diaria**: `modificadosDesde = última sincronización exitosa - 1 día`, paginación por `siguienteDesdeId` y upsert idempotente.
+* **Reanudación**: estado persistido por página (`pending_desde_id`), transacción por lote y actualización de `last_success_at` solo al completar.
+* **Scheduler diario**: ejecución a las 04:00 hora Uruguay (`FACTURAPP_SYNC_ENABLED`), sin polling ni corridas duplicadas.
+* **Panel de control por API**: `status`, `estimate` (sin costo), `sync` manual y `runs` con auditoría de créditos y `requestId`.
+* **Preservación de datos**: `COALESCE` para no sobrescribir con nulos, baja por `activo:false` → `discontinuado`, y nunca se eliminan productos por ausencia en un incremental.
+
+### 🛡️ Seguridad y Calidad
+* Clave exclusivamente desde `FACTURAPP_API_KEY`, solo en backend y nunca en logs.
+* Reintentos únicamente para 429/500/503; sin reintentos en 401/403/400/402.
+* Lock Redis, detección de corridas stale y una sola solicitud activa por vez.
+* 19 pruebas nuevas: páginas vacías, múltiples páginas, duplicados, errores, presupuesto y reanudación.
+* Suite completa: **31 suites / 422 tests** en verde.
+
+---
+
 ## [2.3.2] - 2026-10-23
 
 ### 🚀 Nuevas Funcionalidades

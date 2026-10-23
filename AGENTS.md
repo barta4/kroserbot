@@ -1,6 +1,6 @@
 # Guía de Contexto y Reglas de Desarrollo para Agentes de IA — Kroserbot
 
-Bienvenido al repositorio de **Kroserbot** (Versión actual: **v2.3.2**), nombre técnico del **Cotizador Kroser Martínez**, canal web público desarrollado para **Kroser Uruguay**.  
+Bienvenido al repositorio de **Kroserbot** (Versión actual: **v2.3.3**), nombre técnico del **Cotizador Kroser Martínez**, canal web público desarrollado para **Kroser Uruguay**.  
 Este documento define la arquitectura general, las reglas de oro del negocio, los patrones de código obligatorios y los flujos de prueba y despliegue que cualquier agente de IA o desarrollador humano debe respetar al modificar este codebase.
 
 ---
@@ -22,6 +22,7 @@ Kroserbot es la plataforma omnicanal de atención inteligente, recomendación t�
 | **Panel de Administración** | `admin/` | Vanilla HTML5 / CSS3 / ES6 | Tablero operativo, visor de pedidos, gestión de business hours, simulador RAG y control de scraper. |
 | **Scraper de Catálogo** | `scraper/` | Python 3.10 + BeautifulSoup4 + Async | Extracción automatizada desde `kroser.com.uy`, normalización de categorías e indexación de embeddings. |
 | **Scraper Multi-Proveedor** | `scraequus/` + `backend/services/scraper/` | TypeScript + Fastify | Ingesta de proveedores externos (Equus) con margen, IVA y prefijo SKU configurables. |
+| **Catálogo Facturapp** | `backend/services/facturapp/` | Node.js + API MCP | Sincronización inicial e incremental por `facturapp_id`, con presupuesto de créditos, reanudación y scheduler diario. |
 
 ---
 
@@ -90,7 +91,7 @@ El servicio [`backend/services/llm/llmService.js`](backend/services/llm/llmServi
 Antes de dar por finalizada cualquier tarea o cambio, **todos** los tests deben pasar en verde:
 
 ```bash
-# Ejecutar suite completa de backend (30 suites, 403 tests)
+# Ejecutar suite completa de backend (31 suites, 422 tests)
 npm test
 
 # Ejecutar tests del Scraper en Python (22 tests)
@@ -119,10 +120,10 @@ npx jest backend/tests/llm_failsafe.test.js
 * **Usuario Docker Hub**: `alfredobartaburu`
 * **Imagen Backend**: `alfredobartaburu/kroserbot:<VERSION>` y `alfredobartaburu/kroserbot:latest`
 * **Arquitectura obligatoria**: `--platform linux/amd64`
-* **Regla de Etiquetado Incremental**: Dokploy y Easypanel cachean imágenes localmente en el servidor. **Siempre incrementa la versión semántica** (ej. `v2.3.1` ➔ `v2.3.2`) al compilar nuevas imágenes.
+* **Regla de Etiquetado Incremental**: Dokploy y Easypanel cachean imágenes localmente en el servidor. **Siempre incrementa la versión semántica** (ej. `v2.3.2` ➔ `v2.3.3`) al compilar nuevas imágenes.
 * **Comando de Build y Push**:
   ```bash
-  docker buildx build --platform linux/amd64 -t alfredobartaburu/kroserbot:v2.3.2 -t alfredobartaburu/kroserbot:latest . --push
+  docker buildx build --platform linux/amd64 -t alfredobartaburu/kroserbot:v2.3.3 -t alfredobartaburu/kroserbot:latest . --push
   ```
 * **Git**: Sincronizar siempre a la rama `main` en `https://github.com/barta4/kroserbot.git`.
 * **Desarrollo local**: Mantener bind-mounts y claves dummy en `docker-compose.override.yml` (ignorado en `.gitignore` para no sobreescribir producción).
@@ -156,7 +157,7 @@ kroserbot/
 │   │   ├── media/                # Audio transcribers y gestión de adjuntos
 │   │   ├── pedidos/              # Lógica de pedidos y tracking
 │   │   └── webhook/              # Webhook orchestrator, lifecycleHandler, mediaHandler, escalationHandler
-│   ├── tests/                    # Suites de Jest (30 suites, 403 tests)
+│   ├── tests/                    # Suites de Jest (31 suites, 422 tests)
 │   └── utils/                    # Criptografía, negocio, cross-selling, normalizadores
 ├── db/                           # Scripts de migración y backups
 │   ├── migrations/               # Migraciones SQL incrementales
@@ -170,10 +171,11 @@ kroserbot/
 ├── docker-compose.dokploy.yml    # Configuración de despliegue Dokploy con Traefik
 ├── docker-compose.override.yml   # Overrides para desarrollo local (ignorado en Git)
 ├── Dockerfile                    # Multi-stage build no-root optimizado (Node 20 Alpine)
-├── package.json                  # Dependencias y scripts del proyecto (v2.3.2)
+├── FACTURAPP_SYNC.md             # Análisis, estrategia y operación de la sync Facturapp
+├── package.json                  # Dependencias y scripts del proyecto (v2.3.3)
 └── README.md                     # Documentación de inicio rápido
 ```
 
 ---
 
-*Última actualización de contexto: Release v2.3.2 — Cotizador Kroser Martínez (Canal web con login de clientes y descuentos dinámicos, promociones, multi-scraper de proveedores, hardening de seguridad H1–H10 / S1–S6, modularización del webhook y del panel admin).*
+*Última actualización de contexto: Release v2.3.3 — Cotizador Kroser Martínez + sincronización de catálogo Facturapp (incremental diaria, presupuesto de créditos, reanudación y scheduler).*
