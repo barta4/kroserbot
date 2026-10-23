@@ -11,6 +11,12 @@
 
 const { normalizeQuery, stripStopwords } = require('../../utils/queryAnalyzer');
 
+function hasWordMatch(text, token) {
+  if (!text || !token) return false;
+  const escaped = token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return new RegExp(`(^|\\s|[^a-zA-Z0-9áéíóúüñ])${escaped}($|\\s|[^a-zA-Z0-9áéíóúüñ])`, 'i').test(text);
+}
+
 // ──────────────────────────────────────────── Weight Configuration
 const WEIGHTS = {
   // Exact match
@@ -97,20 +103,46 @@ function scoreProduct(product, normalizedQuery, attrs = {}, options = {}) {
 
   // ── 2. Text Score
   if (normalizedQuery) {
+    const isSpecOrModifier = (t) =>
+      /^\d+([x/]\d+)?(mm|cm|m|kg|w|v|l|bar|hp)?$/i.test(t) ||
+      ['redonda', 'redondo', 'plana', 'plano', 'cuadrada', 'cuadrado', 'chico', 'chica', 'grande', 'largo', 'corta', 'corto', 'mini', 'fino', 'fina', 'grueso', 'gruesa'].includes(t.toLowerCase());
+
+    const targetQuery = cleanQuery || normalizedQuery;
+    const queryTokens = targetQuery.split(/\s+/).filter((t) => t.length >= 2);
+    const substantiveQueryTokens = queryTokens.filter((t) => !isSpecOrModifier(t));
+
     // Full name match (using either raw normalized query or substantive query without stopwords)
     if (matchesFull(nombre, normalizedQuery) || (cleanQuery && matchesFull(nombre, cleanQuery))) {
       breakdown.text += WEIGHTS.TEXT_NOMBRE_FULL;
     } else {
-      // Token-level matching (isolated to substantive query tokens)
-      const targetQuery = cleanQuery || normalizedQuery;
-      const queryTokens = targetQuery.split(/\s+/).filter((t) => t.length >= 2);
       let tokenMatchCount = 0;
+      let substantiveMatchCount = 0;
+
       for (const token of queryTokens) {
-        if (matchesToken(nombre, token) || matchesToken(descripcion, token)) {
+        const matchesName = hasWordMatch(nombre, token);
+        const matchesDesc = hasWordMatch(descripcion, token);
+        if (matchesName || matchesDesc) {
           tokenMatchCount++;
+          if (!isSpecOrModifier(token)) {
+            substantiveMatchCount++;
+          }
         }
       }
-      if (queryTokens.length > 0) {
+
+      const hasSynonymMatch = Boolean(
+        attrs.synonyms &&
+        attrs.synonyms.some((syn) => {
+          const synPattern = new RegExp(`(^|\\s|[^a-zA-Z0-9áéíóúüñ])${syn}($|\\s|[^a-zA-Z0-9áéíóúüñ])`, 'i');
+          return synPattern.test(nombre) || synPattern.test(categoria) || synPattern.test(descripcion);
+        })
+      );
+
+      // If query had substantive noun/product tokens (e.g. "varilla"), but candidate product
+      // only matched numbers (e.g. "16") or generic shape adjectives ("redonda"): disqualify!
+      // (Unless a recognized Uruguayan synonym matched the product, e.g. "medio tanque" -> "parrilla")
+      if (substantiveQueryTokens.length > 0 && substantiveMatchCount === 0 && !hasSynonymMatch) {
+        breakdown.penalty += -100;
+      } else if (queryTokens.length > 0) {
         const matchRatio = tokenMatchCount / queryTokens.length;
         if (matchRatio >= 0.95) {
           // All search tokens found in product name/description!
@@ -297,15 +329,20 @@ function scoreProduct(product, normalizedQuery, attrs = {}, options = {}) {
     }
   }
 
-  // ── Substantive match check: business score is a tiebreaker only, cannot make an irrelevant item match
-  const hasSubstantiveMatch = breakdown.exact > 0 || breakdown.text > 0 || breakdown.vector > 0 || breakdown.attribute > 0;
+  // Business relevance (tiebreakers only, cannot override lack of text/vector relevance)
+  const hasRelevance = breakdown.exact > 0 || breakdown.text > 0 || breakdown.vector > 0;
+  if (!hasRelevance) {
+    breakdown.business = 0;
+  }
 
-
-
-  // ── Total: business bonus only applies if there is a substantive match; otherwise score retains penalty (e.g. < 0) or 0
-  const totalScore = hasSubstantiveMatch
-    ? (breakdown.exact + breakdown.text + breakdown.vector + breakdown.attribute + breakdown.business + breakdown.penalty)
-    : breakdown.penalty;
+  // ── Total
+  const totalScore =
+    breakdown.exact +
+    breakdown.text +
+    breakdown.vector +
+    breakdown.attribute +
+    breakdown.business +
+    breakdown.penalty;
 
   return {
     ...product,

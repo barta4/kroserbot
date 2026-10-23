@@ -3,6 +3,22 @@
 Todos los cambios notables en este proyecto están documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/), y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.4.html).
 
+## [2.3.6] - 2026-10-23
+
+### 🔀 Integración de `origin/main` (v2.3.0–v2.3.2)
+* **Clasificador de búsqueda LLM** (`queryClassifier.js`) con modismos uruguayos y búsqueda multi-query.
+* **Anti-falsos positivos** en catálogo y re-ranking, con fórmula de “no encontrado” y derivación a local.
+* **Scraper v1.5**: SKUs alfanuméricos, detección de 404/410, precios de oferta y corrección del comando spawn.
+* **Locales Kroser Martínez**: se conservan los 2 puntos de Av. 8 de Octubre, teléfonos, horarios, landing, prompt y migración de la v2.3.5.
+* **Facturapp y landing modernizada** conservados e integrados con los cambios remotos.
+
+### ✅ Verificación
+* Suite completa: **33 suites / 442 tests** en verde.
+* Pytest: **24 tests** en verde.
+* Migraciones validadas.
+
+---
+
 ## [2.3.5] - 2026-10-23
 
 ### 📍 Locales, teléfonos y horarios oficiales — Kroser Martínez

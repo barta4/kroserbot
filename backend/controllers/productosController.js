@@ -10,7 +10,7 @@ function sanitizeProductForPublic(product, isStaff = false) {
 module.exports = {
   async listProductos(req, res, next) {
     try {
-      const { search, categoria, marca, fuente_origen, promo_id, limit = 50, offset = 0, page } = req.query;
+      const { search, categoria, marca, fuente_origen, promo_id, limit = 50, offset = 0, page, include_discontinued } = req.query;
       const parsedLimit = Math.max(1, parseInt(limit, 10) || 50);
       let parsedOffset = Math.max(0, parseInt(offset, 10) || 0);
       if (page) {
@@ -24,6 +24,7 @@ module.exports = {
         marca,
         fuente_origen,
         promo_id,
+        include_discontinued: include_discontinued === 'true',
         limit: parsedLimit,
         offset: parsedOffset,
       });

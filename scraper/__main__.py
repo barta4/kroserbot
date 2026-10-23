@@ -64,6 +64,7 @@ def main() -> None:
     p_run.add_argument("--fresh", action="store_true", help="Ignorar checkpoint y arrancar de cero")
     p_run.add_argument("--limit", type=int, default=0, help="Procesar solo N productos (tests/demo)")
     p_run.add_argument("--no-sleep", action="store_true", help="Sin delays (tests/demo)")
+    p_run.add_argument("--delete-missing", action="store_true", help="Eliminar físicamente de la base los productos que ya no existen")
     p_run.add_argument("--verbose", action="store_true", help="Log en consola además de JSON")
     p_run.set_defaults(handler=cmd_run)
 

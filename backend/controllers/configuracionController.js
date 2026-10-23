@@ -49,6 +49,8 @@ const ALLOWED_EXACT_KEYS = new Set([
   'equus_margen_porcentaje',
   'equus_costo_incluye_iva',
   'equus_aplicar_iva_venta',
+  'classifier_enabled',
+  'classifier_timeout_ms',
 ]);
 
 const ALLOWED_PREFIXES = ['msg_', 'assignee_id_'];

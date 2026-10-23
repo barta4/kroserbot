@@ -8,9 +8,9 @@ const generateEmbeddingsService = require('../services/embeddings/generateEmbedd
 function triggerScraperProcess() {
   try {
     const pythonCmd = process.platform === 'win32' ? 'python' : 'python3';
-    const scraperProcess = spawn(pythonCmd, ['-m', 'scraper', '--resume'], {
+    const scraperProcess = spawn(pythonCmd, ['-m', 'scraper', 'run', '--resume'], {
       detached: true,
-      stdio: 'ignore',
+      stdio: ['ignore', 'pipe', 'pipe'],
       cwd: path.join(__dirname, '../../'),
     });
 
@@ -19,6 +19,12 @@ function triggerScraperProcess() {
         error: err.message,
       });
     });
+
+    if (scraperProcess.stderr) {
+      scraperProcess.stderr.on('data', (data) => {
+        logger.error(`[Scraper CLI stderr] ${data.toString().trim()}`);
+      });
+    }
 
     if (process.env.NODE_ENV !== 'test') {
       scraperProcess.on('close', async (code) => {
@@ -48,10 +54,17 @@ module.exports = {
         "SELECT * FROM scraper_runs WHERE status = 'running' ORDER BY started_at DESC LIMIT 1"
       );
       if (activeRes.rows.length > 0) {
-        return res.status(400).json({
-          error: 'Un scraping ya se encuentra en ejecución',
-          run: activeRes.rows[0],
-        });
+        const activeRun = activeRes.rows[0];
+        const ageHours = (Date.now() - new Date(activeRun.started_at).getTime()) / (1000 * 60 * 60);
+        if (ageHours > 4) {
+          logger.warn(`Marking stale running scraper run #${activeRun.id} as failed (started ${ageHours.toFixed(1)}h ago)`);
+          await db.query("UPDATE scraper_runs SET status = 'failed', finished_at = NOW() WHERE id = $1", [activeRun.id]);
+        } else {
+          return res.status(400).json({
+            error: 'Un scraping ya se encuentra en ejecución',
+            run: activeRun,
+          });
+        }
       }
 
       const insertRes = await db.query(

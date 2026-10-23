@@ -237,6 +237,30 @@ describe('queryAnalyzer', () => {
       expect(ranked[1]._score).toBeLessThan(0);
       expect(ranked[2]._score).toBeLessThan(0);
     });
+
+    it('should reject candidates that only match isolated numbers (e.g. 16) when substantive noun (varilla) is missing', () => {
+      const items = [
+        { sku: '86620165', nombre: 'BANDEJA DE PINTURA DE 320 X 160 X 60 MM HARDEN ++', categoria: 'Pintura', stock_status: 'in_stock', precio: '1.41' },
+        { sku: '86625205', nombre: 'O RING 16 PZAS DE 25 X 3.5 MM HARDEN ++', categoria: 'Ferreteria', stock_status: 'in_stock', precio: '1.42' },
+        { sku: '86620175', nombre: 'REPUESTO RODILLO POLIESTER 16MM DE 9 HARDEN ++', categoria: 'Pintura', stock_status: 'in_stock', precio: '1.63' },
+        { sku: '86613016', nombre: 'MECHA PALETA MADERA 16MM PRO HARDEN ++', categoria: 'Herramientas', stock_status: 'in_stock', precio: '1.87' },
+      ];
+      const ranked = rerank(items, 'varilla de 16', {});
+      for (const item of ranked) {
+        expect(item._score).toBeLessThanOrEqual(0);
+      }
+    });
+
+    it('should reject candidates that only match isolated shape adjectives (e.g. redonda) or partial compound words (e.g. cortahierros for hierro)', () => {
+      const items = [
+        { sku: '86620226', nombre: 'CUCHARA ALBAÑIL 6 PUNTA REDONDA PRO HARDEN ++', categoria: 'Herramientas', stock_status: 'in_stock', precio: '3.46' },
+        { sku: '82016306', nombre: 'CORTAHIERROS STANLEY CRV 1/4 X 13CM', categoria: 'Herramientas', stock_status: 'in_stock', precio: '257' },
+      ];
+      const ranked = rerank(items, 'varilla redonda de hierro', {});
+      for (const item of ranked) {
+        expect(item._score).toBeLessThanOrEqual(0);
+      }
+    });
   });
 
   // ─────────────────────────────────────── extractEnrichedProductQuery

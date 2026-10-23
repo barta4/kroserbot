@@ -278,10 +278,17 @@ async function callGeminiWithTools({
     },
   };
 
-  const res2 = await postWithRetry(url, round2Body, { headers: { 'Content-Type': 'application/json' } });
-  const candidate2 = res2.data?.candidates?.[0];
-  const parts2 = candidate2?.content?.parts || [];
-  const finalReplyText = parts2.find((p) => p.text)?.text || '';
+  let finalReplyText = '';
+  try {
+    const res2 = await postWithRetry(url, round2Body, { headers: { 'Content-Type': 'application/json' } });
+    const candidate2 = res2.data?.candidates?.[0];
+    const parts2 = candidate2?.content?.parts || [];
+    finalReplyText = parts2.find((p) => p.text)?.text || '';
+  } catch (err2) {
+    logger.warn('Gemini round 2 with tools failed, preserving executed tools for heuristic synthesis', {
+      error: err2.message,
+    });
+  }
 
   return {
     text: finalReplyText,
@@ -397,7 +404,9 @@ async function callOpenAIWithTools({
       const choice2Fallback = res2Fallback.data?.choices?.[0];
       finalReplyText = choice2Fallback?.message?.content || '';
     } catch (_fallbackErr) {
-      throw err2;
+      logger.warn('LLM round 2 fallback without tools also failed, preserving executed tools for heuristic synthesis', {
+        error: _fallbackErr.message,
+      });
     }
   }
 
@@ -636,14 +645,9 @@ module.exports = {
         if (prodTool && prodTool.result) {
           const prods = prodTool.result.productos || [];
           if (prods.length > 0) {
-            const listText = prods
-              .slice(0, 5)
-              .map((p) => {
-                const formattedPrice = p.precio ? (String(p.precio).startsWith('$') || String(p.precio).startsWith('U$S') ? p.precio : `${p.moneda || '$'} ${p.precio}`) : 'Consultar';
-                return `• *${p.nombre}* - ${formattedPrice} (SKU: ${p.sku})`;
-              })
-              .join('\n');
-            const synReply = `Contamos con las siguientes opciones disponibles en Kroser:\n\n${listText}\n\n¿Desea consultar stock en algún local específico o coordinar el retiro/envío?`;
+            const p = prods[0];
+            const formattedPrice = p.precio ? (String(p.precio).startsWith('$') || String(p.precio).startsWith('U$S') ? p.precio : `${p.moneda || '$'} ${p.precio}`) : 'precio a consultar';
+            const synReply = `Hola, tenemos ${p.nombre} a ${formattedPrice}. ¿Le sirve esta opción?`;
             return {
               reply: synReply,
               toolsUsed,
@@ -651,7 +655,7 @@ module.exports = {
               rawReply: synReply,
             };
           } else {
-            const noStockReply = 'No encontramos artículos disponibles con esa descripción exacta en el catálogo en este momento. ¿Desea consultar por otra marca, modelo o categoría de ferretería?';
+            const noStockReply = 'Hola, no tenemos en el catálogo. Si desea, páseme su ubicación y le envío los datos de nuestros locales.';
             return {
               reply: noStockReply,
               toolsUsed,
@@ -667,7 +671,7 @@ module.exports = {
           if (sucs.length > 0) {
             const listText = sucs
               .slice(0, 4)
-              .map((s) => `• *${s.nombre}* (${s.direccion || ''}, ${s.ciudad || s.departamento || ''}) - Tel: ${s.telefono || 'Central'}`)
+              .map((s) => `• *${s.nombre}* (${s.direccion || ''}${s.zona ? `, ${s.zona}` : ''}) - Tel: ${s.telefono || '2508 3100'}`)
               .join('\n');
             const sucReply = `Nuestros locales a su disposición son:\n\n${listText}\n\n¿En cuál de ellos le gustaría realizar su retiro o visita?`;
             return {

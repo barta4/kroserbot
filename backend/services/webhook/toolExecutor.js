@@ -7,6 +7,7 @@ const configuracionRepo = require('../../repositories/configuracionRepository');
 const orderTrackingService = require('../pedidos/orderTrackingService');
 const emailService = require('../email/emailService');
 const searchService = require('../search/searchService');
+const { classifyQuery } = require('../search/queryClassifier');
 const logger = require('../../config/logger');
 
 
@@ -165,7 +166,17 @@ async function executeBuscarProductos({ consulta = '' }, context = {}) {
   const rawQuery = (consulta || '').trim();
   const lastUserMsg = context?.lastUserMessage || '';
   const enrichedQuery = extractEnrichedProductQuery(rawQuery, lastUserMsg);
-  const effectiveQuery = (enrichedQuery || rawQuery || '').trim();
+
+  // Agente clasificador (LLM): interpreta mensajes coloquiales / modismos uruguayos.
+  // Devuelve null ante cualquier fallo -> se usa el clasificador por reglas.
+  let classification = null;
+  try {
+    classification = await classifyQuery(lastUserMsg || rawQuery, { context: context?.recentContext });
+  } catch (cErr) {
+    logger.warn('executeBuscarProductos: classifier error', { error: cErr.message });
+  }
+
+  const effectiveQuery = ((classification && classification.queries[0]) || enrichedQuery || rawQuery || '').trim();
 
   if (!effectiveQuery) {
     return {
@@ -196,17 +207,48 @@ async function executeBuscarProductos({ consulta = '' }, context = {}) {
 
   // 1. Hybrid search (exact + textual + vector with re-ranking)
   try {
-    productos = await searchService.hybridSearch(targetSearch, { limit: 5 });
-    // Si la búsqueda con targetSearch dio 0, probamos con effectiveQuery o rawQuery
-    if (productos.length === 0 && targetSearch !== effectiveQuery) {
-      productos = await searchService.hybridSearch(effectiveQuery, { limit: 5 });
-    }
-    if (productos.length === 0 && rawQuery && rawQuery !== effectiveQuery && rawQuery !== targetSearch) {
-      logger.info('executeBuscarProductos: enriched query found 0, falling back to rawQuery', {
-        effectiveQuery,
-        rawQuery,
+    const queries = [];
+    const pushQuery = (q) => {
+      const v = (q || '').trim();
+      if (v && !queries.includes(v)) queries.push(v);
+    };
+    if (classification) classification.queries.forEach(pushQuery);
+    // Prioridad al término técnico traducido (rol Traductor Técnico)
+    pushQuery(targetSearch);
+    pushQuery(enrichedQuery);
+    pushQuery(rawQuery);
+
+    if (classification && queries.length > 1) {
+      // Multi-query: se ejecutan en paralelo y se fusionan por SKU respetando prioridad
+      const resultsPerQuery = await Promise.all(
+        queries.slice(0, 5).map((q) => searchService.hybridSearch(q, { limit: 5 }).catch(() => []))
+      );
+      const seen = new Set();
+      for (const list of resultsPerQuery) {
+        for (const p of list) {
+          if (p.sku && !seen.has(p.sku)) {
+            seen.add(p.sku);
+            productos.push(p);
+          }
+        }
+      }
+      productos = productos.slice(0, 5);
+      logger.info('executeBuscarProductos: classifier multi-query search', {
+        original: lastUserMsg || rawQuery,
+        queries,
+        found: productos.length,
       });
-      productos = await searchService.hybridSearch(rawQuery, { limit: 5 });
+    } else {
+      const primaryQuery = targetSearch || effectiveQuery;
+      productos = await searchService.hybridSearch(primaryQuery, { limit: 5 });
+      // If the technical/enriched query yielded 0 results, fall back to the LLM's original rawQuery
+      if (productos.length === 0 && rawQuery && rawQuery !== primaryQuery && rawQuery !== effectiveQuery) {
+        logger.info('executeBuscarProductos: enriched query found 0, falling back to rawQuery', {
+          primaryQuery,
+          rawQuery,
+        });
+        productos = await searchService.hybridSearch(rawQuery, { limit: 5 });
+      }
     }
   } catch (pErr) {
     logger.error('Error in hybrid search tool', { error: pErr.message });

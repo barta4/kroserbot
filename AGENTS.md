@@ -1,6 +1,6 @@
 # Guía de Contexto y Reglas de Desarrollo para Agentes de IA — Kroserbot
 
-Bienvenido al repositorio de **Kroserbot** (Versión actual: **v2.3.5**), nombre técnico del **Cotizador Kroser Martínez**, canal web público desarrollado para **Kroser Martínez** (Kroser Uruguay).  
+Bienvenido al repositorio de **Kroserbot** (Versión actual: **v2.3.6**), nombre técnico del **Cotizador Kroser Martínez**, canal web público desarrollado para **Kroser Martínez** (Kroser Uruguay).  
 Este documento define la arquitectura general, las reglas de oro del negocio, los patrones de código obligatorios y los flujos de prueba y despliegue que cualquier agente de IA o desarrollador humano debe respetar al modificar este codebase.
 
 ---
@@ -67,7 +67,7 @@ Kroserbot es la plataforma omnicanal de atención inteligente, recomendación t�
 * **Concurrencia en Webhook**: Si el mensaje incluye audio + foto, se preservan ambos en el prompt para que el bot conozca la voz y el repuesto fotografiado.
 
 ### 2.7 Ciclo de Vida del Scraper y Cron Nocturno
-* **Contenedor**: `alfredobartaburu/kroserbot-scraper:v1.4` con `restart: "no"`. Al terminar el catálogo sale con código 0 y se apaga solo (liberando memoria).
+* **Contenedor**: `alfredobartaburu/kroserbot-scraper:v1.5` con `restart: "no"`. Al terminar el catálogo sale con código 0 y se apaga solo (liberando memoria).
 * **Ejecución Manual**: Desde el botón "Iniciar Scraping" en el panel admin o ejecutando `docker start kroserbot-scraper`.
 * **Ejecución Programada**: En Easypanel / Linux Crontab a las 03:00 AM mediante la expresión:
   ```bash
@@ -91,10 +91,10 @@ El servicio [`backend/services/llm/llmService.js`](backend/services/llm/llmServi
 Antes de dar por finalizada cualquier tarea o cambio, **todos** los tests deben pasar en verde:
 
 ```bash
-# Ejecutar suite completa de backend (31 suites, 423 tests)
+# Ejecutar suite completa de backend (33 suites, 442 tests)
 npm test
 
-# Ejecutar tests del Scraper en Python (22 tests)
+# Ejecutar tests del Scraper en Python (24 tests)
 npm run test:python
 
 # Ejecutar tests de audio WhatsApp y notas de voz
@@ -120,10 +120,10 @@ npx jest backend/tests/llm_failsafe.test.js
 * **Usuario Docker Hub**: `alfredobartaburu`
 * **Imagen Backend**: `alfredobartaburu/kroserbot:<VERSION>` y `alfredobartaburu/kroserbot:latest`
 * **Arquitectura obligatoria**: `--platform linux/amd64`
-* **Regla de Etiquetado Incremental**: Dokploy y Easypanel cachean imágenes localmente en el servidor. **Siempre incrementa la versión semántica** (ej. `v2.3.4` ➔ `v2.3.5`) al compilar nuevas imágenes.
+* **Regla de Etiquetado Incremental**: Dokploy y Easypanel cachean imágenes localmente en el servidor. **Siempre incrementa la versión semántica** (ej. `v2.3.5` ➔ `v2.3.6`) al compilar nuevas imágenes.
 * **Comando de Build y Push**:
   ```bash
-  docker buildx build --platform linux/amd64 -t alfredobartaburu/kroserbot:v2.3.5 -t alfredobartaburu/kroserbot:latest . --push
+  docker buildx build --platform linux/amd64 -t alfredobartaburu/kroserbot:v2.3.6 -t alfredobartaburu/kroserbot:latest . --push
   ```
 * **Git**: Sincronizar siempre a la rama `main` en `https://github.com/barta4/kroserbot.git`.
 * **Desarrollo local**: Mantener bind-mounts y claves dummy en `docker-compose.override.yml` (ignorado en `.gitignore` para no sobreescribir producción).
@@ -156,14 +156,15 @@ kroserbot/
 │   │   ├── llm/                  # Motor LLM, Function Calling y Fail-Safe
 │   │   ├── media/                # Audio transcribers y gestión de adjuntos
 │   │   ├── pedidos/              # Lógica de pedidos y tracking
+│   │   ├── search/               # Búsqueda híbrida, re-ranking y queryClassifier LLM
 │   │   └── webhook/              # Webhook orchestrator, lifecycleHandler, mediaHandler, escalationHandler
-│   ├── tests/                    # Suites de Jest (31 suites, 423 tests)
-│   └── utils/                    # Criptografía, negocio, cross-selling, normalizadores
+│   ├── tests/                    # Suites de Jest (33 suites, 442 tests)
+│   └── utils/                    # Criptografía, vocabulario UY, negocio, cross-selling, normalizadores
 ├── db/                           # Scripts de migración y backups
 │   ├── migrations/               # Migraciones SQL incrementales
 │   └── migrate.js                # Runner de migraciones hacia arriba y abajo
 ├── scraper/                      # Scraper en Python para catálogo Kroser
-│   ├── tests/                    # Pruebas de Pytest (22 tests)
+│   ├── tests/                    # Pruebas de Pytest (24 tests)
 │   └── products.py               # Lógica de extracción y sanitización de datos
 ├── scraequus/                    # Scraper y API de proveedor Equus (TypeScript + Fastify)
 ├── public/                       # Cotizador Kroser Martínez (landing web y chat Cotibot)
@@ -172,10 +173,10 @@ kroserbot/
 ├── docker-compose.override.yml   # Overrides para desarrollo local (ignorado en Git)
 ├── Dockerfile                    # Multi-stage build no-root optimizado (Node 20 Alpine)
 ├── FACTURAPP_SYNC.md             # Análisis, estrategia y operación de la sync Facturapp
-├── package.json                  # Dependencias y scripts del proyecto (v2.3.5)
+├── package.json                  # Dependencias y scripts del proyecto (v2.3.6)
 └── README.md                     # Documentación de inicio rápido
 ```
 
 ---
 
-*Última actualización de contexto: Release v2.3.5 — Locales oficiales de Kroser Martínez (Av. 8 de Octubre 3452 y 3451, La Unión), teléfonos, horarios, landing y prompt alineados.*
+*Última actualización de contexto: Release v2.3.6 — Integración de v2.3.0–v2.3.2 (clasificador de búsqueda, anti-falsos positivos, scraper v1.5) + locales Kroser Martínez, Facturapp y landing modernizada.*

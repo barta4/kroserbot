@@ -25,7 +25,7 @@ class Product:
 
     def __init__(self, sku, nombre, precio, precio_oferta, marca, categoria,
                  descripcion, imagen_url, producto_url, stock_status, moneda: str = "UYU"):
-        self.sku = str(sku)
+        self.sku = str(sku).strip()
         self.nombre = (nombre or "").strip()
         self.precio = _to_monto(precio)
         self.precio_oferta = _to_monto(precio_oferta)
@@ -41,7 +41,7 @@ class Product:
             "m": self.marca, "c": self.categoria, "d": self.descripcion,
             "i": self.imagen_url, "u": self.producto_url, "s": self.stock_status,
             "curr": self.moneda,
-        }, ensure_ascii=False).encode()).hexdigest()
+        }, ensure_ascii=False, sort_keys=True).encode()).hexdigest()
 
     def to_dict(self) -> dict:
         return {
@@ -76,8 +76,12 @@ def _url(v: str) -> str:
 
 
 def sku_from_url(url: str) -> str:
-    """De /catalogo/slugg_7303371_7303371 -> '7303371'. Cae al último segmento si falla."""
-    m = re.search(r"_(\d+)(?:_\d+)*$", url)
+    """Extrae el SKU del slug de Fenicio.
+    Ej: /catalogo/slugg_7303371_7303371 -> '7303371'
+        /catalogo/atornillador_820DW268_820DW268 -> '820DW268'
+        /catalogo/sikalastic_640505250ML_640505250ML -> '640505250ML'
+    Soporta SKUs alfanuméricos y dígitos."""
+    m = re.search(r"_([a-zA-Z0-9]+)(?:_[a-zA-Z0-9]+)*$", url)
     if m:
         return m.group(1)
     return url.rstrip("/").rsplit("/", 1)[-1]
@@ -93,10 +97,37 @@ def ficha_data(html: str) -> dict | None:
         return None
 
 
+def _precio(data: dict) -> tuple[float | None, float | None]:
+    """Extrae precio regular y precio de oferta soportando Fenicio."""
+    variante = data.get("variante") or {}
+
+    monto = data.get("precioMonto")
+    if monto is None and isinstance(variante, dict):
+        monto = variante.get("precioMonto") or variante.get("precio")
+    if monto is None:
+        monto = data.get("precio")
+
+    precio = _to_monto(monto)
+
+    # Detección de precio oferta / lista
+    precio_oferta = _to_monto(data.get("precioOferta") or data.get("precioSale"))
+    precio_lista = _to_monto(data.get("precioLista") or data.get("precioAnterior") or data.get("precioRegular"))
+
+    if precio_oferta is not None and precio is not None and precio_oferta < precio:
+        return precio, precio_oferta
+    elif precio_lista is not None and precio is not None and precio < precio_lista:
+        return precio_lista, precio
+    elif data.get("sale") and precio_lista is not None:
+        return precio_lista, precio
+
+    return precio, precio_oferta
+
+
 def _product_from_json(data: dict, url: str) -> Product | None:
     variante = data.get("variante") or {}
     producto = data.get("producto") or {}
-    sku = (data.get("sku") or {}).get("com") or variante.get("codigo") or sku_from_url(url)
+    raw_sku = (data.get("sku") or {}).get("com") or variante.get("codigo") or sku_from_url(url)
+    sku = str(raw_sku).strip() if raw_sku else None
     img = variante.get("img")
     if isinstance(img, dict):
         img = img.get("u")
@@ -129,11 +160,6 @@ def _product_from_json(data: dict, url: str) -> Product | None:
         producto_url=variante.get("url") or url,
         stock_status="in_stock" if variante.get("tieneStock") else "out_of_stock",
     )
-
-
-def _precio(data: dict) -> tuple[int | None, int | None]:
-    """Fenicio entrega precioMonto único (sin precio lista/oferta separado en el JSON)."""
-    return _to_monto(data.get("precioMonto")), None
 
 
 def parse_product(html: str, url: str) -> Product | None:

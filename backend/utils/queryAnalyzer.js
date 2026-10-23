@@ -8,6 +8,11 @@
  */
 
 const { normalize } = require('./textNormalizer');
+const {
+  UY_STOPWORDS,
+  findUySynonyms,
+  detectAccessoryOfMachine,
+} = require('./uyVocabulary');
 
 // ──────────────────────────────────────────── Stopwords
 const STOPWORDS = new Set([
@@ -23,6 +28,7 @@ const STOPWORDS = new Set([
   'podrian', 'pueden', 'queda', 'quedan', 'disponen', 'disponible',
   'disponibles', 'si'
 ]);
+UY_STOPWORDS.forEach((w) => STOPWORDS.add(w));
 
 // ──────────────────────────────────────────── Problem, Damage and Surface Words
 // Words describing household surfaces, damage, or symptoms (should NOT be treated as product keywords)
@@ -341,7 +347,17 @@ function extractAttributes(query) {
   }
 
   // ── Category hint (detected with word boundaries, not filtered — used for scoring boost)
+  // Accesorio de máquina ("disco amoladora"): NO clasificar como la máquina.
+  const accessoryOf = detectAccessoryOfMachine(normalized);
+  if (accessoryOf) {
+    attrs.accesorioDe = accessoryOf.maquina;
+    if (['disco', 'discos', 'lija', 'lijas'].includes(accessoryOf.accesorio)) {
+      attrs.categoriaHint = 'abrasivos';
+    }
+  }
+
   for (const [cat, keywords] of Object.entries(CATEGORY_HINTS)) {
+    if (accessoryOf) break;
     for (const kw of keywords) {
       const kwPattern = new RegExp(`(?:^|\\s|[.,;¿?¡!])${kw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?:$|\\s|[.,;¿?¡!])`, 'i');
       if (kwPattern.test(normalized)) {
@@ -362,11 +378,15 @@ function extractAttributes(query) {
     if (attrs.categoriaHint) break;
   }
 
-  // ── Local Uruguayan Synonyms
+  // ── Local Uruguayan Synonyms (legacy map + shared UY vocabulary)
   for (const [idiom, syns] of Object.entries(LOCAL_SYNONYMS)) {
     if (normalized.includes(idiom)) {
       attrs.synonyms = (attrs.synonyms || []).concat(syns);
     }
+  }
+  const uySyns = findUySynonyms(normalized);
+  if (uySyns.length > 0) {
+    attrs.synonyms = Array.from(new Set([...(attrs.synonyms || []), ...uySyns]));
   }
 
   return attrs;

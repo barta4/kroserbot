@@ -70,7 +70,35 @@ def test_hash_estable_con_datos_iguales():
 def test_sku_from_url():
     assert sku_from_url("/catalogo/hoja_7303371_7303371") == "7303371"
     assert sku_from_url("/catalogo/otra_100200300") == "100200300"
+    assert sku_from_url("/catalogo/atornillador_820DW268_820DW268") == "820DW268"
+    assert sku_from_url("/catalogo/sikalastic_640505250ML_640505250ML") == "640505250ML"
+    assert sku_from_url("/catalogo/combo_86CP101_86CP101") == "86CP101"
     assert sku_from_url("/catalogo/random") == "random"
+
+
+def test_parse_product_with_sale_and_offer():
+    # Caso 1: precio normal y precio oferta
+    sample_sale = {
+        **SAMPLE,
+        "precioMonto": 100,
+        "precioLista": 150,
+        "sale": True,
+    }
+    p = parse_product(_sample_html(sample_sale), SAMPLE["variante"]["url"])
+    assert p is not None
+    assert p.precio == 150.0
+    assert p.precio_oferta == 100.0
+
+    # Caso 2: precio normal sin oferta
+    sample_regular = {
+        **SAMPLE,
+        "precioMonto": 250,
+        "sale": False,
+    }
+    p_reg = parse_product(_sample_html(sample_regular), SAMPLE["variante"]["url"])
+    assert p_reg is not None
+    assert p_reg.precio == 250.0
+    assert p_reg.precio_oferta is None
 
 
 def test_parse_product_list_escaped_json():
