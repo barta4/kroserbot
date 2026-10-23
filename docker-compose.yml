@@ -32,7 +32,7 @@ services:
       retries: 5
 
   backend:
-    image: alfredobartaburu/kroserbot:${TAG:-latest}
+    image: alfredobartaburu/krosmart:${TAG:-latest}
     build:
       context: .
       dockerfile: Dockerfile
@@ -102,7 +102,7 @@ services:
       retries: 3
 
   scraper:
-    image: alfredobartaburu/kroserbot-scraper:${TAG:-latest}
+    image: alfredobartaburu/krosmart-scraper:${TAG:-latest}
     build:
       context: .
       dockerfile: scraper/Dockerfile
