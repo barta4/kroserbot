@@ -1,4 +1,9 @@
 node_modules
+**/node_modules
+scraequus
+manual-usuario
+coordinacion-multi-agente
+.agents
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
