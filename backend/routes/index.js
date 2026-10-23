@@ -17,8 +17,18 @@ const mercadopagoRoutes = require('./mercadopagoRoutes');
 const chatwootRoutes = require('./chatwootRoutes');
 const simulatorRoutes = require('./simulatorRoutes');
 const guiasTecnicasRoutes = require('./guiasTecnicasRoutes');
+const clienteAuthRoutes = require('./clienteAuthRoutes');
+const cotibotRoutes = require('./cotibotRoutes');
+const clientesAdminRoutes = require('./clientesAdminRoutes');
+const proveedoresScraperRoutes = require('./proveedoresScraperRoutes');
+const promocionesRoutes = require('./promocionesRoutes');
 
 router.use('/', healthRoutes);
+router.use('/auth/cliente', clienteAuthRoutes);
+router.use('/cotibot', cotibotRoutes);
+router.use('/promociones', promocionesRoutes);
+router.use('/clientes', clientesAdminRoutes);
+router.use('/proveedores-scraper', proveedoresScraperRoutes);
 router.use('/auth', authRoutes);
 router.use('/analytics', analyticsRoutes);
 router.use('/productos', productosRoutes);
@@ -36,4 +46,5 @@ router.use('/simulator', simulatorRoutes);
 router.use('/guias-tecnicas', guiasTecnicasRoutes);
 
 module.exports = router;
+
 

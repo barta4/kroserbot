@@ -1,7 +1,7 @@
 {
   "name": "kroserbot",
-  "version": "2.2.0",
-  "description": "Bot Kroser - RAG + Pedidos + Scraper + Admin Panel",
+  "version": "2.3.2",
+  "description": "Cotibot — Asistente de Cotizaciones, Catálogo y RAG (Kroser Uruguay)",
   "main": "backend/index.js",
   "scripts": {
     "dev:backend": "node backend/index.js",

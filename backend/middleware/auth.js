@@ -1,16 +1,17 @@
 const crypto = require('crypto');
+const logger = require('../config/logger');
 require('dotenv').config();
 
 const INITIAL_EXPECTED = process.env.WEBHOOK_BASIC_AUTH;
 if (!INITIAL_EXPECTED || String(INITIAL_EXPECTED).trim() === '') {
-  console.error('[FATAL] Falta variable de entorno WEBHOOK_BASIC_AUTH');
+  logger.error('[FATAL] Falta variable de entorno WEBHOOK_BASIC_AUTH');
 }
 
 module.exports = function basicAuth(req, res, next) {
   const expectedAuth = process.env.WEBHOOK_BASIC_AUTH;
 
   if (!expectedAuth || String(expectedAuth).trim() === '') {
-    console.error('[auth] Petición rechazada: variable WEBHOOK_BASIC_AUTH no está configurada.');
+    logger.error('[auth] Petición rechazada: variable WEBHOOK_BASIC_AUTH no está configurada.');
     return res.status(500).json({ error: 'Configuración de autenticación del servidor incompleta' });
   }
 
@@ -29,10 +30,11 @@ module.exports = function basicAuth(req, res, next) {
     return res.status(401).json({ error: 'Acceso no autorizado: credenciales inválidas' });
   }
 
-  const credBuf = Buffer.from(credentials, 'utf8');
-  const expBuf = Buffer.from(expectedAuth, 'utf8');
+  // Comparación blindada en tiempo constante (ambos hashes tienen exactamente 32 bytes)
+  const hashCred = crypto.createHash('sha256').update(credentials, 'utf8').digest();
+  const hashExp = crypto.createHash('sha256').update(expectedAuth, 'utf8').digest();
 
-  if (credBuf.length === 0 || expBuf.length === 0 || credBuf.length !== expBuf.length || !crypto.timingSafeEqual(credBuf, expBuf)) {
+  if (!crypto.timingSafeEqual(hashCred, hashExp)) {
     return res.status(401).json({ error: 'Acceso no autorizado: credenciales inválidas' });
   }
 

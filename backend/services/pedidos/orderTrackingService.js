@@ -80,9 +80,42 @@ function formatStatusMessage(pedido) {
   return fullReply;
 }
 
+/**
+ * Formats sanitized status message without PII for unverified requestors
+ */
+function formatStatusMessageSanitized(pedido) {
+  if (!pedido) return null;
+  const orderRef = pedido.ecommerce_order_number || `#${pedido.id}`;
+  let statusExplanation = '';
+  switch (pedido.estado) {
+    case 'pendiente':
+      statusExplanation = 'se encuentra en **Revisión Comercial y Control de Stock**.';
+      break;
+    case 'confirmado':
+      statusExplanation = 'está **Confirmado** en cola para depósito.';
+      break;
+    case 'en_preparacion':
+      statusExplanation = 'está **En Preparación en Depósito**.';
+      break;
+    case 'entregado':
+      statusExplanation = 'figura como **Entregado / Despachado**.';
+      break;
+    case 'rechazado':
+      statusExplanation = 'figura como **Rechazado**.';
+      break;
+    case 'cancelado':
+      statusExplanation = 'figura como **Cancelado**.';
+      break;
+    default:
+      statusExplanation = `se encuentra en estado **${pedido.estado}**.`;
+  }
+  return `El pedido ${orderRef} ${statusExplanation} (Por políticas de privacidad, para consultar el detalle de artículos o dirección de entrega, debe consultar desde el mismo WhatsApp o confirmar el teléfono registrado).`;
+}
+
 module.exports = {
   extractOrderIdentifier,
   formatStatusMessage,
+  formatStatusMessageSanitized,
 
   async getTrackingInfo({ text = '', conversationId = null, sender = {}, clientPayload = {} } = {}) {
     try {
@@ -126,16 +159,38 @@ module.exports = {
         };
       }
 
-      const formattedReply = formatStatusMessage(pedido);
+      const cliente = typeof pedido.cliente === 'string' ? JSON.parse(pedido.cliente) : (pedido.cliente || {});
+      const reqPhoneClean = String(phone).replace(/\D/g, '').slice(-8);
+      const orderPhoneClean = String(cliente.telefono || cliente.whatsapp || '').replace(/\D/g, '').slice(-8);
+
+      // Verificación de identidad para prevenir IDOR y fuga de PII a terceros
+      const matchesConversation = Boolean(conversationId && pedido.conversation_id === conversationId);
+      const matchesPhone = Boolean(reqPhoneClean.length >= 7 && orderPhoneClean.length >= 7 && reqPhoneClean === orderPhoneClean);
+      const clientId = clientPayload.id || clientPayload.cliente_id;
+      const matchesClientAuth = Boolean(clientId && cliente.cliente_id && String(clientId) === String(cliente.cliente_id));
+
+      const isVerifiedOwner = matchesConversation || matchesPhone || matchesClientAuth;
+
+      // Si no es el titular verificado, responder sin datos sensibles (nombre, dirección, artículos)
+      const formattedReply = isVerifiedOwner
+        ? formatStatusMessage(pedido)
+        : formatStatusMessageSanitized(pedido);
+
       const orderRef = pedido.ecommerce_order_number || `#${pedido.id}`;
 
-      const contextStr = `ESTADO DE PEDIDO ENCONTRADO EN SISTEMA:
+      const contextStr = isVerifiedOwner
+        ? `ESTADO DE PEDIDO ENCONTRADO EN SISTEMA:
 - Pedido: ${orderRef}
 - Estado actual: ${pedido.estado.toUpperCase()}
 - Origen: ${pedido.origen || 'bot'}
 - Pago: ${pedido.pago_estado || 'sin_pago'}
 - Detalle: ${formattedReply}
-IMPORTANTE: Si el cliente pregunta por el estado de su pedido o entrega, responda directamente con esta información de forma cordial y concisa.\n\n`;
+IMPORTANTE: Si el cliente pregunta por el estado de su pedido o entrega, responda directamente con esta información de forma cordial y concisa.\n\n`
+        : `ESTADO DE PEDIDO ENCONTRADO (PROTEGIDO POR PRIVACIDAD):
+- Pedido: ${orderRef}
+- Estado actual: ${pedido.estado.toUpperCase()}
+- Detalle: ${formattedReply}
+IMPORTANTE: Por razones de seguridad y privacidad, NO revele nombres, direcciones de entrega ni teléfonos de pedidos a usuarios no verificados.\n\n`;
 
       return {
         hasOrder: true,
@@ -144,6 +199,7 @@ IMPORTANTE: Si el cliente pregunta por el estado de su pedido o entrega, respond
         status: pedido.estado,
         directReply: formattedReply,
         contextStr,
+        isVerifiedOwner,
       };
     } catch (err) {
       logger.warn('Error in order tracking service', { error: err.message });

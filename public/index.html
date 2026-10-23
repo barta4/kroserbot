@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cotizador Kroser Martínez — Ferretería, Pinturas y Herramientas (40 Años)</title>
+  <meta name="description" content="Cotizador oficial Kroser Martínez: Consulte catálogo, stock y presupuestos en tiempo real con descuentos directos para profesionales y gremio.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2220%22 fill=%22%23f59e0b%22/><text x=%2250%22 y=%2270%22 font-family=%22Arial-Black,sans-serif%22 font-weight=%22900%22 font-size=%2265%22 fill=%22%23005bb5%22 text-anchor=%22middle%22>K</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <!-- Accessible skip-to-content link -->
+  <a href="#heroSearchInput" class="skip-to-content">Saltar al cotizador</a>
+
+  <!-- Ambient background light effect -->
+  <div class="ambient-glow"></div>
+
+  <!-- Header & Navbar -->
+  <header class="navbar-wrapper">
+    <nav class="navbar" aria-label="Navegación principal">
+      <a href="/" class="brand-container" id="brandLinkHome">
+        <div class="brand-logo-icon">
+          <div class="k-logo-badge">K</div>
+        </div>
+        <div class="brand-text-col">
+          <span class="brand-name">KROSER <span class="brand-subname">MARTÍNEZ</span></span>
+          <span class="brand-tagline">Cotizador Oficial &bull; 40 Años</span>
+        </div>
+      </a>
+
+      <!-- User state and Actions in Navbar -->
+      <div class="nav-actions">
+        <!-- Logged-in client badge -->
+        <div class="user-badge-header" id="headerUserBadge">
+          <span id="headerClientName">Hola, Cliente</span>
+          <span class="discount-pill" id="headerDiscountPill">GREMIO 15% OFF</span>
+          <button class="btn-nav-action" id="btnLogout" aria-label="Cerrar sesión de cliente" style="padding:0.25rem 0.6rem; font-size:0.75rem;">Salir</button>
+        </div>
+
+        <!-- Guest box -->
+        <div id="headerGuestBox" style="display:flex; gap:0.6rem; align-items:center;">
+          <button class="btn-nav-action" id="btnOpenLogin" aria-label="Iniciar sesión o registrar cuenta">
+            <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+            <span>Iniciar Sesión</span>
+          </button>
+        </div>
+
+        <!-- Quote cart button -->
+        <button class="btn-quote-cart" id="btnQuoteCart" aria-label="Abrir bandeja de cotización y presupuesto actual">
+          <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
+          </svg>
+          <span class="quote-text-btn">Presupuesto</span>
+          <span class="quote-count-badge" id="quoteCountBadge" aria-live="polite">0</span>
+        </button>
+
+        <!-- Access to Admin Panel -->
+        <a href="/admin/" class="btn-nav-action" style="opacity:0.7; font-size:0.8rem;" title="Acceso a Gestión Interna">
+          <span>⚙️ Panel</span>
+        </a>
+      </div>
+    </nav>
+  </header>
+
+  <!-- Main Content Container -->
+  <main>
+    <!-- Hero Section -->
+    <section class="hero-section" aria-labelledby="heroMainTitle">
+      <div class="hero-pill-announcement">
+        <span class="pill-k-badge">K</span>
+        <span>Kroser Martínez &bull; 40 Años de Trayectoria</span>
+        <span style="opacity:0.4;">|</span>
+        <span>Cotizaciones y Stock en Tiempo Real</span>
+      </div>
+
+      <h1 class="hero-title" id="heroMainTitle">
+        Cotizador Rápido y Catálogo <br>
+        <span class="highlight">Kroser Martínez</span>
+      </h1>
+
+      <p class="hero-subtitle">
+        Consulte especificaciones técnicas, precios de mostrador o suelte su lista de materiales para cotizar al instante con su descuento bonificado de cliente.
+      </p>
+
+      <!-- Central Executive Quote & Search Container -->
+      <div class="chatgpt-hero-container" id="heroChatContainer">
+        <!-- Active Conversation Header (shown when chat is active) -->
+        <div class="stream-canvas-header" id="heroCanvasHeader" style="display:none;">
+          <div class="canvas-agent-info">
+            <div class="canvas-avatar">
+              <span class="avatar-k">K</span>
+            </div>
+            <div class="canvas-title-wrap">
+              <h4>Cotizador & Asesor Técnico — Kroser Martínez</h4>
+              <span>Cálculo inmediato de mostrador con precios bonificados</span>
+            </div>
+          </div>
+          <button class="btn-canvas-clear" onclick="resetHeroChat()" title="Iniciar nuevo presupuesto" aria-label="Reiniciar consulta e iniciar nuevo presupuesto">
+            <span>🔄 Nuevo Presupuesto</span>
+          </button>
+        </div>
+
+        <!-- Messages Stream Container (grows downwards, above prompt box) -->
+        <div class="stream-messages-list" id="heroMessagesContainer" style="display:none;">
+          <!-- Messages, answers, product cards and list quotes rendered here -->
+        </div>
+
+        <!-- Suggested Quick Queries (visible initially, hides once chatting) -->
+        <div class="quick-tags" id="heroQuickTags">
+          <span class="quick-tag-label">Consultas frecuentes:</span>
+          <button class="quick-tag-btn" onclick="submitHeroQuickPrompt('Pintura para humedad exterior en pared')">🎨 Humedad en paredes exteriores</button>
+          <button class="quick-tag-btn" onclick="submitHeroQuickPrompt('1 taladro percutor\n2 cintas aisladoras\n1 pintura latex 20L')">📋 Cotizar lista de obra</button>
+          <button class="quick-tag-btn" onclick="submitHeroQuickPrompt('¿Qué pegamento necesito para reparar una canilla o caño de PVC?')">💧 Reparar fuga o canilla PVC</button>
+          <button class="quick-tag-btn" onclick="submitHeroQuickPrompt('Taladros y atornilladores inalámbricos')">🛠️ Taladros a batería</button>
+        </div>
+
+        <!-- Main Prompt / Search Box (positioned at the bottom of the conversation) -->
+        <div class="chatgpt-prompt-box" id="heroPromptBox">
+          <!-- Hidden File Inputs -->
+          <input type="file" id="heroFileInput" accept=".pdf,.doc,.docx,.txt,.csv,image/*" style="display:none;">
+          <input type="file" id="heroPhotoInput" accept="image/*" capture="environment" style="display:none;">
+
+          <!-- Multimodal Media Preview & Active Recording Tray -->
+          <div class="chatgpt-media-tray" id="heroMediaTray" style="display:none;">
+            <!-- Attached Image Preview -->
+            <div class="media-preview-card" id="heroImagePreviewCard" style="display:none;">
+              <img id="heroImagePreviewThumb" src="" alt="Foto adjunta" class="media-preview-thumb">
+              <div class="media-preview-info">
+                <span class="media-preview-title" id="heroImagePreviewName">Foto de repuesto</span>
+                <span class="media-preview-tag">📷 Visual Parts Finder activo</span>
+              </div>
+              <button type="button" class="btn-media-remove" id="btnRemoveHeroImage" title="Eliminar imagen" aria-label="Eliminar imagen adjunta">✕</button>
+            </div>
+
+            <!-- Active Voice Recording Bar -->
+            <div class="voice-recording-bar" id="heroVoiceRecordingBar" style="display:none;">
+              <div class="recording-pulse-indicator">
+                <span class="pulse-dot"></span>
+                <span class="recording-label">Grabando audio...</span>
+              </div>
+              <div class="recording-waveform">
+                <span></span><span></span><span></span><span></span><span></span>
+              </div>
+              <span class="recording-timer" id="heroVoiceTimer">00:00</span>
+              <div class="recording-actions">
+                <button type="button" class="btn-voice-cancel" id="btnCancelHeroVoice" title="Cancelar grabación" aria-label="Cancelar grabación de voz">✕</button>
+                <button type="button" class="btn-voice-stop" id="btnStopHeroVoice" title="Finalizar grabación" aria-label="Finalizar y procesar grabación de voz">⏹️ Listo</button>
+              </div>
+            </div>
+
+            <!-- Recorded Voice Note Preview -->
+            <div class="media-preview-card voice-preview" id="heroVoicePreviewCard" style="display:none;">
+              <div class="voice-pill-icon">🎙️</div>
+              <div class="media-preview-info">
+                <span class="media-preview-title" id="heroVoicePreviewName">Mensaje de voz grabado</span>
+                <span class="media-preview-tag">Transcripción automática lista</span>
+                <audio id="heroVoiceAudioPreview" controls class="mini-audio-player"></audio>
+              </div>
+              <button type="button" class="btn-media-remove" id="btnRemoveHeroVoice" title="Eliminar audio" aria-label="Eliminar mensaje de voz grabado">✕</button>
+            </div>
+          </div>
+
+          <div class="chatgpt-prompt-top">
+            <!-- Left Tools: Clip, Camera, Mic -->
+            <div class="chatgpt-input-left-tools">
+              <button type="button" class="btn-prompt-media-tool" id="btnHeroAttachFile" title="Adjuntar lista de materiales o archivo" aria-label="Adjuntar archivo o lista de materiales">
+                <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/>
+                </svg>
+              </button>
+              <button type="button" class="btn-prompt-media-tool" id="btnHeroAttachPhoto" title="Tomar o adjuntar foto de repuesto o plano (Visual Parts)" aria-label="Tomar o adjuntar foto de repuesto o plano">
+                <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/>
+                  <circle cx="12" cy="13" r="4"/>
+                </svg>
+              </button>
+              <button type="button" class="btn-prompt-media-tool" id="btnHeroRecordVoice" title="Grabar mensaje de voz (Audio)" aria-label="Grabar consulta por mensaje de voz">
+                <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/>
+                  <path d="M19 10v2a7 7 0 01-14 0v-2"/>
+                  <line x1="12" y1="19" x2="12" y2="23"/>
+                  <line x1="8" y1="23" x2="16" y2="23"/>
+                </svg>
+              </button>
+            </div>
+
+            <!-- Central Input -->
+            <div class="search-input-field-wrap">
+              <textarea
+                id="heroSearchInput"
+                class="search-input-hero"
+                rows="1"
+                placeholder="Pregúntale a Kroser Martínez, dicta la tarea o sube fotos de la obra..."
+                autocomplete="off"
+                aria-label="Escribe tu consulta o lista de materiales para cotizar"
+              ></textarea>
+              <div id="heroListDetectionPill" class="hero-list-pill" style="display:none;">
+                <span>📋 Lista de materiales detectada — Presupuestando cada ítem</span>
+              </div>
+            </div>
+
+            <!-- Right Circular Send Button (Upward Arrow) -->
+            <button type="button" class="btn-chatgpt-send-circle" id="btnHeroSearch" title="Enviar (Enter)" aria-label="Enviar consulta al cotizador">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 19V5M5 12l7-7 7 7"/>
+              </svg>
+            </button>
+          </div>
+
+          <div class="chatgpt-prompt-bottom">
+            <div class="chatgpt-status-badge">
+              <span>Kroser Martínez analiza imágenes, voz y listas de materiales para estructurar tus cotizaciones al instante.</span>
+            </div>
+            <div class="chatgpt-prompt-actions">
+              <button type="button" class="btn-prompt-reset" id="btnResetHeroChat" onclick="resetHeroChat()" aria-label="Reiniciar consulta y cotizar nuevos materiales" style="display:none;">
+                <span>🔄 Nuevo Presupuesto</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Special Promotions & Deals Interactive Banner -->
+    <section class="promos-banner-section" id="promocionesBannerSection" aria-label="Promociones especiales y ofertas">
+      <div class="promos-container">
+        <div class="promos-top-bar">
+          <div class="promos-tag-wrap">
+            <span class="promos-flame-icon">🔥</span>
+            <span class="promos-heading-tag">PROMOCIONES ESPECIALES & BENEFICIOS</span>
+          </div>
+          <p class="promos-subheading">Aprovecha ofertas destacadas, combos de temporada y bonificaciones exclusivas con entrega rápida.</p>
+        </div>
+
+        <!-- Dynamic Grid of Special Promotions -->
+        <div class="promos-cards-grid" id="promocionesCardsGrid">
+          <div class="promo-card promo-gradient-amber" onclick="applyPromoFilter('Equus')">
+            <div class="promo-card-top">
+              <span class="promo-badge">⚡ EQUUS DESTACADO</span>
+              <span class="promo-discount-pill">25% OFF</span>
+            </div>
+            <div class="promo-card-body">
+              <h3 class="promo-card-title">Super Oferta Equus: Escaleras Profesionales</h3>
+              <p class="promo-card-desc">Escaleras telescópicas y articuladas de aluminio de alta resistencia con entrega inmediata.</p>
+            </div>
+            <div class="promo-card-footer">
+              <span class="promo-action-btn">Ver Escaleras →</span>
+            </div>
+          </div>
+          <div class="promo-card promo-gradient-emerald" onclick="applyPromoFilter('Pinturas')">
+            <div class="promo-card-top">
+              <span class="promo-badge">🎨 PROMO PINTURA</span>
+              <span class="promo-discount-pill">15% OFF</span>
+            </div>
+            <div class="promo-card-body">
+              <h3 class="promo-card-title">Combo Pinturas & Acabados de Temporada</h3>
+              <p class="promo-card-desc">Membrana líquida fibrada, látex antihongo y esmaltes sintéticos con bonificación por balde.</p>
+            </div>
+            <div class="promo-card-footer">
+              <span class="promo-action-btn">Ver Línea Pinturas →</span>
+            </div>
+          </div>
+          <div class="promo-card promo-gradient-blue" onclick="applyPromoFilter('Herramientas')">
+            <div class="promo-card-top">
+              <span class="promo-badge">👷‍♂️ GREMIO & OBRA</span>
+              <span class="promo-discount-pill">20% OFF</span>
+            </div>
+            <div class="promo-card-body">
+              <h3 class="promo-card-title">Descuentos Exclusivos Profesionales & Gremio</h3>
+              <p class="promo-card-desc">Precios bonificados del 10% al 20% para electricistas, sanitarios, constructores y talleres.</p>
+            </div>
+            <div class="promo-card-footer">
+              <span class="promo-action-btn">Explorar Catálogo →</span>
+            </div>
+          </div>
+          <div class="promo-card promo-gradient-purple" onclick="openAuthModal('register')">
+            <div class="promo-card-top">
+              <span class="promo-badge">✨ CLIENTES KROSER</span>
+              <span class="promo-discount-pill">REGISTRO</span>
+            </div>
+            <div class="promo-card-body">
+              <h3 class="promo-card-title">Registra tu Cuenta Comercial</h3>
+              <p class="promo-card-desc">Accede a cotizaciones automáticas, lista de materiales y precios bonificados al instante.</p>
+            </div>
+            <div class="promo-card-footer">
+              <span class="promo-action-btn">Crear Cuenta Gratis →</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Product Catalog Section -->
+    <section class="catalog-section" id="catalogoSection" aria-labelledby="catalogHeading">
+      <div class="catalog-header-bar">
+        <div class="catalog-title-col">
+          <h2 id="catalogHeading">Catálogo de Artículos</h2>
+          <p>Precios oficiales y cálculo automático de descuentos para tu cuenta.</p>
+        </div>
+      </div>
+
+      <!-- Active Promo Indicator Bar -->
+      <div id="activePromoIndicatorBar" role="status" aria-live="polite" style="display:none; margin: 1rem 0; padding: 1rem 1.25rem; border-radius: 0.75rem; background: linear-gradient(135deg, rgba(245,158,11,0.15), rgba(239,68,68,0.15)); border: 1px solid rgba(245,158,11,0.5); align-items: center; justify-content: space-between; gap: 1rem;">
+        <div style="display:flex; align-items:center; gap:0.75rem;">
+          <span style="font-size:1.75rem;">🔥</span>
+          <div>
+            <div style="font-weight:800; font-size:1.05rem; color:#fff; display:flex; align-items:center; gap:0.5rem;">
+              <span id="activePromoIndicatorTitle">Promoción Activa</span>
+              <span id="activePromoIndicatorBadge" class="badge-discount-tag" style="position:static; font-size:0.75rem;">OFERTA</span>
+            </div>
+            <div style="font-size:0.85rem; color:var(--text-dim); margin-top:2px;">
+              Mostrando únicamente los artículos seleccionados en esta promoción con su descuento real aplicado.
+            </div>
+          </div>
+        </div>
+        <button type="button" onclick="clearPromoFilter()" class="btn-action" aria-label="Restablecer filtro y ver todo el catálogo" style="background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.25); color:#fff; padding:0.5rem 0.9rem; border-radius:0.5rem; font-size:0.85rem; font-weight:600; cursor:pointer; white-space:nowrap; transition:all 0.2s ease;">
+          ✕ Ver Todo el Catálogo
+        </button>
+      </div>
+
+      <!-- Category Filter Pills -->
+      <nav class="category-pills-bar" id="categoryPillsContainer" aria-label="Filtrar por categoría">
+        <button class="cat-pill active" onclick="selectCategory('')" id="catPillAll">
+          <span>Todos los artículos</span>
+        </button>
+      </nav>
+
+      <!-- Products Grid -->
+      <div class="products-grid" id="productsGrid">
+        <!-- Rendered dynamically by app.js -->
+      </div>
+
+      <!-- Pagination -->
+      <div class="pagination-wrap" id="paginationContainer">
+        <!-- Rendered dynamically by app.js -->
+      </div>
+    </section>
+  </main>
+
+  <!-- Quote Drawer (Shopping Cart / Cotización) -->
+  <div class="quote-drawer-backdrop" id="quoteDrawerBackdrop"></div>
+  <aside class="quote-drawer" id="quoteDrawer" aria-label="Bandeja de cotización">
+    <div class="drawer-header">
+      <h3>📋 Tu Cotización</h3>
+      <button class="btn-chat-close" id="btnCloseDrawer" style="font-size:1.4rem;" aria-label="Cerrar bandeja de cotización">&times;</button>
+    </div>
+
+    <div class="drawer-items-list" id="drawerItemsList">
+      <!-- Rendered dynamically -->
+    </div>
+
+    <div class="drawer-summary-footer">
+      <div class="summary-line">
+        <span>Subtotal lista:</span>
+        <strong id="summarySubtotal">$ 0.00</strong>
+      </div>
+      <div class="summary-line discount">
+        <span>Ahorro por tu nivel:</span>
+        <strong id="summaryDiscount">-$ 0.00</strong>
+      </div>
+      <div class="summary-line total">
+        <span>Total estimado:</span>
+        <strong id="summaryTotal">$ 0.00</strong>
+      </div>
+
+      <!-- Action buttons -->
+      <div class="drawer-actions-container">
+        <!-- Main prominent button to place order -->
+        <button class="btn-primary-order" id="btnOpenOrderModal" aria-label="Hacer pedido ahora">
+          <svg width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+          </svg>
+          <span>Hacer Pedido</span>
+        </button>
+
+        <!-- Compact, smaller WhatsApp button as requested ("mantener el boton achicarlo") -->
+        <button class="btn-whatsapp-compact" id="btnExportWhatsApp" aria-label="Exportar cotización a WhatsApp">
+          <svg width="15" height="15" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981z"/>
+          </svg>
+          <span>Exportar a WhatsApp</span>
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Modal Confirmación de Pedido (Hacer Pedido) -->
+  <div class="auth-modal-backdrop" id="orderModalBackdrop" role="dialog" aria-modal="true" aria-labelledby="orderModalHeading">
+    <div class="auth-modal-card order-modal-card">
+      <div class="auth-modal-header" style="display:flex; justify-content:space-between; align-items:flex-start;">
+        <div>
+          <h3 id="orderModalHeading" style="font-size:1.35rem; color:#fff; margin-bottom:0.25rem;">🛍️ Realizar Pedido</h3>
+          <p style="font-size:0.85rem; color:var(--text-muted);">Confirma tus datos para registrar el pedido en Kroser Martínez</p>
+        </div>
+        <button class="btn-chat-close" id="btnCloseOrderModal" style="font-size:1.4rem; padding:0 0.5rem;" aria-label="Cerrar modal">&times;</button>
+      </div>
+
+      <!-- Resumen Compacto de Artículos -->
+      <div class="order-summary-box">
+        <div class="order-summary-header">
+          <span id="orderModalItemsCount">0 artículos en la cotización</span>
+          <strong id="orderModalTotal" style="color:var(--coti-accent); font-size:1.15rem;">$ 0.00</strong>
+        </div>
+        <div id="orderModalItemsPreview" class="order-items-preview">
+          <!-- Mini preview de items -->
+        </div>
+      </div>
+
+      <!-- Formulario de Toma de Pedido -->
+      <form id="orderForm" class="order-form">
+        <div class="form-row-2col">
+          <div class="form-group">
+            <label for="orderNombre">Nombre y Apellido *</label>
+            <input type="text" id="orderNombre" class="form-input" placeholder="Ej: Juan Pérez" required>
+          </div>
+          <div class="form-group">
+            <label for="orderTelefono">Teléfono / WhatsApp *</label>
+            <input type="tel" id="orderTelefono" class="form-input" placeholder="Ej: 099 123 456" required>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="orderEmail">Correo Electrónico (Opcional, para aviso)</label>
+          <input type="email" id="orderEmail" class="form-input" placeholder="correo@ejemplo.com">
+        </div>
+
+        <!-- Tipo de entrega -->
+        <div class="form-group">
+          <label style="margin-bottom:0.4rem; display:block;">Modalidad de entrega *</label>
+          <div class="delivery-toggle-group">
+            <label class="delivery-option active" id="optEnvio">
+              <input type="radio" name="orderDeliveryType" value="envio" checked style="display:none;">
+              <span>🚚 Envío a Domicilio</span>
+            </label>
+            <label class="delivery-option" id="optRetiro">
+              <input type="radio" name="orderDeliveryType" value="retiro" style="display:none;">
+              <span>🏬 Retiro en Sucursal</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Dirección (si envío) -->
+        <div class="form-group" id="groupDireccion">
+          <label for="orderDireccion">Dirección de entrega *</label>
+          <input type="text" id="orderDireccion" class="form-input" placeholder="Calle, número de puerta, esquina / apto" required>
+        </div>
+
+        <!-- Sucursal (si retiro) -->
+        <div class="form-group" id="groupSucursal" style="display:none;">
+          <label for="orderSucursal">Seleccionar Sucursal de Retiro *</label>
+          <select id="orderSucursal" class="form-input" style="background:#0b0f19;">
+            <option value="Kroser Centro — Av. 18 de Julio 1234">Kroser Centro — Av. 18 de Julio 1234</option>
+            <option value="Kroser Pocitos — Av. Brasil 2500">Kroser Pocitos — Av. Brasil 2500</option>
+            <option value="Kroser Portones — Av. Italia 5775">Kroser Portones — Av. Italia 5775</option>
+            <option value="Kroser Carrasco — Av. Arocena 1580">Kroser Carrasco — Av. Arocena 1580</option>
+            <option value="Kroser Ciudad de la Costa — Av. Giannattasio km 21">Kroser Ciudad de la Costa — Av. Giannattasio km 21</option>
+          </select>
+        </div>
+
+        <!-- Forma de Pago -->
+        <div class="form-group">
+          <label for="orderFormaPago">Forma de Pago preferida</label>
+          <select id="orderFormaPago" class="form-input" style="background:#0b0f19;">
+            <option value="Efectivo en mostrador / contra entrega">Efectivo (en mostrador o contra entrega)</option>
+            <option value="Transferencia Bancaria (BROU / Santander / Itaú)">Transferencia Bancaria (BROU / Santander / Itaú)</option>
+            <option value="Tarjeta de Débito / Crédito">Tarjeta de Débito o Crédito</option>
+            <option value="MercadoPago / Código QR">MercadoPago / Código QR</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="orderNotas">Indicaciones o notas adicionales (Opcional)</label>
+          <textarea id="orderNotas" class="form-input" rows="2" placeholder="Ej: Timbre 102, horario preferido por la tarde, etc."></textarea>
+        </div>
+
+        <div class="order-modal-actions">
+          <button type="submit" class="btn-confirm-order-submit" id="btnSubmitOrder">
+            <span id="btnSubmitOrderText">✅ Enviar Pedido a Mostrador</span>
+          </button>
+        </div>
+      </form>
+
+      <!-- Éxito / Confirmación -->
+      <div id="orderSuccessBox" class="order-success-box" style="display:none;">
+        <div style="font-size:2.8rem; margin-bottom:0.5rem;">🎉</div>
+        <h4 style="font-size:1.35rem; color:#fff; margin-bottom:0.35rem;">¡Pedido Registrado con Éxito!</h4>
+        <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:0.9rem;" id="orderSuccessRefMsg">Tu pedido fue recibido en Kroser Martínez.</p>
+
+        <div class="order-success-card" id="orderSuccessDetails">
+          <!-- Detalle dinámico -->
+        </div>
+
+        <p style="font-size:0.83rem; color:var(--text-muted); margin:0.9rem 0;">Un asesor de mostrador se comunicará contigo para confirmar el despacho o coordinar tu retiro.</p>
+
+        <div class="order-success-buttons">
+          <button type="button" class="btn-whatsapp-compact" id="btnNotifyWhatsAppOrder" style="width:100%; justify-content:center; padding:0.75rem; font-size:0.92rem;">
+            <span>📲 Notificar por WhatsApp</span>
+          </button>
+          <button type="button" class="btn-secondary-order" id="btnCloseSuccessOrder" style="margin-top:0.5rem; width:100%;">
+            <span>Cerrar y seguir navegando</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+
+  <!-- Auth Modal (Login & Registro) -->
+  <div class="auth-modal-backdrop" id="authModalBackdrop" role="dialog" aria-modal="true" aria-labelledby="authModalHeading">
+    <div class="auth-modal-card">
+      <div class="auth-modal-header">
+        <h3 id="authModalHeading" style="font-size:1.35rem; color:#fff; margin-bottom:0.3rem;">Acceso a Cotibot</h3>
+        <p style="font-size:0.85rem; color:var(--text-muted);">Inicia sesión para aplicar tus descuentos de cliente</p>
+      </div>
+
+      <div class="auth-modal-tabs">
+        <button class="auth-tab-btn active" id="tabLoginBtn">Iniciar Sesión</button>
+        <button class="auth-tab-btn" id="tabRegisterBtn">Registrarme</button>
+      </div>
+
+      <!-- Login Form -->
+      <div class="auth-form-wrap">
+        <form id="loginForm">
+          <div class="form-group">
+            <label for="loginEmail">Correo Electrónico</label>
+            <input type="email" id="loginEmail" class="form-input" placeholder="ejemplo@correo.com" required>
+          </div>
+          <div class="form-group">
+            <label for="loginPassword">Contraseña</label>
+            <input type="password" id="loginPassword" class="form-input" placeholder="••••••••" required>
+          </div>
+          <button type="submit" class="btn-auth-submit" id="btnLoginSubmit">Ingresar a mi Cuenta</button>
+
+          <!-- Demo Quick Logins: solo se muestran en local o con ?demo=1 (ver app.js) -->
+          <div class="demo-accounts-box" id="demoAccountsBox" hidden>
+            <span>Probar cuentas demo (1 clic):</span>
+            <div class="demo-pills-row">
+              <button type="button" class="demo-pill" onclick="quickFillDemoAccount('minorista@cotibot.uy')">Minorista (0%)</button>
+              <button type="button" class="demo-pill" onclick="quickFillDemoAccount('profesional@cotibot.uy')">Profesional (10%)</button>
+              <button type="button" class="demo-pill" onclick="quickFillDemoAccount('gremio@cotibot.uy')">Gremio (15%)</button>
+              <button type="button" class="demo-pill" onclick="quickFillDemoAccount('empresa@cotibot.uy')">Empresa (20%)</button>
+            </div>
+          </div>
+        </form>
+
+        <!-- Register Form -->
+        <form id="registerForm" style="display:none;">
+          <div class="form-group">
+            <label for="regNombre">Nombre y Apellido o Empresa</label>
+            <input type="text" id="regNombre" class="form-input" placeholder="Juan Pérez / Construcciones SRL" required>
+          </div>
+          <div class="form-group">
+            <label for="regEmail">Correo Electrónico</label>
+            <input type="email" id="regEmail" class="form-input" placeholder="correo@empresa.com" required>
+          </div>
+          <div class="form-group">
+            <label for="regPassword">Contraseña (Mínimo 6 caracteres)</label>
+            <input type="password" id="regPassword" class="form-input" placeholder="••••••••" required minlength="6">
+          </div>
+          <div class="form-group">
+            <label for="regTelefono">Teléfono / WhatsApp</label>
+            <input type="text" id="regTelefono" class="form-input" placeholder="099 123 456">
+          </div>
+          <div class="form-group">
+            <label for="regCategoria">Tipo de Cuenta / Rubro</label>
+            <select id="regCategoria" class="form-input" style="background:#0b0f19;">
+              <option value="minorista">Consumidor Particular (Precios de lista)</option>
+              <option value="profesional">Profesional Independiente (10% OFF)</option>
+              <option value="gremio">Gremio / Instalador / Taller (15% OFF)</option>
+              <option value="empresa">Empresa / Constructora (20% OFF)</option>
+            </select>
+          </div>
+          <button type="submit" class="btn-auth-submit" id="btnRegisterSubmit">Crear Cuenta y Ver Precios</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="footer-wrapper">
+    <p>
+      &copy; 2026 <strong>Kroser Martínez</strong> — Ferretería, Pinturas y Herramientas (40 Años de Trayectoria).
+      Todos los derechos reservados.
+    </p>
+    <p style="margin-top:0.4rem; font-size:0.78rem;">
+      Precios de mostrador, inventario y descuentos gremiales actualizados en tiempo real.
+    </p>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="/js/app.js"></script>
+  <script src="/js/chatWidget.js"></script>
+</body>
+</html>

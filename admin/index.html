@@ -8,1070 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
-  <style>
-    /* ========================================================
-       URUCHAT & SAAS 2026 DESIGN SYSTEM TOKENS
-       ======================================================== */
-    :root {
-      --bg-app: #f8fafc;
-      --bg-surface: #ffffff;
-      --bg-surface-subtle: #f1f5f9;
-      --border-subtle: #e2e8f0;
-      --border-focus: #cbd5e1;
-      
-      --primary: #CC0000;
-      --primary-hover: #b30000;
-      --primary-50: #fef2f2;
-      --primary-100: #fee2e2;
-      --primary-glow: rgba(204, 0, 0, 0.25);
-
-      --chatwoot-blue: #1f69ff;
-      --chatwoot-indigo: #4f46e5;
-      
-      --text-main: #0f172a;
-      --text-muted: #64748b;
-      --text-light: #94a3b8;
-      
-      --success: #10b981;
-      --success-bg: #ecfdf5;
-      --success-text: #047857;
-      
-      --warning: #f59e0b;
-      --warning-bg: #fffbeb;
-      --warning-text: #b45309;
-      
-      --danger: #ef4444;
-      --danger-bg: #fef2f2;
-      --danger-text: #b91c1c;
-
-      --header-bg: #0f172a;
-      --header-surface: #1e293b;
-      --header-border: rgba(255, 255, 255, 0.08);
-
-      --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-      --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.07), 0 1px 2px -1px rgba(0, 0, 0, 0.07);
-      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.07);
-      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.08);
-      --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
-    }
-
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-
-    body {
-      font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-      background-color: var(--bg-app);
-      color: var(--text-main);
-      display: flex;
-      flex-direction: column;
-      min-height: 100vh;
-      overflow-x: hidden;
-      -webkit-font-smoothing: antialiased;
-      -webkit-tap-highlight-color: transparent;
-    }
-
-    /* ========================================================
-       SINGLE UNIFIED TOP NAVIGATION BAR (ONE ROW ONLY)
-       ======================================================== */
-    .app-header {
-      background: var(--header-bg);
-      border-bottom: 1px solid var(--header-border);
-      position: sticky;
-      top: 0;
-      z-index: 1000;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
-    }
-
-    .header-unified-bar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 0.55rem 1.25rem;
-      gap: 1rem;
-    }
-
-    .header-left {
-      display: flex;
-      align-items: center;
-      gap: 0.85rem;
-    }
-
-    .brand-text-link {
-      text-decoration: none;
-      display: flex;
-      align-items: center;
-    }
-
-    .brand-app-name {
-      color: #ffffff;
-      font-size: 1.05rem;
-      font-weight: 800;
-      letter-spacing: -0.3px;
-      display: flex;
-      align-items: center;
-      gap: 0.45rem;
-    }
-
-    .brand-version-badge {
-      background: var(--primary);
-      color: #ffffff;
-      font-size: 0.62rem;
-      padding: 0.15rem 0.45rem;
-      border-radius: 9999px;
-      font-weight: 700;
-      letter-spacing: 0.4px;
-      box-shadow: 0 0 10px var(--primary-glow);
-    }
-
-    .nav-pipe-divider {
-      width: 1px;
-      height: 22px;
-      background: rgba(255, 255, 255, 0.14);
-      margin: 0 0.25rem;
-    }
-
-    /* Inline Nav Menu (One Single Row) */
-    .header-nav-inline {
-      display: flex;
-      align-items: center;
-      gap: 0.3rem;
-    }
-
-    .nav-btn-direct {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.45rem;
-      padding: 0.45rem 0.85rem;
-      border-radius: 4px;
-      border: 1px solid transparent;
-      background: transparent;
-      color: #cbd5e1;
-      font-family: inherit;
-      font-size: 0.86rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.15s ease;
-      user-select: none;
-    }
-    .nav-btn-direct:hover {
-      background: rgba(255, 255, 255, 0.08);
-      color: #ffffff;
-    }
-    .nav-btn-direct.active {
-      background: var(--primary);
-      color: #ffffff;
-      font-weight: 700;
-      box-shadow: 0 2px 8px var(--primary-glow);
-    }
-
-    /* Dropdown Group Container */
-    .dropdown-group {
-      position: relative;
-      display: inline-block;
-    }
-
-    .dropdown-trigger-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.45rem;
-      padding: 0.45rem 0.85rem;
-      border-radius: 4px;
-      border: 1px solid transparent;
-      background: transparent;
-      color: #cbd5e1;
-      font-family: inherit;
-      font-size: 0.86rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.15s ease;
-      user-select: none;
-    }
-    .dropdown-trigger-btn:hover {
-      background: rgba(255, 255, 255, 0.08);
-      color: #ffffff;
-    }
-    .dropdown-trigger-btn.active-parent {
-      background: var(--primary) !important;
-      color: #ffffff !important;
-      font-weight: 700 !important;
-      border-color: transparent !important;
-      box-shadow: 0 2px 8px var(--primary-glow);
-    }
-
-    /* Dropdown Floating Menu Box */
-    .dropdown-menu-box {
-      position: absolute;
-      top: calc(100% + 4px);
-      left: 0;
-      min-width: 240px;
-      background: #1e293b;
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      border-radius: 4px;
-      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.45);
-      padding: 0.35rem;
-      display: none;
-      flex-direction: column;
-      gap: 0.2rem;
-      z-index: 1200;
-      backdrop-filter: blur(12px);
-      animation: dropdownFadeIn 0.15s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-
-    @keyframes dropdownFadeIn {
-      from { opacity: 0; transform: translateY(-3px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    @media (min-width: 861px) {
-      .dropdown-group:hover .dropdown-menu-box,
-      .dropdown-group.open .dropdown-menu-box {
-        display: flex;
-      }
-    }
-
-    .dropdown-item-btn {
-      display: flex;
-      align-items: center;
-      gap: 0.6rem;
-      padding: 0.55rem 0.85rem;
-      border-radius: 4px;
-      border: none;
-      background: transparent;
-      color: #cbd5e1;
-      font-family: inherit;
-      font-size: 0.85rem;
-      font-weight: 500;
-      cursor: pointer;
-      text-align: left;
-      transition: all 0.15s ease;
-      width: 100%;
-    }
-    .dropdown-item-btn:hover {
-      background: rgba(255, 255, 255, 0.08);
-      color: #ffffff;
-      transform: translateX(2px);
-    }
-    .dropdown-item-btn.active {
-      background: var(--primary);
-      color: #ffffff;
-      font-weight: 700;
-      box-shadow: 0 2px 6px var(--primary-glow);
-    }
-
-    /* Right Zone: Badges and User Actions */
-    .header-right {
-      display: flex;
-      align-items: center;
-      gap: 0.65rem;
-    }
-
-    .header-badges {
-      display: flex;
-      align-items: center;
-      gap: 0.45rem;
-    }
-
-    .header-pill-badge {
-      background: rgba(255, 255, 255, 0.06);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      padding: 0.22rem 0.6rem;
-      border-radius: 9999px;
-      font-size: 0.74rem;
-      font-weight: 600;
-      color: #cbd5e1;
-      display: flex;
-      align-items: center;
-      gap: 0.35rem;
-      white-space: nowrap;
-    }
-
-    .pulse-dot {
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background: var(--success);
-      box-shadow: 0 0 8px var(--success);
-      display: inline-block;
-    }
-
-    .header-actions {
-      display: flex;
-      align-items: center;
-      gap: 0.55rem;
-    }
-
-    .btn-header-link {
-      background: rgba(255, 255, 255, 0.08);
-      color: #f1f5f9;
-      border: 1px solid rgba(255, 255, 255, 0.14);
-      padding: 0.35rem 0.75rem;
-      border-radius: 0.5rem;
-      font-size: 0.78rem;
-      font-weight: 600;
-      text-decoration: none;
-      transition: all 0.15s ease;
-      display: inline-flex;
-      align-items: center;
-      gap: 0.35rem;
-    }
-    .btn-header-link:hover {
-      background: rgba(255, 255, 255, 0.16);
-      color: #ffffff;
-    }
-
-    .user-tag {
-      background: rgba(0, 0, 0, 0.3);
-      padding: 0.3rem 0.65rem;
-      border-radius: 0.5rem;
-      color: #cbd5e1;
-      font-size: 0.78rem;
-      font-weight: 600;
-      display: flex;
-      align-items: center;
-      gap: 0.35rem;
-      border: 1px solid rgba(255, 255, 255, 0.06);
-    }
-
-    .btn-header-logout {
-      background: rgba(239, 68, 68, 0.18);
-      color: #fca5a5;
-      border: 1px solid rgba(239, 68, 68, 0.35);
-      padding: 0.35rem 0.75rem;
-      border-radius: 0.5rem;
-      font-size: 0.78rem;
-      font-weight: 700;
-      cursor: pointer;
-      transition: all 0.15s ease;
-      display: inline-flex;
-      align-items: center;
-      gap: 0.35rem;
-    }
-    .btn-header-logout:hover {
-      background: var(--danger);
-      color: #ffffff;
-    }
-
-    /* Mobile Hamburger */
-    .mobile-hamburger-btn {
-      display: none;
-      background: rgba(255, 255, 255, 0.08);
-      border: 1px solid rgba(255, 255, 255, 0.14);
-      color: #ffffff;
-      width: 36px;
-      height: 36px;
-      border-radius: 0.5rem;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.25rem;
-      cursor: pointer;
-      transition: all 0.15s ease;
-    }
-    .mobile-hamburger-btn:hover {
-      background: rgba(255, 255, 255, 0.18);
-    }
-
-    @media (max-width: 1100px) {
-      .header-badges {
-        display: none;
-      }
-    }
-
-    @media (max-width: 860px) {
-      .header-nav-inline, .nav-pipe-divider {
-        display: none;
-      }
-      .mobile-hamburger-btn {
-        display: inline-flex;
-      }
-    }
-
-    /* ========================================================
-       MOBILE DRAWER SLIDE-IN (STRICTLY HIDDEN ON DESKTOP)
-       ======================================================== */
-    .mobile-drawer {
-      display: none;
-    }
-    .mobile-backdrop {
-      display: none;
-    }
-
-    @media (max-width: 860px) {
-      .mobile-backdrop.open {
-        display: block;
-        position: fixed;
-        inset: 0;
-        background: rgba(15, 23, 42, 0.7);
-        backdrop-filter: blur(4px);
-        z-index: 2000;
-      }
-
-      .mobile-drawer {
-        display: flex;
-        position: fixed;
-        top: 0;
-        left: -300px;
-        width: 285px;
-        height: 100vh;
-        background: #0f172a;
-        border-right: 1px solid rgba(255, 255, 255, 0.1);
-        z-index: 2050;
-        flex-direction: column;
-        overflow-y: auto;
-        box-shadow: 10px 0 30px rgba(0, 0, 0, 0.5);
-        transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
-      }
-      .mobile-drawer.open {
-        transform: translateX(300px);
-      }
-
-      .mobile-drawer-header {
-        padding: 1.25rem 1rem;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-      }
-
-      .mobile-drawer-close {
-        background: transparent;
-        border: none;
-        color: #94a3b8;
-        font-size: 1.4rem;
-        cursor: pointer;
-        padding: 0.25rem;
-      }
-
-      .mobile-drawer-body {
-        padding: 1rem 0.75rem 2rem;
-        display: flex;
-        flex-direction: column;
-        gap: 0.4rem;
-      }
-
-      .mobile-section-header {
-        font-size: 0.72rem;
-        font-weight: 800;
-        text-transform: uppercase;
-        color: #64748b;
-        letter-spacing: 0.6px;
-        margin: 0.8rem 0.5rem 0.25rem;
-      }
-
-      .mobile-nav-link {
-        display: flex;
-        align-items: center;
-        gap: 0.65rem;
-        padding: 0.65rem 0.85rem;
-        border-radius: 0.5rem;
-        border: none;
-        background: transparent;
-        color: #cbd5e1;
-        font-family: inherit;
-        font-size: 0.9rem;
-        font-weight: 500;
-        cursor: pointer;
-        text-align: left;
-        width: 100%;
-        transition: all 0.15s ease;
-      }
-      .mobile-nav-link:hover, .mobile-nav-link:active {
-        background: rgba(255, 255, 255, 0.08);
-        color: #ffffff;
-      }
-      .mobile-nav-link.active {
-        background: var(--primary);
-        color: #ffffff;
-        font-weight: 700;
-      }
-    }
-
-    /* ========================================================
-       MAIN APP WORKSPACE
-       ======================================================== */
-    .main-workspace {
-      flex: 1;
-      width: 100%;
-      max-width: 1600px;
-      margin: 0 auto;
-      padding: 1.35rem 1.5rem 3rem;
-    }
-
-    @media (max-width: 768px) {
-      .main-workspace {
-        padding: 0.85rem 0.85rem 3rem;
-      }
-    }
-
-    .page-header-bar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 1.25rem;
-      padding-bottom: 0.65rem;
-      border-bottom: 1.5px solid var(--border-subtle);
-      flex-wrap: wrap;
-      gap: 0.5rem;
-    }
-
-    .page-title {
-      font-size: 1.35rem;
-      font-weight: 800;
-      color: var(--text-main);
-      letter-spacing: -0.3px;
-    }
-
-    /* Tab Sections */
-    .tab-view-section { display: none; }
-    .tab-view-section.active { display: block; }
-
-    /* ========================================================
-       DASHBOARD & STATS CARDS
-       ======================================================== */
-    .stats-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
-      gap: 1rem;
-      margin-bottom: 1.25rem;
-    }
-
-    @media (max-width: 600px) {
-      .stats-grid {
-        grid-template-columns: 1fr 1fr;
-        gap: 0.65rem;
-      }
-    }
-
-    .stat-card {
-      background: var(--bg-surface);
-      border: 1px solid var(--border-subtle);
-      border-radius: 6px;
-      padding: 1.15rem;
-      box-shadow: var(--shadow-sm);
-      transition: all 0.2s ease;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-    }
-    .stat-card:hover {
-      box-shadow: var(--shadow-md);
-      border-color: #cbd5e1;
-      transform: translateY(-2px);
-    }
-    .stat-label {
-      font-size: 0.78rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      color: var(--text-muted);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-    .stat-value {
-      font-size: 1.85rem;
-      font-weight: 800;
-      color: var(--primary);
-      margin-top: 0.35rem;
-      letter-spacing: -0.5px;
-    }
-
-    @media (max-width: 600px) {
-      .stat-card {
-        padding: 0.85rem;
-      }
-      .stat-value {
-        font-size: 1.45rem;
-      }
-    }
-
-    /* ========================================================
-       URUCHAT CONVERSATION VIEW & RAG TELEMETRY SUITE
-       ======================================================== */
-    .chatwoot-suite-card {
-      background: var(--bg-surface);
-      border: 1px solid var(--border-subtle);
-      border-radius: 6px;
-      padding: 1.25rem;
-      box-shadow: var(--shadow-sm);
-    }
-
-    /* Mobile Segmented Switch (Chat vs Telemetry) */
-    .mobile-segmented-switch {
-      display: none;
-      background: var(--bg-surface-subtle);
-      padding: 0.25rem;
-      border-radius: 4px;
-      border: 1px solid var(--border-subtle);
-      margin-bottom: 1rem;
-      grid-template-columns: 1fr 1fr;
-      gap: 0.25rem;
-    }
-
-    @media (max-width: 1024px) {
-      .mobile-segmented-switch {
-        display: grid;
-      }
-    }
-
-    .segmented-btn {
-      padding: 0.5rem;
-      border-radius: 4px;
-      border: none;
-      background: transparent;
-      color: var(--text-muted);
-      font-family: inherit;
-      font-size: 0.85rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.15s ease;
-    }
-    .segmented-btn.active {
-      background: var(--bg-surface);
-      color: var(--text-main);
-      box-shadow: var(--shadow-xs);
-      font-weight: 700;
-    }
-
-    .chatwoot-grid-layout {
-      display: grid;
-      grid-template-columns: 1.25fr 1fr;
-      gap: 1.25rem;
-      height: calc(100vh - 340px);
-      min-height: 540px;
-      margin-top: 1rem;
-    }
-
-    @media (max-width: 1024px) {
-      .chatwoot-grid-layout {
-        grid-template-columns: 1fr;
-        height: auto;
-        min-height: 0;
-      }
-      .panel-telemetry {
-        display: none;
-      }
-      .panel-telemetry.mobile-active {
-        display: flex !important;
-      }
-      .panel-conversation.mobile-hidden {
-        display: none !important;
-      }
-    }
-
-    /* Left Pane: Conversation */
-    .panel-conversation {
-      background: #ffffff;
-      border: 1px solid var(--border-subtle);
-      border-radius: 6px;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-      box-shadow: var(--shadow-xs);
-      height: 100%;
-      min-height: 480px;
-    }
-
-    .conversation-header {
-      background: #0f172a;
-      color: #ffffff;
-      padding: 0.75rem 1.15rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .conversation-messages {
-      flex: 1;
-      overflow-y: auto;
-      padding: 1.15rem;
-      display: flex;
-      flex-direction: column;
-      gap: 0.85rem;
-      background: #f8fafc;
-    }
-
-    /* Uruchat Speech Bubbles */
-    .chat-bubble-user {
-      align-self: flex-end;
-      max-width: 85%;
-      background: #0f172a;
-      color: #ffffff;
-      border-radius: 0.85rem 0.85rem 0.2rem 0.85rem;
-      padding: 0.75rem 1rem;
-      font-size: 0.9rem;
-      line-height: 1.45;
-      box-shadow: var(--shadow-sm);
-      word-break: break-word;
-    }
-
-    .chat-bubble-bot {
-      align-self: flex-start;
-      max-width: 88%;
-      background: #ffffff;
-      color: var(--text-main);
-      border: 1px solid var(--border-subtle);
-      border-radius: 0.85rem 0.85rem 0.85rem 0.2rem;
-      padding: 0.85rem 1.1rem;
-      font-size: 0.9rem;
-      line-height: 1.5;
-      box-shadow: var(--shadow-xs);
-      word-break: break-word;
-    }
-
-    /* Typing wave indicator */
-    .chatwoot-typing {
-      display: none;
-      align-self: flex-start;
-      background: #ffffff;
-      border: 1px solid var(--border-subtle);
-      border-radius: 1rem;
-      padding: 0.5rem 0.85rem;
-      box-shadow: var(--shadow-xs);
-    }
-    .typing-dots {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-    }
-    .typing-dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: var(--text-muted);
-      animation: typingWave 1.4s infinite ease-in-out both;
-    }
-    .typing-dot:nth-child(1) { animation-delay: -0.32s; }
-    .typing-dot:nth-child(2) { animation-delay: -0.16s; }
-
-    @keyframes typingWave {
-      0%, 80%, 100% { transform: scale(0.6); opacity: 0.5; }
-      40% { transform: scale(1); opacity: 1; }
-    }
-
-    /* Chat Composer */
-    .conversation-composer {
-      display: flex;
-      gap: 0.5rem;
-      padding: 0.75rem 1rem;
-      background: #ffffff;
-      border-top: 1px solid var(--border-subtle);
-      align-items: center;
-    }
-
-    .composer-input {
-      flex: 1;
-      margin: 0;
-      padding: 0.65rem 0.9rem;
-      font-size: 0.92rem;
-      border-radius: 4px;
-      border: 1px solid var(--border-subtle);
-      background: #f8fafc;
-      transition: all 0.15s ease;
-    }
-    .composer-input:focus {
-      background: #ffffff;
-      border-color: var(--primary);
-      box-shadow: 0 0 0 3px var(--primary-glow);
-    }
-
-    /* Right Pane: Telemetry */
-    .panel-telemetry {
-      background: #ffffff;
-      border: 1px solid var(--border-subtle);
-      border-radius: 6px;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-      box-shadow: var(--shadow-xs);
-      height: 100%;
-      min-height: 480px;
-    }
-
-    .telemetry-header-bar {
-      background: #f8fafc;
-      padding: 0.75rem 1.15rem;
-      border-bottom: 1px solid var(--border-subtle);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .telemetry-body-content {
-      flex: 1;
-      overflow-y: auto;
-      padding: 1.15rem;
-      display: flex;
-      flex-direction: column;
-      gap: 0.9rem;
-      font-size: 0.85rem;
-    }
-
-    /* Telemetry Card Containers */
-    .prop-card {
-      background: #f8fafc;
-      border: 1px solid var(--border-subtle);
-      border-radius: 4px;
-      padding: 0.75rem 0.9rem;
-    }
-
-    .prop-title {
-      font-size: 0.75rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      color: var(--text-muted);
-      margin-bottom: 0.4rem;
-      display: flex;
-      justify-content: space-between;
-    }
-
-    /* Quick Prompts Bar */
-    .quick-chips-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.4rem;
-      align-items: center;
-      margin-top: 0.75rem;
-    }
-
-    .chip-btn {
-      background: #f1f5f9;
-      border: 1px solid var(--border-subtle);
-      color: var(--text-main);
-      padding: 0.35rem 0.75rem;
-      border-radius: 4px;
-      font-size: 0.78rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.15s ease;
-      display: inline-flex;
-      align-items: center;
-      gap: 0.3rem;
-    }
-    .chip-btn:hover {
-      background: var(--primary-50);
-      border-color: var(--primary);
-      color: var(--primary);
-      transform: translateY(-1px);
-    }
-
-    /* ========================================================
-       FORMS, TABLES & MODALS
-       ======================================================== */
-    .card-box {
-      background-color: var(--bg-surface);
-      padding: 1.5rem;
-      border-radius: 6px;
-      border: 1px solid var(--border-subtle);
-      margin-top: 1rem;
-      box-shadow: var(--shadow-sm);
-    }
-
-    label {
-      display: block;
-      font-size: 0.78rem;
-      font-weight: 700;
-      color: var(--text-muted);
-      margin-top: 0.9rem;
-      text-transform: uppercase;
-      letter-spacing: 0.4px;
-    }
-
-    textarea, input, select {
-      width: 100%;
-      padding: 0.65rem 0.85rem;
-      border-radius: 4px;
-      border: 1px solid var(--border-subtle);
-      background-color: #fff;
-      color: var(--text-main);
-      font-family: inherit;
-      font-size: 0.92rem;
-      margin-top: 0.35rem;
-      transition: all 0.15s ease;
-    }
-
-    @media (max-width: 768px) {
-      textarea, input, select {
-        font-size: 16px; /* Avoid auto-zoom */
-      }
-    }
-
-    textarea:focus, input:focus, select:focus {
-      outline: none;
-      border-color: var(--primary);
-      box-shadow: 0 0 0 3px var(--primary-glow);
-    }
-
-    button.btn-action {
-      padding: 0.55rem 1.15rem;
-      border-radius: 4px;
-      border: none;
-      background-color: var(--primary);
-      color: white;
-      font-family: inherit;
-      font-weight: 700;
-      font-size: 0.86rem;
-      cursor: pointer;
-      transition: all 0.15s ease;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.4rem;
-      user-select: none;
-    }
-    button.btn-action:hover {
-      background-color: var(--primary-hover);
-      transform: translateY(-1px);
-      box-shadow: var(--shadow-md);
-    }
-    button.btn-action:active { transform: translateY(0); }
-    button.btn-danger { background-color: var(--danger); }
-    button.btn-danger:hover { background-color: #dc2626; }
-    button.btn-success { background-color: var(--success); }
-    button.btn-success:hover { background-color: #059669; }
-    button.btn-secondary { background-color: #64748b; }
-    button.btn-secondary:hover { background-color: #475569; }
-
-    /* Tables */
-    .table-container {
-      width: 100%;
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
-      margin-top: 1rem;
-      border-radius: 6px;
-      border: 1px solid var(--border-subtle);
-      box-shadow: var(--shadow-xs);
-      background-color: var(--bg-surface);
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      background-color: var(--bg-surface);
-      min-width: 650px;
-    }
-
-    th, td {
-      padding: 0.8rem 1rem;
-      text-align: left;
-      border-bottom: 1px solid var(--border-subtle);
-      font-size: 0.88rem;
-    }
-
-    th {
-      background-color: #f8fafc;
-      color: var(--text-muted);
-      font-size: 0.74rem;
-      text-transform: uppercase;
-      font-weight: 700;
-      letter-spacing: 0.5px;
-    }
-
-    tr:hover { background-color: #f8fafc; }
-
-    .badge {
-      padding: 0.25rem 0.6rem;
-      border-radius: 4px;
-      font-size: 0.75rem;
-      font-weight: 700;
-      text-transform: capitalize;
-      display: inline-flex;
-      align-items: center;
-      gap: 0.25rem;
-    }
-    .badge.pendiente { background-color: var(--warning-bg); color: var(--warning-text); }
-    .badge.confirmado { background-color: var(--success-bg); color: var(--success-text); }
-    .badge.rechazado { background-color: var(--danger-bg); color: var(--danger-text); }
-    .badge.entregado { background-color: var(--primary-50); color: var(--primary); }
-
-    .img-thumb {
-      width: 44px;
-      height: 44px;
-      object-fit: cover;
-      border-radius: 4px;
-      border: 1px solid var(--border-subtle);
-      background-color: #f8fafc;
-    }
-
-    /* Filters */
-    .filter-bar {
-      display: flex;
-      gap: 0.5rem;
-      margin-bottom: 1rem;
-      flex-wrap: wrap;
-    }
-    .filter-btn {
-      padding: 0.45rem 0.85rem;
-      border-radius: 4px;
-      border: 1px solid var(--border-subtle);
-      background: var(--bg-surface);
-      color: var(--text-muted);
-      cursor: pointer;
-      font-family: inherit;
-      font-size: 0.85rem;
-      font-weight: 600;
-      transition: all 0.15s;
-    }
-    .filter-btn:hover {
-      border-color: var(--primary);
-      color: var(--primary);
-    }
-    .filter-btn.active {
-      background: var(--primary);
-      color: white;
-      border-color: var(--primary);
-    }
-
-    h3 { color: var(--text-main); font-size: 1.18rem; font-weight: 800; }
-
-    /* Modals */
-    .modal-overlay {
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background-color: rgba(15, 23, 42, 0.7);
-      backdrop-filter: blur(5px);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      z-index: 3000;
-      padding: 1rem;
-    }
-    .modal-overlay.active { display: flex; }
-    .modal-card {
-      background-color: var(--bg-surface);
-      border: 1px solid var(--border-subtle);
-      border-radius: 6px;
-      width: 100%;
-      max-width: 750px;
-      max-height: 90vh;
-      overflow-y: auto;
-      padding: 1.5rem;
-      box-shadow: var(--shadow-xl);
-      animation: modalFadeIn 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-
-    @keyframes modalFadeIn {
-      from { opacity: 0; transform: scale(0.96); }
-      to { opacity: 1; transform: scale(1); }
-    }
-
-    .modal-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding-bottom: 0.75rem;
-      border-bottom: 2px solid var(--primary);
-      margin-bottom: 1rem;
-      gap: 0.5rem;
-    }
-
-    @media print {
-      body { background: white; color: black; }
-      .app-header, .page-header-bar, .filter-bar, .modal-header button, .no-print, .mobile-drawer, .mobile-backdrop { display: none !important; }
-      .modal-card { border: none; width: 100%; max-width: 100%; box-shadow: none; padding: 0; }
-      table { background: white; color: black; border: 1px solid #ccc; min-width: 100%; }
-      th, td { border: 1px solid #ccc; color: black; }
-    }
-  </style>
+    <link rel="stylesheet" href="css/admin.css">
 </head>
 <body>
 
@@ -1132,6 +69,10 @@
                 <span>🛠️</span>
                 <span>Guías Técnicas & Cálculos</span>
               </button>
+              <button class="dropdown-item-btn" id="nav-btn-promociones" onclick="switchTab('promociones', event)">
+                <span>🎯</span>
+                <span>Banners & Promociones</span>
+              </button>
             </div>
           </div>
 
@@ -1149,6 +90,10 @@
               <button class="dropdown-item-btn" id="nav-btn-contactos" onclick="switchTab('contactos', event)">
                 <span>📬</span>
                 <span>Avisos & Alertas de Pedido</span>
+              </button>
+              <button class="dropdown-item-btn" id="nav-btn-clientes" onclick="switchTab('clientes', event)">
+                <span>👥</span>
+                <span>Clientes & Descuentos Cotibot</span>
               </button>
             </div>
           </div>
@@ -1251,6 +196,9 @@
       <button class="mobile-nav-link" id="mob-btn-guias" onclick="switchTab('guias', event)">
         <span>🛠️</span> <span>Guías Técnicas & Cálculos</span>
       </button>
+      <button class="mobile-nav-link" id="mob-btn-promociones" onclick="switchTab('promociones', event)">
+        <span>🎯</span> <span>Banners & Promociones</span>
+      </button>
 
       <!-- 3. Pedidos -->
       <div class="mobile-section-header">🛒 Pedidos</div>
@@ -1259,6 +207,9 @@
       </button>
       <button class="mobile-nav-link" id="mob-btn-contactos" onclick="switchTab('contactos', event)">
         <span>📬</span> <span>Avisos de Pedido</span>
+      </button>
+      <button class="mobile-nav-link" id="mob-btn-clientes" onclick="switchTab('clientes', event)">
+        <span>👥</span> <span>Clientes Cotibot</span>
       </button>
 
       <!-- 4. Configuración (Luego de Pedidos) -->
@@ -1712,6 +663,42 @@
           <button class="btn-action btn-success" onclick="saveDataSourceConfig()">💾 Guardar Estrategia de Ingestión</button>
         </div>
       </div>
+
+      <!-- TARJETA: PROVEEDORES EXTERNOS & REGLAS DE MARGEN / IVA (MULTI-SCRAPER) -->
+      <div class="card-box" style="margin-top:1.5rem;">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;">
+          <div>
+            <h3>🏷️ Proveedores Externos & Reglas de Margen / IVA (Multi-Scraper)</h3>
+            <p style="color:var(--text-muted); font-size:0.85rem; margin-top:0.25rem;">
+              Gestiona el recargo comercial, tratamiento de IVA y sincronización para <strong>Equus Uruguay</strong> y hasta 4 proveedores adicionales preparados para ingesta masiva.
+            </p>
+          </div>
+          <div>
+            <button class="btn-action btn-success" onclick="recalcularTodosPrecios()">⚡ Recalcular Precios de Todos los Proveedores</button>
+          </div>
+        </div>
+
+        <div class="table-container" style="margin-top:1rem;">
+          <table>
+            <thead>
+              <tr>
+                <th>Estado</th>
+                <th>Código / Proveedor</th>
+                <th>Prefijo SKU</th>
+                <th>Margen Recargo (%)</th>
+                <th>Costo incluye IVA</th>
+                <th>Aplicar IVA 22% Venta</th>
+                <th>Moneda</th>
+                <th>Productos</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="proveedores-table-body">
+              <tr><td colspan="9" style="text-align:center; padding:1.5rem;">Cargando proveedores...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
     </section>
 
     <!-- ========================================================
@@ -1873,9 +860,18 @@
         </div>
       </div>
 
-      <div style="display:grid; grid-template-columns: 2fr 1fr; gap:0.75rem; margin-bottom:1rem;">
+      <div style="display:grid; grid-template-columns: 2fr 1.2fr 1fr; gap:0.75rem; margin-bottom:1rem;">
         <input type="text" id="product-search" placeholder="Buscar por SKU, nombre o marca..." onkeyup="debouncedLoadProducts()" style="margin:0;">
         <input type="text" id="product-category" placeholder="Filtrar por categoría (ej: Pinturas)..." onkeyup="debouncedLoadProducts()" style="margin:0;">
+        <select id="product-fuente" onchange="debouncedLoadProducts()" style="margin:0; padding:0.5rem; font-size:0.85rem; border-radius:4px; border:1px solid var(--border-subtle); background:#ffffff;">
+          <option value="">Origen: Todos los Catálogos</option>
+          <option value="kroser">Kroser Oficial</option>
+          <option value="equus">Equus Uruguay (EQ-)</option>
+          <option value="sitio_2">Proveedor 2 (P2-)</option>
+          <option value="sitio_3">Proveedor 3 (P3-)</option>
+          <option value="sitio_4">Proveedor 4 (P4-)</option>
+          <option value="sitio_5">Proveedor 5 (P5-)</option>
+        </select>
       </div>
 
       <div class="table-container">
@@ -1885,8 +881,9 @@
               <th>Imagen</th>
               <th>SKU</th>
               <th>Nombre</th>
-              <th>Precio (USD)</th>
-              <th>Marca</th>
+              <th>Precio Venta</th>
+              <th>Costo / Margen</th>
+              <th>Origen</th>
               <th>Categoría</th>
               <th>Stock</th>
               <th>Enlace Web</th>
@@ -2101,6 +1098,85 @@
     </section>
 
     <!-- ========================================================
+         TAB: CLIENTES & DESCUENTOS (COTIBOT)
+         ======================================================== -->
+    <section id="tab-clientes" class="tab-view-section">
+      <!-- 1. GESTIÓN DE CATEGORÍAS Y NIVELES DE DESCUENTO -->
+      <div class="card-box" style="margin-bottom: 1.5rem;">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem; margin-bottom:1rem;">
+          <div>
+            <h3>🏷️ Niveles y Categorías de Descuento (Gestión Manual)</h3>
+            <p style="color:var(--text-muted); font-size:0.85rem; margin-top:0.25rem;">
+              Defina manualmente las categorías comerciales, configure su porcentaje de descuento base y agregue nuevos segmentos (ej: Sanitarios, Pintores, Arquitectos).
+            </p>
+          </div>
+          <div style="display:flex; gap:0.5rem; align-items:center;">
+            <button class="btn-action btn-success" onclick="openNuevaCategoriaModal()">+ Nueva Categoría</button>
+            <button class="btn-action" onclick="loadCategoriasDescuento()" style="padding:0.55rem 0.85rem;" title="Recargar categorías">🔄</button>
+          </div>
+        </div>
+
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th style="width:130px;">Código</th>
+                <th>Nombre Visible</th>
+                <th style="width:140px;">Descuento Base %</th>
+                <th style="width:80px;">Orden</th>
+                <th style="width:100px;">Estado</th>
+                <th style="width:180px;">Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="categorias-table-body">
+              <tr><td colspan="6" style="text-align:center; padding:1.5rem; color:var(--text-muted);">Cargando categorías...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 2. CLIENTES REGISTRADOS -->
+      <div class="card-box">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem; margin-bottom:1rem;">
+          <div>
+            <h3>👥 Clientes Registrados & Descuentos Cotibot</h3>
+            <p style="color:var(--text-muted); font-size:0.85rem; margin-top:0.25rem;">
+              Administre las cuentas de clientes de la landing, categorías asignadas y porcentajes de descuento personalizados.
+            </p>
+          </div>
+          <div style="display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap;">
+            <input type="text" id="clientes-search-input" placeholder="Buscar por nombre, email o RUT..." style="width:240px; margin:0;" oninput="debounceClientesSearch()">
+            <select id="clientes-filter-categoria" style="width:180px; margin:0;" onchange="loadClientesAdmin()">
+              <option value="">Todas las categorías</option>
+            </select>
+            <button class="btn-action" onclick="loadClientesAdmin()" style="padding:0.55rem 0.85rem;">🔄</button>
+          </div>
+        </div>
+
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Nombre / Razón Social</th>
+                <th>Email</th>
+                <th>RUT / CI</th>
+                <th>Teléfono</th>
+                <th>Categoría</th>
+                <th>Descuento %</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="clientes-table-body">
+              <tr><td colspan="9" style="text-align:center; padding:1.5rem; color:var(--text-muted);">Cargando clientes...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================================
          TAB 13: GUÍAS TÉCNICAS, CÁLCULOS & DIAGNÓSTICO
          ======================================================== -->
     <section id="tab-guias" class="tab-view-section">
@@ -2128,6 +1204,47 @@
               </tr>
             </thead>
             <tbody id="guias-table-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================================
+         TAB 14: BANNERS & PROMOCIONES ESPECIALES (COTIBOT)
+         ======================================================== -->
+    <section id="tab-promociones" class="tab-view-section">
+      <div class="card-box">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
+          <div>
+            <h3>🎯 Banners & Promociones Especiales (Cotibot)</h3>
+            <p style="color:var(--text-muted); font-size:0.85rem; margin-top:0.25rem;">
+              Carga y administra ofertas destacadas, bonificaciones por proveedor (Equus, Pinturas, etc.) y banners promocionales visibles en el cotizador público.
+            </p>
+          </div>
+          <div>
+            <button class="btn-action btn-success" onclick="openPromoModal()">+ Nueva Promoción</button>
+          </div>
+        </div>
+
+        <div class="table-container" style="margin-top:1.25rem;">
+          <table>
+            <thead>
+              <tr>
+                <th>Estado</th>
+                <th>Prioridad</th>
+                <th>Etiqueta / Badge</th>
+                <th>Título Promocional</th>
+                <th>Subtítulo</th>
+                <th>Descuento</th>
+                <th>Productos Asignados</th>
+                <th>Gradiente</th>
+                <th>Botón CTA</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="promociones-table-body">
+              <tr><td colspan="10" style="text-align:center; padding:1.5rem;">Cargando promociones especiales...</td></tr>
+            </tbody>
           </table>
         </div>
       </div>
@@ -2266,6 +1383,162 @@
     </div>
   </div>
 
+  <!-- Modal Promoción Especial / Banner -->
+  <div class="modal-overlay" id="promo-modal">
+    <div class="modal-card" style="max-width:800px; max-height:92vh; overflow-y:auto;">
+      <div class="modal-header">
+        <h3 id="promo-modal-title">🎯 Cargar Promoción Especial</h3>
+        <button class="btn-action btn-danger" onclick="closeModal('promo-modal')">✖</button>
+      </div>
+      <form id="form-promocion" onsubmit="savePromocionForm(event)">
+        <input type="hidden" id="promo-form-id">
+        <input type="hidden" id="promo-form-accion">
+        
+        <label>Título de la Promoción *</label>
+        <input type="text" id="promo-form-titulo" required placeholder="Ej: Super Oferta Equus: Escaleras Profesionales">
+        
+        <label>Subtítulo o Descripción Breve</label>
+        <textarea id="promo-form-subtitulo" rows="2" placeholder="Ej: Escaleras telescópicas de aluminio con entrega rápida y garantía oficial."></textarea>
+        
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:0.75rem;">
+          <div>
+            <label>Etiqueta / Badge Destacado</label>
+            <input type="text" id="promo-form-badge" placeholder="Ej: ⚡ EQUUS DESTACADO, OFERTA DEL MES">
+          </div>
+          <div>
+            <label>Descuento General de la Promo (%) *</label>
+            <input type="number" id="promo-form-descuento" min="0" max="100" step="0.1" placeholder="Ej: 25" oninput="renderPromoSelectedProductsTable()">
+          </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:0.75rem;">
+          <div>
+            <label>Texto del Botón CTA</label>
+            <input type="text" id="promo-form-boton" placeholder="Ej: Ver Ofertas, Comprar Ahora">
+          </div>
+          <div>
+            <label>Tema / Gradiente Visual</label>
+            <select id="promo-form-gradiente">
+              <option value="amber">🔥 Ámbar / Dorado (Equus & Fuego)</option>
+              <option value="emerald">🌿 Esmeralda / Verde (Pinturas & Ahorro)</option>
+              <option value="blue">⚡ Azul Eléctrico (Gremio & Pro)</option>
+              <option value="purple">✨ Púrpura / Índigo (Cuentas & Clientes)</option>
+              <option value="red">💥 Rojo Furia (Liquidaciones)</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:0.75rem;">
+          <div>
+            <label>Orden / Prioridad (menor = primero)</label>
+            <input type="number" id="promo-form-orden" value="1" min="0">
+          </div>
+          <div style="display:flex; align-items:center; margin-top:1.5rem; gap:0.5rem;">
+            <input type="checkbox" id="promo-form-activo" checked style="width:auto; margin:0;">
+            <label for="promo-form-activo" style="margin:0; text-transform:none; font-weight:600;">Promoción activa visible en el Banner público</label>
+          </div>
+        </div>
+
+        <!-- SECCIÓN: CONTROL TOTAL DE PRODUCTOS -->
+        <div style="margin-top:1.25rem; padding:1rem; background:rgba(255,255,255,0.03); border:1px solid var(--border); border-radius:0.75rem;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem;">
+            <div>
+              <h4 style="margin:0; font-size:1rem; color:var(--text-main); display:flex; align-items:center; gap:0.5rem;">
+                📦 Productos Asignados (Control Total)
+              </h4>
+              <p style="margin:0.25rem 0 0 0; font-size:0.8rem; color:var(--text-muted);">
+                Solo los productos seleccionados aquí recibirán el descuento y se mostrarán al hacer clic en el banner.
+              </p>
+            </div>
+            <span id="promo-selected-count-badge" class="badge entregado" style="font-size:0.8rem;">0 productos</span>
+          </div>
+
+          <!-- Buscador interactivo de productos con dropdown -->
+          <div style="position:relative; margin-bottom:0.75rem;">
+            <label style="font-size:0.8rem;">Buscar producto para agregar:</label>
+            <input type="text" id="promo-search-prod-input" placeholder="🔍 Escribe nombre o SKU (ej: Escalera, EQ-R12205HT, Cetol, Taladro)..." oninput="handlePromoSearchProductInput(this.value)" autocomplete="off">
+            <div id="promo-search-prod-results" style="display:none; position:absolute; top:100%; left:0; right:0; max-height:220px; overflow-y:auto; background:var(--card-bg, #1e293b); border:1px solid var(--border); border-radius:0.5rem; z-index:1000; box-shadow:0 10px 25px rgba(0,0,0,0.5);"></div>
+          </div>
+
+          <!-- Carga rápida por SKUs separados por coma -->
+          <div style="display:flex; gap:0.5rem; margin-bottom:1rem; align-items:flex-end;">
+            <div style="flex:1;">
+              <label style="font-size:0.8rem;">O agregar varios SKUs (separados por coma):</label>
+              <input type="text" id="promo-skus-quick-input" placeholder="Ej: EQ-R12205HT, EQ-R12206HT, EQ-R16005">
+            </div>
+            <button type="button" class="btn-action btn-secondary" style="height:38px; white-space:nowrap; padding:0 0.85rem;" onclick="addSkusToPromoFromInput()">+ Cargar SKUs</button>
+          </div>
+
+          <!-- Tabla de productos asignados -->
+          <div style="max-height:260px; overflow-y:auto; border:1px solid var(--border); border-radius:0.5rem; background:rgba(0,0,0,0.2);">
+            <table style="width:100%; font-size:0.82rem; margin:0;">
+              <thead>
+                <tr style="background:rgba(255,255,255,0.04); text-align:left;">
+                  <th style="padding:0.5rem;">Artículo / SKU</th>
+                  <th style="padding:0.5rem;">Precio Normal</th>
+                  <th style="padding:0.5rem;">Descuento</th>
+                  <th style="padding:0.5rem;">Precio Promo</th>
+                  <th style="padding:0.5rem; text-align:center;">Quitar</th>
+                </tr>
+              </thead>
+              <tbody id="promo-selected-products-tbody">
+                <tr><td colspan="5" style="text-align:center; padding:1.25rem; color:var(--text-muted);">No has agregado productos a esta promoción aún.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div style="margin-top:1.5rem; display:flex; justify-content:flex-end; gap:0.5rem;">
+          <button type="button" class="btn-action btn-secondary" onclick="closeModal('promo-modal')">Cancelar</button>
+          <button type="submit" class="btn-action btn-success">💾 Guardar Promoción y Productos</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal Categoría de Descuento (Cotibot) -->
+  <div class="modal-overlay" id="categoria-modal">
+    <div class="modal-card" style="max-width:540px;">
+      <div class="modal-header">
+        <h3 id="categoria-modal-title">🏷️ Nueva Categoría de Descuento</h3>
+        <button class="btn-action btn-danger" onclick="closeModal('categoria-modal')">✖</button>
+      </div>
+      <form id="form-categoria" onsubmit="saveCategoriaForm(event)">
+        <input type="hidden" id="categoria-form-is-edit" value="0">
+
+        <label>Código Identificador * <small style="color:var(--text-muted);">(Único, sin espacios, ej: sanitarios, pintores, vip)</small></label>
+        <input type="text" id="categoria-form-codigo" required placeholder="ej: sanitarios" style="font-family:monospace;">
+
+        <label>Nombre Visible al Público / Admin *</label>
+        <input type="text" id="categoria-form-nombre" required placeholder="ej: Sanitarios y Plomeros">
+
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:0.75rem;">
+          <div>
+            <label>Descuento Base (%) *</label>
+            <input type="number" id="categoria-form-descuento" min="0" max="100" step="0.5" required placeholder="ej: 12">
+          </div>
+          <div>
+            <label>Orden / Prioridad</label>
+            <input type="number" id="categoria-form-orden" min="0" value="10">
+          </div>
+        </div>
+
+        <label>Descripción / Observaciones</label>
+        <textarea id="categoria-form-descripcion" rows="2" placeholder="ej: Destinado a profesionales del gremio sanitario y gasistas"></textarea>
+
+        <div style="display:flex; align-items:center; gap:0.5rem; margin-top:0.75rem; margin-bottom:1rem;">
+          <input type="checkbox" id="categoria-form-activo" checked style="width:auto; margin:0;">
+          <label for="categoria-form-activo" style="margin:0; text-transform:none; font-weight:600;">Categoría activa (habilitada para asignar a clientes)</label>
+        </div>
+
+        <div style="display:flex; justify-content:flex-end; gap:0.5rem; margin-top:1rem;">
+          <button type="button" class="btn-action btn-secondary" onclick="closeModal('categoria-modal')">Cancelar</button>
+          <button type="submit" class="btn-action btn-success">💾 Guardar Categoría</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- Modal Login Admin -->
   <div class="modal-overlay" id="login-modal" style="background: rgba(15,23,42,0.85); backdrop-filter: blur(6px); z-index: 9999;">
     <div class="modal-card" style="max-width: 420px; padding: 2rem; border-radius: 1rem; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.3);">
@@ -2293,1755 +1566,6 @@
   <!-- ========================================================
        APPLICATION JAVASCRIPT LOGIC
        ======================================================== -->
-  <script>
-    function escHtml(str) {
-      if (str == null) return '';
-      return String(str)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
-    }
-
-    const API_BASE = '/api';
-    let currentPedidosList = [];
-    let currentFilter = 'todos';
-    let pendingAuthResolver = null;
-
-    // --- AUTHENTICATION ---
-    function showLoginModal() {
-      document.getElementById('login-modal').classList.add('active');
-      document.getElementById('admin-login-password').focus();
-    }
-
-    function hideLoginModal() {
-      document.getElementById('login-modal').classList.remove('active');
-    }
-
-    async function handleAdminLoginSubmit(event) {
-      event.preventDefault();
-      const username = document.getElementById('admin-login-username').value.trim();
-      const password = document.getElementById('admin-login-password').value;
-      const errorDiv = document.getElementById('admin-login-error');
-      errorDiv.style.display = 'none';
-
-      try {
-        const loginRes = await fetch(`${API_BASE}/auth/login`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({ username, password })
-        });
-        const data = await loginRes.json();
-        if (!loginRes.ok || !data.success) {
-          throw new Error(data.error || 'Credenciales incorrectas');
-        }
-        localStorage.setItem('kroser_admin_token', data.token);
-        hideLoginModal();
-        if (pendingAuthResolver) {
-          pendingAuthResolver(data.token);
-          pendingAuthResolver = null;
-        } else {
-          loadDashboard();
-          initSimulator();
-        }
-      } catch (err) {
-        errorDiv.textContent = err.message || 'Contraseña o usuario incorrecto';
-        errorDiv.style.display = 'block';
-      }
-    }
-
-    async function apiFetch(url, options = {}) {
-      options.credentials = 'include';
-      let token = localStorage.getItem('kroser_admin_token');
-      if (token) {
-        options.headers = { ...options.headers, 'Authorization': `Bearer ${token}` };
-      }
-      let response = await fetch(url, options);
-      if (response.status === 401 && !url.includes('/auth/login')) {
-        localStorage.removeItem('kroser_admin_token');
-        showLoginModal();
-        token = await new Promise(resolve => { pendingAuthResolver = resolve; });
-        if (token) {
-          options.headers = { ...options.headers, 'Authorization': `Bearer ${token}` };
-        }
-        response = await fetch(url, options);
-      }
-      return response;
-    }
-
-    function logoutAdmin() {
-      localStorage.removeItem('kroser_admin_token');
-      fetch(`${API_BASE}/auth/logout`, { method: 'POST', credentials: 'include' }).finally(() => {
-        showLoginModal();
-      });
-    }
-
-    // --- NAVIGATION LOGIC ---
-    const TAB_TITLES = {
-      dashboard: 'Dashboard de Operaciones & Chat IA',
-      catalogo: 'Catálogo de Productos Scrapeados (USD)',
-      locales: 'Sucursales Kroser en Uruguay (50+)',
-      zonas: 'Zonas y Tarifas de Envío',
-      pagos: 'Formas y Métodos de Pago',
-      pedidos: 'Gestión de Pedidos & Vista Depósito',
-      contactos: 'Destinatarios de Alertas y Notificaciones de Pedido',
-      prompt: 'Prompt del Sistema & Mensajes Predeterminados',
-      chatwoot: 'Integración Uruchat (Inboxes & Canales)',
-      datasource: 'Estrategia y Fuente de Datos del Catálogo',
-      llm: 'Conector Agente IA (Gemini / OpenAI / Modelos)',
-      scraper: 'Panel de Control del Scraper Oficial',
-      guias: 'Guías Técnicas, Rendimientos de Materiales & Diagnóstico',
-    };
-
-    const TAB_PARENT_GROUPS = {
-      dashboard: null,
-      catalogo: 'trigger-catalogo',
-      locales: 'trigger-catalogo',
-      zonas: 'trigger-catalogo',
-      pagos: 'trigger-catalogo',
-      guias: 'trigger-catalogo',
-      pedidos: 'trigger-pedidos',
-      contactos: 'trigger-pedidos',
-      prompt: 'trigger-config',
-      chatwoot: 'trigger-config',
-      datasource: 'trigger-config',
-      llm: 'trigger-config',
-      scraper: 'trigger-config',
-    };
-
-    function toggleDropdown(groupId, event) {
-      if (event) event.stopPropagation();
-      const group = document.getElementById(groupId);
-      const isAlreadyOpen = group.classList.contains('open');
-      
-      // Close all
-      document.querySelectorAll('.dropdown-group').forEach(g => g.classList.remove('open'));
-      
-      if (!isAlreadyOpen) {
-        group.classList.add('open');
-      }
-    }
-
-    // Close dropdowns on outside click
-    document.addEventListener('click', () => {
-      document.querySelectorAll('.dropdown-group').forEach(g => g.classList.remove('open'));
-    });
-
-    function toggleMobileDrawer() {
-      const drawer = document.getElementById('mobile-drawer');
-      const backdrop = document.getElementById('mobile-backdrop');
-      if (drawer && backdrop) {
-        drawer.classList.toggle('open');
-        backdrop.classList.toggle('open');
-      }
-    }
-
-    function closeMobileDrawer() {
-      const drawer = document.getElementById('mobile-drawer');
-      const backdrop = document.getElementById('mobile-backdrop');
-      if (drawer && backdrop) {
-        drawer.classList.remove('open');
-        backdrop.classList.remove('open');
-      }
-    }
-
-    function switchMobileChatView(view) {
-      const chatPane = document.getElementById('pane-chat-conversation');
-      const telePane = document.getElementById('pane-chat-telemetry');
-      const btnChat = document.getElementById('seg-btn-chat');
-      const btnTele = document.getElementById('seg-btn-telemetry');
-
-      if (view === 'telemetry') {
-        chatPane.classList.add('mobile-hidden');
-        telePane.classList.add('mobile-active');
-        btnTele.classList.add('active');
-        btnChat.classList.remove('active');
-      } else {
-        chatPane.classList.remove('mobile-hidden');
-        telePane.classList.remove('mobile-active');
-        btnChat.classList.add('active');
-        btnTele.classList.remove('active');
-      }
-    }
-
-    function switchTab(tabName, event) {
-      // 1. Hide all sections
-      document.querySelectorAll('.tab-view-section').forEach(el => el.classList.remove('active'));
-
-      // 2. Clear all desktop nav active classes
-      document.querySelectorAll('.nav-btn-direct, .dropdown-item-btn').forEach(el => el.classList.remove('active'));
-      document.querySelectorAll('.dropdown-trigger-btn').forEach(el => el.classList.remove('active-parent'));
-
-      // 3. Clear mobile nav active classes
-      document.querySelectorAll('.mobile-nav-link').forEach(el => el.classList.remove('active'));
-
-      // 4. Activate target tab section
-      const targetSection = document.getElementById(`tab-${tabName}`);
-      if (targetSection) targetSection.classList.add('active');
-
-      // 5. Activate desktop nav item
-      const targetDesktopBtn = document.getElementById(`nav-btn-${tabName}`);
-      if (targetDesktopBtn) targetDesktopBtn.classList.add('active');
-
-      // 6. Highlight parent dropdown group trigger
-      const parentTriggerId = TAB_PARENT_GROUPS[tabName];
-      if (parentTriggerId) {
-        const parentTrigger = document.getElementById(parentTriggerId);
-        if (parentTrigger) parentTrigger.classList.add('active-parent');
-      }
-
-      // 7. Highlight mobile nav item
-      const targetMobBtn = document.getElementById(`mob-btn-${tabName}`);
-      if (targetMobBtn) targetMobBtn.classList.add('active');
-
-      // 8. Update page title
-      const pageTitleEl = document.getElementById('page-title');
-      if (pageTitleEl) pageTitleEl.innerText = TAB_TITLES[tabName] || tabName.toUpperCase();
-
-      // 9. Close mobile drawer and dropdowns
-      closeMobileDrawer();
-      document.querySelectorAll('.dropdown-group').forEach(g => g.classList.remove('open'));
-
-      // 10. Load corresponding section data
-      if (tabName === 'dashboard') {
-        loadDashboard();
-        initSimulator();
-      }
-      if (tabName === 'prompt') loadConfig();
-      if (tabName === 'chatwoot') loadUruchatConfig();
-      if (tabName === 'datasource') loadDataSourceConfig();
-      if (tabName === 'llm') loadLLMConfig();
-      if (tabName === 'pedidos') loadPedidos();
-      if (tabName === 'catalogo') loadProducts();
-      if (tabName === 'locales') loadLocales();
-      if (tabName === 'contactos') loadContactos();
-      if (tabName === 'zonas') loadZonas();
-      if (tabName === 'pagos') loadFormasPago();
-      if (tabName === 'guias') loadGuias();
-      if (tabName === 'scraper') loadScraperStatus();
-
-      // Smooth scroll to top on mobile
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-
-    function closeModal(id) { document.getElementById(id).classList.remove('active'); }
-    function openModal(id) { document.getElementById(id).classList.add('active'); }
-
-    // --- DASHBOARD METRICS ---
-    async function loadDashboard() {
-      try {
-        const res = await apiFetch(`${API_BASE}/analytics/dashboard`);
-        const data = await res.json();
-        document.getElementById('metric-orders').innerText = data.metrics.totalOrders;
-        document.getElementById('metric-products').innerText = data.metrics.totalProducts;
-        document.getElementById('metric-derivations').innerText = data.metrics.totalDerivations;
-      } catch (err) { console.error(err); }
-    }
-
-    // --- SIMULADOR DE CHAT IA ---
-    let simulatorHistory = [];
-    let simulatorIsLoading = false;
-
-    async function initSimulator() {
-      try {
-        const res = await apiFetch(`${API_BASE}/configuracion`);
-        const cfg = await res.json();
-        const prov = cfg.llm_provider || 'Gemini';
-        const mod = cfg.llm_model || 'gemini-1.5-flash';
-        const headerModel = document.getElementById('chat-header-model');
-        if (headerModel) headerModel.innerText = `Proveedor: ${prov} | Modelo: ${mod}`;
-      } catch (_e) {}
-    }
-
-    function clearSimulator() {
-      simulatorHistory = [];
-      const container = document.getElementById('sim-messages-container');
-      if (container) {
-        container.innerHTML = `
-          <div class="chat-bubble-bot">
-            👋 ¡Hola! Soy el asesor virtual de <strong>Kroser Uruguay</strong>. Puede consultarme por artículos, precios en dólares (U$S), asesoramiento técnico, sucursales o costos de envío. ¿En qué le podemos ayudar hoy?
-          </div>
-        `;
-      }
-      resetInspector();
-    }
-
-    function resetInspector() {
-      const latBadge = document.getElementById('inspector-latency-badge');
-      if (latBadge) latBadge.innerText = 'Latencia: -- ms';
-      const intentEl = document.getElementById('insp-intent');
-      if (intentEl) intentEl.innerText = '--';
-      const emoEl = document.getElementById('insp-emotion');
-      if (emoEl) emoEl.innerText = '--';
-      const prodCount = document.getElementById('insp-prod-count');
-      if (prodCount) prodCount.innerText = '0 encontrados';
-      const prodList = document.getElementById('insp-products-list');
-      if (prodList) prodList.innerHTML = '<div style="color:var(--text-muted); font-style:italic; font-size:0.8rem;">Envíe un mensaje para ver los productos recuperados.</div>';
-      const crossList = document.getElementById('insp-cross-list');
-      if (crossList) crossList.innerHTML = '<span style="font-style:italic;">Sin sugerencias activas.</span>';
-      const extraInfo = document.getElementById('insp-extra-info');
-      if (extraInfo) extraInfo.innerHTML = 'Sin información complementaria inyectada.';
-      const rawPrompt = document.getElementById('insp-raw-prompt');
-      if (rawPrompt) rawPrompt.innerText = '';
-    }
-
-    function sendQuickPrompt(text) {
-      const input = document.getElementById('sim-input-text');
-      if (input) {
-        input.value = text;
-        handleSimulatorSubmit(new Event('submit'));
-      }
-    }
-
-    function formatMarkdownChat(rawText) {
-      if (!rawText) return '';
-      let text = escHtml(rawText);
-
-      // 1. Parse markdown links [Title](URL)
-      text = text.replace(/\[([^\]]+)\]\((https?:\/\/[^\s\)]+)\)/g, '<a href="$2" target="_blank" style="color:var(--primary); font-weight:700; text-decoration:underline;">🔗 $1</a>');
-
-      // 2. Parse naked URLs
-      text = text.replace(/(?<!href=")(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" style="color:var(--primary); font-weight:700; text-decoration:underline;">🔗 $1</a>');
-
-      // 3. Parse bold text **bold**
-      text = text.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-
-      // 4. Parse linebreaks
-      text = text.replace(/\n/g, '<br>');
-
-      return text;
-    }
-
-    async function handleSimulatorSubmit(event) {
-      if (event && event.preventDefault) event.preventDefault();
-      if (simulatorIsLoading) return;
-
-      const input = document.getElementById('sim-input-text');
-      const text = input ? input.value.trim() : '';
-      if (!text) return;
-
-      input.value = '';
-      simulatorIsLoading = true;
-
-      const container = document.getElementById('sim-messages-container');
-      const typing = document.getElementById('sim-typing-indicator');
-
-      // Append User Bubble
-      const userBubble = document.createElement('div');
-      userBubble.className = 'chat-bubble-user';
-      userBubble.innerText = text;
-      container.appendChild(userBubble);
-      container.scrollTop = container.scrollHeight;
-
-      if (typing) typing.style.display = 'block';
-
-      try {
-        const fetchStartTime = Date.now();
-        const res = await apiFetch(`${API_BASE}/simulator/chat`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            message: text,
-            history: simulatorHistory,
-            customerName: 'Cliente de Prueba',
-            channel: 'Web Simulator',
-          })
-        });
-
-        const data = await res.json();
-
-        // Natural human debounce pacing: keep typing wave for a brief realistic moment
-        const elapsed = Date.now() - fetchStartTime;
-        if (elapsed < 600) {
-          await new Promise((r) => setTimeout(r, 600 - elapsed));
-        }
-
-        if (typing) typing.style.display = 'none';
-
-        if (data.success && data.reply) {
-          const formattedReply = formatMarkdownChat(data.reply);
-
-          const botBubble = document.createElement('div');
-          botBubble.className = 'chat-bubble-bot';
-          botBubble.innerHTML = formattedReply;
-          container.appendChild(botBubble);
-          container.scrollTop = container.scrollHeight;
-
-          simulatorHistory.push({ role: 'user', content: text });
-          simulatorHistory.push({ role: 'assistant', content: data.reply });
-
-          // If an order was created in DB, render celebratory order card & refresh dashboard metrics
-          if (data.pedidoCreated) {
-            const orderCard = document.createElement('div');
-            orderCard.style.cssText = 'align-self:stretch; background:#ecfdf5; border:1px solid #10b981; border-radius:6px; padding:0.85rem 1rem; margin:0.4rem 0; box-shadow:var(--shadow-sm); animation:modalFadeIn 0.3s ease;';
-            
-            const cliente = typeof data.pedidoCreated.cliente === 'string' ? JSON.parse(data.pedidoCreated.cliente) : (data.pedidoCreated.cliente || {});
-            const items = typeof data.pedidoCreated.items === 'string' ? JSON.parse(data.pedidoCreated.items) : (data.pedidoCreated.items || []);
-            const total = items.reduce((acc, item) => acc + (parseFloat(item.subtotal) || (parseFloat(item.precio || 0) * parseInt(item.cantidad || 1))), 0);
-
-            orderCard.innerHTML = `
-              <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #a7f3d0; padding-bottom:0.4rem; margin-bottom:0.5rem;">
-                <span style="font-weight:800; color:#065f46; font-size:0.92rem; display:flex; align-items:center; gap:0.35rem;">
-                  🛒 ¡Pedido #${data.pedidoCreated.id} Creado en BD!
-                </span>
-                <span class="badge confirmado" style="font-size:0.75rem;">${(data.pedidoCreated.estado || 'PENDIENTE').toUpperCase()}</span>
-              </div>
-              <div style="font-size:0.82rem; color:#047857; line-height:1.4;">
-                <div><strong>Cliente:</strong> ${cliente.nombre || 'N/A'} ${cliente.telefono ? `(${cliente.telefono})` : ''}</div>
-                <div><strong>Entrega / Retiro:</strong> ${cliente.direccion || cliente.sucursal_retiro || 'A coordinar'}</div>
-                <div style="margin-top:0.35rem;"><strong>Artículos:</strong> ${items.map(i => `${i.cantidad || 1}x ${i.nombre} ($${i.precio || 0})`).join(', ')}</div>
-                <div style="margin-top:0.25rem; font-weight:700; color:#065f46;">Total estimado: U$S ${total.toFixed(2)}</div>
-              </div>
-              <button class="btn-action btn-success" style="margin-top:0.6rem; padding:0.35rem 0.75rem; font-size:0.78rem; width:100%;" onclick="switchTab('pedidos')">
-                📦 Ver Pedido en Depósito & Despacho →
-              </button>
-            `;
-            container.appendChild(orderCard);
-            loadDashboard();
-          }
-
-          updateSimulatorInspector(data);
-        } else {
-          const errBubble = document.createElement('div');
-          errBubble.style.cssText = 'align-self:flex-start; max-width:88%; background:#fee2e2; color:#dc2626; border:1px solid #f87171; border-radius:4px; padding:0.75rem 1rem; font-size:0.85rem;';
-          errBubble.innerText = `Error: ${data.error || 'No se pudo generar respuesta'}`;
-          container.appendChild(errBubble);
-        }
-      } catch (err) {
-        if (typing) typing.style.display = 'none';
-        const errBubble = document.createElement('div');
-        errBubble.style.cssText = 'align-self:flex-start; max-width:88%; background:#fee2e2; color:#dc2626; border:1px solid #f87171; border-radius:4px; padding:0.75rem 1rem; font-size:0.85rem;';
-        errBubble.innerText = `Error de conexión: ${err.message}`;
-        container.appendChild(errBubble);
-      } finally {
-        simulatorIsLoading = false;
-        container.scrollTop = container.scrollHeight;
-      }
-    }
-
-    function updateSimulatorInspector(data) {
-      if (!data) return;
-
-      const latBadge = document.getElementById('inspector-latency-badge');
-      if (latBadge) {
-        latBadge.innerText = `Latencia: ${data.latencyMs || 0} ms (${data.provider || 'IA'})`;
-      }
-
-      const intentEl = document.getElementById('insp-intent');
-      if (intentEl) intentEl.innerText = data.analysis?.intent || 'General';
-
-      const emoEl = document.getElementById('insp-emotion');
-      if (emoEl) emoEl.innerText = data.analysis?.emotion || 'Neutral';
-
-      const prodList = document.getElementById('insp-products-list');
-      const prodCount = document.getElementById('insp-prod-count');
-      const prods = data.rag?.productos || [];
-      if (prodCount) prodCount.innerText = `${prods.length} encontrados`;
-
-      if (prodList) {
-        if (prods.length === 0) {
-          prodList.innerHTML = '<div style="color:var(--text-muted); font-style:italic; font-size:0.8rem;">No se requirieron productos específicos del catálogo.</div>';
-        } else {
-          prodList.innerHTML = prods.map(p => {
-            const isUyu = (p.moneda || '').toUpperCase() === 'UYU' || (parseFloat(p.precio) >= 200 && (p.moneda || '').toUpperCase() !== 'USD');
-            const priceTag = isUyu ? `$ ${parseFloat(p.precio) || 0} UYU` : `U$S ${parseFloat(p.precio) || 0}`;
-            return `
-              <div style="background:#ffffff; padding:0.45rem 0.65rem; border-radius:4px; border:1px solid var(--border-subtle); font-size:0.8rem; display:flex; justify-content:space-between; align-items:center;">
-                <div>
-                  <strong>${escHtml(p.nombre)}</strong>
-                  <div style="color:var(--text-muted); font-size:0.72rem;">SKU: ${escHtml(p.sku)} · Stock: ${escHtml(p.stock_status)}</div>
-                </div>
-                <strong style="color:var(--primary); font-size:0.86rem; white-space:nowrap; margin-left:0.5rem;">${priceTag}</strong>
-              </div>
-            `;
-          }).join('');
-        }
-      }
-
-      const crossList = document.getElementById('insp-cross-list');
-      const crossItems = data.rag?.complementarios || [];
-      if (crossList) {
-        if (crossItems.length === 0) {
-          crossList.innerHTML = '<span style="font-style:italic; font-size:0.8rem;">Sin sugerencias activadas para este término.</span>';
-        } else {
-          crossList.innerHTML = crossItems.map(c => {
-            const isUyu = (c.moneda || '').toUpperCase() === 'UYU' || (parseFloat(c.precio) >= 200 && (c.moneda || '').toUpperCase() !== 'USD');
-            const priceTag = isUyu ? `$ ${parseFloat(c.precio) || 0} UYU` : `U$S ${parseFloat(c.precio) || 0}`;
-            return `
-              <div style="font-size:0.78rem; color:var(--text-main); margin-top:2px;">
-                🔹 <strong>${escHtml(c.nombre)}</strong> (${priceTag})
-              </div>
-            `;
-          }).join('');
-        }
-      }
-
-      const extraInfo = document.getElementById('insp-extra-info');
-      if (extraInfo) {
-        const parts = [];
-        if (data.toolsUsed && data.toolsUsed.length > 0) {
-          parts.push(`⚙️ <strong>Herramientas ejecutadas:</strong> ` + data.toolsUsed.map(t => `<code style="background:#e2e8f0; padding:1px 5px; border-radius:3px; font-size:0.75rem;">${t.name}</code>`).join(' '));
-        } else {
-          parts.push(`⚡ <em style="color:var(--text-muted);">Respuesta directa (sin herramientas requeridas)</em>`);
-        }
-        if (data.rag?.locales?.length > 0) parts.push(`🏪 <strong>${data.rag.locales.length} Sucursales</strong> consultadas`);
-        if (data.rag?.zonasEnvio?.length > 0) parts.push(`🚚 <strong>${data.rag.zonasEnvio.length} Zonas de Envío</strong> consultadas`);
-        if (data.rag?.formasPago?.length > 0) parts.push(`💳 <strong>${data.rag.formasPago.length} Formas de Pago</strong> consultadas`);
-        if (data.rag?.guiasTecnicas?.length > 0) parts.push(`📚 <strong>${data.rag.guiasTecnicas.length} Guías Técnicas</strong> consultadas`);
-
-        extraInfo.innerHTML = parts.join('<br>');
-      }
-
-      const rawPrompt = document.getElementById('insp-raw-prompt');
-      if (rawPrompt) rawPrompt.innerText = data.systemPrompt || '';
-    }
-
-    // --- PROMPT & CONFIG ---
-    async function loadConfig() {
-      try {
-        const res = await apiFetch(`${API_BASE}/configuracion`);
-        const cfg = await res.json();
-        document.getElementById('system-prompt-input').value = cfg.system_prompt || '';
-        document.getElementById('msg-pendiente').value = cfg.msg_pedido_pendiente || '';
-        document.getElementById('msg-listo').value = cfg.msg_pedido_listo || '';
-        document.getElementById('msg-rechazado').value = cfg.msg_pedido_rechazado || '';
-        document.getElementById('msg-derivacion').value = cfg.msg_derivacion || '';
-        const select = document.getElementById('config-pedidos-enabled-select');
-        if (select) {
-          select.value = cfg.pedidos_enabled !== 'false' ? 'true' : 'false';
-        }
-
-        // Business hours & out-of-hours (Meta 24h window)
-        const elWStart = document.getElementById('bh-weekday-start');
-        if (elWStart) elWStart.value = cfg.business_hours_weekday_start || '09:00';
-        const elWEnd = document.getElementById('bh-weekday-end');
-        if (elWEnd) elWEnd.value = cfg.business_hours_weekday_end || '18:00';
-        const elSatEn = document.getElementById('bh-sat-enabled');
-        if (elSatEn) {
-          elSatEn.value = cfg.business_hours_saturday_enabled !== 'false' ? 'true' : 'false';
-          toggleSaturdayHoursFields();
-        }
-        const elSatStart = document.getElementById('bh-sat-start');
-        if (elSatStart) elSatStart.value = cfg.business_hours_saturday_start || '09:00';
-        const elSatEnd = document.getElementById('bh-sat-end');
-        if (elSatEnd) elSatEnd.value = cfg.business_hours_saturday_end || '13:00';
-        const elAltMail = document.getElementById('bh-alt-email');
-        if (elAltMail) elAltMail.value = cfg.contact_alternative_email || 'atencion@kroser.com.uy';
-        const elCustomMsg = document.getElementById('bh-custom-msg');
-        if (elCustomMsg) elCustomMsg.value = cfg.msg_fuera_de_horario || '';
-      } catch (err) { console.error(err); }
-    }
-
-    function toggleSaturdayHoursFields() {
-      const enabled = document.getElementById('bh-sat-enabled')?.value === 'true';
-      const group = document.getElementById('bh-sat-hours-group');
-      if (group) group.style.opacity = enabled ? '1' : '0.4';
-    }
-
-    async function saveBusinessHoursConfig() {
-      const wStart = document.getElementById('bh-weekday-start').value;
-      const wEnd = document.getElementById('bh-weekday-end').value;
-      const satEnabled = document.getElementById('bh-sat-enabled').value;
-      const satStart = document.getElementById('bh-sat-start').value;
-      const satEnd = document.getElementById('bh-sat-end').value;
-      const altEmail = document.getElementById('bh-alt-email').value.trim();
-      const customMsg = document.getElementById('bh-custom-msg').value.trim();
-
-      await Promise.all([
-        apiFetch(`${API_BASE}/configuracion`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ key: 'business_hours_weekday_start', value: wStart }),
-        }),
-        apiFetch(`${API_BASE}/configuracion`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ key: 'business_hours_weekday_end', value: wEnd }),
-        }),
-        apiFetch(`${API_BASE}/configuracion`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ key: 'business_hours_saturday_enabled', value: satEnabled }),
-        }),
-        apiFetch(`${API_BASE}/configuracion`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ key: 'business_hours_saturday_start', value: satStart }),
-        }),
-        apiFetch(`${API_BASE}/configuracion`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ key: 'business_hours_saturday_end', value: satEnd }),
-        }),
-        apiFetch(`${API_BASE}/configuracion`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ key: 'contact_alternative_email', value: altEmail || 'atencion@kroser.com.uy' }),
-        }),
-        apiFetch(`${API_BASE}/configuracion`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ key: 'msg_fuera_de_horario', value: customMsg }),
-        }),
-      ]);
-
-      alert('Horarios comerciales y mensajes de fuera de horario guardados exitosamente.');
-    }
-
-    async function saveConfig(key, elementId) {
-      const val = document.getElementById(elementId).value;
-      await apiFetch(`${API_BASE}/configuracion`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ key, value: val })
-      });
-      alert(`Configuración '${key}' guardada exitosamente.`);
-    }
-
-    // --- URUCHAT & CANALES (DINÁMICO) ---
-    let currentInboxes = [];
-    let currentDisabledChannels = [];
-
-    function getChannelIcon(channelType) {
-      const type = (channelType || '').toLowerCase();
-      if (type.includes('whatsapp')) return '💬';
-      if (type.includes('instagram')) return '📸';
-      if (type.includes('webwidget') || type.includes('widget') || type.includes('web')) return '🌐';
-      if (type.includes('email')) return '✉️';
-      if (type.includes('facebook') || type.includes('page')) return '👥';
-      if (type.includes('telegram')) return '✈️';
-      if (type.includes('api')) return '🔌';
-      return '📥';
-    }
-
-    function getChannelPrettyName(channelType) {
-      const type = (channelType || '').toLowerCase();
-      if (type.includes('whatsapp')) return 'WhatsApp Business';
-      if (type.includes('instagram')) return 'Instagram Direct';
-      if (type.includes('webwidget')) return 'Web Widget Live Chat';
-      if (type.includes('email')) return 'Email / Correo';
-      if (type.includes('facebook')) return 'Facebook Messenger';
-      if (type.includes('telegram')) return 'Telegram';
-      if (type.includes('api')) return 'API Externa';
-      return channelType || 'Canal';
-    }
-
-    async function loadUruchatConfig() {
-      try {
-        const res = await apiFetch(`${API_BASE}/configuracion`);
-        const cfg = await res.json();
-        document.getElementById('chatwoot-url-input').value = cfg.chatwoot_base_url || '';
-        document.getElementById('chatwoot-token-input').value = cfg.chatwoot_api_token || '';
-        if (document.getElementById('chatwoot-account-input')) {
-          document.getElementById('chatwoot-account-input').value = cfg.chatwoot_account_id || '2';
-        }
-
-        const autoFarewell = cfg.auto_resolve_on_farewell !== 'false';
-        const elFarewell = document.getElementById('auto-resolve-farewell-check');
-        if (elFarewell) elFarewell.checked = autoFarewell;
-
-        const elTimeout = document.getElementById('auto-resolve-timeout-input');
-        if (elTimeout) elTimeout.value = cfg.auto_resolve_timeout_minutes ?? '15';
-
-        const elLabel = document.getElementById('auto-resolve-label-input');
-        if (elLabel) elLabel.value = cfg.auto_resolve_label || 'resuelto-bot';
-
-        const elDerivAgent = document.getElementById('derivation-agent-id-input');
-        if (elDerivAgent) {
-          elDerivAgent.value = cfg.derivation_agent_id || cfg.chatwoot_default_assignee_id || '';
-        }
-        const elDerivLabel = document.getElementById('derivation-label-input');
-        if (elDerivLabel) {
-          elDerivLabel.value = cfg.derivation_label || 'derivar';
-        }
-        await loadUruchatAgents();
-
-        let disabledList = [];
-        if (cfg.canales_desactivados) {
-          try {
-            if (cfg.canales_desactivados.trim().startsWith('[')) {
-              disabledList = JSON.parse(cfg.canales_desactivados);
-            } else {
-              disabledList = cfg.canales_desactivados.split(',').map(s => s.trim()).filter(Boolean);
-            }
-          } catch (_e) {
-            disabledList = cfg.canales_desactivados.split(',').map(s => s.trim()).filter(Boolean);
-          }
-        }
-        currentDisabledChannels = disabledList;
-        await refreshUruchatInboxes();
-      } catch (err) {
-        console.error('Error cargando configuración de Uruchat / Canales:', err);
-      }
-    }
-
-    async function refreshUruchatInboxes() {
-      const container = document.getElementById('inboxes-list-container');
-      const loader = document.getElementById('inboxes-loading');
-      if (loader) loader.style.display = 'block';
-
-      try {
-        const res = await apiFetch(`${API_BASE}/chatwoot/inboxes`);
-        const data = await res.json();
-        currentInboxes = data.inboxes || [];
-        renderInboxesList();
-      } catch (err) {
-        console.error('Error obteniendo inboxes de Uruchat:', err);
-        if (container) {
-          container.innerHTML = `<div style="color:var(--danger); grid-column:1/-1;">Error al consultar la API de Uruchat: ${escHtml(err.message)}</div>`;
-        }
-      } finally {
-        if (loader) loader.style.display = 'none';
-      }
-    }
-
-    function renderInboxesList() {
-      const container = document.getElementById('inboxes-list-container');
-      if (!container) return;
-
-      if (!currentInboxes || currentInboxes.length === 0) {
-        container.innerHTML = '<div style="color:var(--text-muted); grid-column:1/-1;">No se encontraron bandejas configuradas en Uruchat.</div>';
-        return;
-      }
-
-      container.innerHTML = currentInboxes.map(inbox => {
-        const strId = String(inbox.id);
-        const isNumericIdDisabled = currentDisabledChannels.includes(strId) || currentDisabledChannels.includes(`inbox:${strId}`);
-        const isNameDisabled = currentDisabledChannels.some(d => String(d).toLowerCase() === String(inbox.name).toLowerCase());
-        const isTypeDisabled = currentDisabledChannels.some(d => {
-          const lower = String(d).toLowerCase();
-          return lower && (String(inbox.channel_type).toLowerCase().includes(lower) || lower.includes(String(inbox.channel_type).toLowerCase()));
-        });
-        const isOff = isNumericIdDisabled || isNameDisabled || isTypeDisabled;
-
-        const icon = getChannelIcon(inbox.channel_type);
-        const prettyChannel = getChannelPrettyName(inbox.channel_type);
-        const contactInfo = inbox.phone_number || inbox.email || (inbox.is_mock ? 'Modo Demostración / Offline' : 'Conectado');
-
-        return `
-          <div style="background:#f8fafc; padding:1.1rem; border-radius:0.6rem; border:1px solid ${isOff ? 'var(--danger)' : 'var(--border-subtle)'}; display:flex; flex-direction:column; justify-content:space-between;">
-            <div>
-              <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:0.5rem;">
-                <div>
-                  <span style="font-weight:700; font-size:1rem; color:var(--text-main);">${icon} ${escHtml(inbox.name)}</span>
-                  <div style="font-size:0.78rem; color:var(--text-muted); margin-top:2px;">
-                    <strong>ID #${inbox.id}</strong> · <span>${escHtml(prettyChannel)}</span>
-                  </div>
-                </div>
-                <span id="badge-inbox-${inbox.id}" class="badge ${isOff ? 'rechazado' : 'confirmado'}" style="font-size:0.75rem; white-space:nowrap;">
-                  ${isOff ? '🔴 Solo Humanos' : '🟢 Bot Activo'}
-                </span>
-              </div>
-              <p style="color:var(--text-muted); font-size:0.8rem; margin:0.6rem 0 0.8rem;">
-                ${escHtml(contactInfo)}
-              </p>
-            </div>
-            <div style="border-top:1px solid rgba(0,0,0,0.06); padding-top:0.6rem;">
-              <label style="display:flex; align-items:center; gap:0.6rem; cursor:pointer; font-weight:normal; text-transform:none; margin:0;">
-                <input type="checkbox" id="inbox-toggle-${inbox.id}" style="width:18px; height:18px; margin:0;" ${isOff ? 'checked' : ''} onchange="toggleInboxBot(${inbox.id})">
-                <span style="font-size:0.85rem;"><strong>Apagar Bot</strong> (Atención 100% Humana)</span>
-              </label>
-            </div>
-          </div>
-        `;
-      }).join('');
-    }
-
-    function toggleInboxBot(inboxId) {
-      const checkbox = document.getElementById(`inbox-toggle-${inboxId}`);
-      const badge = document.getElementById(`badge-inbox-${inboxId}`);
-      if (!checkbox || !badge) return;
-
-      const strId = String(inboxId);
-      if (checkbox.checked) {
-        badge.className = 'badge rechazado';
-        badge.innerText = '🔴 Solo Humanos';
-        if (!currentDisabledChannels.includes(strId)) {
-          currentDisabledChannels.push(strId);
-        }
-      } else {
-        badge.className = 'badge confirmado';
-        badge.innerText = '🟢 Bot Activo';
-        currentDisabledChannels = currentDisabledChannels.filter(id => String(id) !== strId && String(id) !== `inbox:${strId}`);
-        const inbox = currentInboxes.find(i => i.id === inboxId);
-        if (inbox) {
-          currentDisabledChannels = currentDisabledChannels.filter(id => {
-            const lower = String(id).toLowerCase();
-            return lower !== String(inbox.name).toLowerCase() && !String(inbox.channel_type).toLowerCase().includes(lower);
-          });
-        }
-      }
-    }
-
-    async function saveUruchatConfig() {
-      const url = document.getElementById('chatwoot-url-input').value;
-      const accountId = document.getElementById('chatwoot-account-input')?.value || '2';
-      const token = document.getElementById('chatwoot-token-input').value;
-      const autoFarewell = document.getElementById('auto-resolve-farewell-check')?.checked ? 'true' : 'false';
-      const timeoutMins = document.getElementById('auto-resolve-timeout-input')?.value || '15';
-      const label = document.getElementById('auto-resolve-label-input')?.value || 'resuelto-bot';
-
-      if (url && url.trim()) {
-        await apiFetch(`${API_BASE}/configuracion`, {
-          method: 'PUT', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ key: 'chatwoot_base_url', value: url.trim() })
-        });
-      }
-      await apiFetch(`${API_BASE}/configuracion`, {
-        method: 'PUT', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ key: 'chatwoot_account_id', value: String(accountId).trim() })
-      });
-      if (token && token.trim()) {
-        await apiFetch(`${API_BASE}/configuracion`, {
-          method: 'PUT', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ key: 'chatwoot_api_token', value: token.trim() })
-        });
-      }
-      await apiFetch(`${API_BASE}/configuracion`, {
-        method: 'PUT', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ key: 'auto_resolve_on_farewell', value: autoFarewell })
-      });
-      await apiFetch(`${API_BASE}/configuracion`, {
-        method: 'PUT', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ key: 'auto_resolve_timeout_minutes', value: timeoutMins })
-      });
-      await apiFetch(`${API_BASE}/configuracion`, {
-        method: 'PUT', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ key: 'auto_resolve_label', value: label })
-      });
-
-      const derivAgentId = document.getElementById('derivation-agent-id-input')?.value?.trim();
-      const derivLabel = document.getElementById('derivation-label-input')?.value?.trim() || 'derivar';
-
-      if (derivAgentId) {
-        await apiFetch(`${API_BASE}/configuracion`, {
-          method: 'PUT', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ key: 'derivation_agent_id', value: derivAgentId })
-        });
-        await apiFetch(`${API_BASE}/configuracion`, {
-          method: 'PUT', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ key: 'chatwoot_default_assignee_id', value: derivAgentId })
-        });
-      }
-      await apiFetch(`${API_BASE}/configuracion`, {
-        method: 'PUT', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ key: 'derivation_label', value: derivLabel })
-      });
-
-      alert('Configuración de Uruchat, Agente de Derivación y Resolución Automática guardada exitosamente.');
-      await refreshUruchatInboxes();
-      await loadUruchatAgents();
-    }
-
-    async function loadUruchatAgents() {
-      const select = document.getElementById('derivation-agent-select');
-      if (!select) return;
-      try {
-        const res = await apiFetch(`${API_BASE}/chatwoot/agents`);
-        const data = await res.json();
-        if (data.success && Array.isArray(data.agents) && data.agents.length > 0) {
-          select.innerHTML = '<option value="">-- Seleccionar operador de Uruchat --</option>' +
-            data.agents.map(a => `<option value="${a.id}">${a.name} (ID: ${a.id}${a.role ? ' · ' + a.role : ''})</option>`).join('');
-          
-          const currentId = document.getElementById('derivation-agent-id-input')?.value;
-          if (currentId) {
-            select.value = currentId;
-          }
-        } else {
-          select.innerHTML = '<option value="">Sin agentes disponibles (ingrese ID manual)</option>';
-        }
-      } catch (err) {
-        console.warn('No se pudieron cargar los agentes de Uruchat:', err);
-        select.innerHTML = '<option value="">Ingrese ID manual</option>';
-      }
-    }
-
-    function onSelectDerivationAgent(selectEl) {
-      if (selectEl.value) {
-        const input = document.getElementById('derivation-agent-id-input');
-        if (input) input.value = selectEl.value;
-      }
-    }
-
-    async function saveChannelConfig() {
-      await apiFetch(`${API_BASE}/configuracion`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          key: 'canales_desactivados',
-          value: JSON.stringify(currentDisabledChannels)
-        })
-      });
-      alert(`Control de canales e inboxes guardado exitosamente.\nInboxes con bot apagado: ${currentDisabledChannels.length > 0 ? currentDisabledChannels.join(', ') : 'Ninguno (Bot activo en todos)'}`);
-    }
-
-    // --- DATASOURCE ---
-    async function loadDataSourceConfig() {
-      const res = await apiFetch(`${API_BASE}/configuracion`);
-      const cfg = await res.json();
-      document.getElementById('datasource-select').value = cfg.fuente_datos || 'scraping';
-      document.getElementById('ds-sql-url').value = cfg.sql_directo_url || '';
-      document.getElementById('ds-api-url').value = cfg.api_productos_url || '';
-      document.getElementById('ds-api-key').value = cfg.api_productos_key || '';
-      toggleDataSourceFields();
-    }
-
-    function toggleDataSourceFields() {
-      const v = document.getElementById('datasource-select').value;
-      document.getElementById('ds-sql-fields').style.display = (v === 'sql_directo') ? 'block' : 'none';
-      document.getElementById('ds-api-fields').style.display = (v === 'api') ? 'block' : 'none';
-    }
-
-    async function saveDataSourceConfig() {
-      const fuente = document.getElementById('datasource-select').value;
-      const sqlUrl = document.getElementById('ds-sql-url').value;
-      const apiUrl = document.getElementById('ds-api-url').value;
-      const apiKey = document.getElementById('ds-api-key').value;
-
-      await apiFetch(`${API_BASE}/configuracion`, {
-        method: 'PUT', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ key: 'fuente_datos', value: fuente })
-      });
-      await apiFetch(`${API_BASE}/configuracion`, {
-        method: 'PUT', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ key: 'sql_directo_url', value: sqlUrl })
-      });
-      await apiFetch(`${API_BASE}/configuracion`, {
-        method: 'PUT', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ key: 'api_productos_url', value: apiUrl })
-      });
-      await apiFetch(`${API_BASE}/configuracion`, {
-        method: 'PUT', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ key: 'api_productos_key', value: apiKey })
-      });
-      alert('Estrategia de Ingestión guardada.');
-    }
-
-    // --- LLM & FAIL-SAFE ---
-    async function loadLLMConfig() {
-      try {
-        const res = await apiFetch(`${API_BASE}/configuracion`);
-        const cfg = await res.json();
-
-        // Primary
-        const prov = cfg.llm_provider || 'gemini';
-        document.getElementById('llm-provider-select').value = prov;
-        document.getElementById('llm-apikey-input').value = cfg.llm_api_key || '';
-        document.getElementById('llm-baseurl-input').value = cfg.llm_base_url || '';
-
-        // Fallback
-        const failsafeActive = cfg.llm_failsafe_enabled !== 'false';
-        const elFailsafe = document.getElementById('llm-failsafe-enabled-check');
-        if (elFailsafe) elFailsafe.checked = failsafeActive;
-
-        const fbProv = cfg.llm_fallback_provider || (prov === 'gemini' ? 'openai' : 'gemini');
-        document.getElementById('llm-fallback-provider-select').value = fbProv;
-        document.getElementById('llm-fallback-apikey-input').value = cfg.llm_fallback_api_key || '';
-        document.getElementById('llm-fallback-baseurl-input').value = cfg.llm_fallback_base_url || '';
-
-        await Promise.all([
-          fetchAvailableModels(cfg.llm_model),
-          fetchAvailableFallbackModels(cfg.llm_fallback_model),
-        ]);
-      } catch (err) {
-        console.error('Error cargando configuración LLM:', err);
-      }
-    }
-
-    async function fetchAvailableModels(selectedModelToPreserve = null) {
-      const provider = document.getElementById('llm-provider-select').value;
-      const apiKey = document.getElementById('llm-apikey-input').value;
-      const baseUrl = document.getElementById('llm-baseurl-input').value;
-      const modelSelect = document.getElementById('llm-model-select');
-      const curVal = selectedModelToPreserve || modelSelect.value;
-      modelSelect.innerHTML = '<option value="">Consultando modelos...</option>';
-      try {
-        const res = await apiFetch(`${API_BASE}/llm/models`, {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ provider, apiKey, baseUrl })
-        });
-        const data = await res.json();
-        if (data.models && data.models.length > 0) {
-          modelSelect.innerHTML = data.models.map(m => `<option value="${escHtml(m.id)}" ${m.id === curVal ? 'selected' : ''}>${escHtml(m.name)} (${escHtml(m.id)})</option>`).join('');
-          if (curVal && !data.models.some(m => m.id === curVal)) {
-            modelSelect.insertAdjacentHTML('afterbegin', `<option value="${escHtml(curVal)}" selected>${escHtml(curVal)} (Actual)</option>`);
-          }
-        } else {
-          const defVal = curVal || (provider === 'gemini' ? 'gemini-1.5-flash' : 'gpt-4o-mini');
-          const defLabel = curVal || (provider === 'gemini' ? 'Gemini 1.5 Flash' : 'GPT-4o Mini');
-          modelSelect.innerHTML = `<option value="${escHtml(defVal)}" selected>${escHtml(defLabel)}</option>`;
-        }
-      } catch (err) {
-        const fbVal = curVal || 'gemini-1.5-flash';
-        const fbLabel = curVal || 'Gemini 1.5 Flash';
-        modelSelect.innerHTML = `<option value="${escHtml(fbVal)}" selected>${escHtml(fbLabel)}</option>`;
-      }
-    }
-
-    async function fetchAvailableFallbackModels(selectedModelToPreserve = null) {
-      const provider = document.getElementById('llm-fallback-provider-select').value;
-      const apiKey = document.getElementById('llm-fallback-apikey-input').value;
-      const baseUrl = document.getElementById('llm-fallback-baseurl-input').value;
-      const modelSelect = document.getElementById('llm-fallback-model-select');
-      const curVal = selectedModelToPreserve || modelSelect.value;
-      modelSelect.innerHTML = '<option value="">Consultando modelos de respaldo...</option>';
-      try {
-        const res = await apiFetch(`${API_BASE}/llm/models`, {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ provider, apiKey, baseUrl })
-        });
-        const data = await res.json();
-        if (data.models && data.models.length > 0) {
-          modelSelect.innerHTML = data.models.map(m => `<option value="${escHtml(m.id)}" ${m.id === curVal ? 'selected' : ''}>${escHtml(m.name)} (${escHtml(m.id)})</option>`).join('');
-          if (curVal && !data.models.some(m => m.id === curVal)) {
-            modelSelect.insertAdjacentHTML('afterbegin', `<option value="${escHtml(curVal)}" selected>${escHtml(curVal)} (Actual)</option>`);
-          }
-        } else {
-          const defVal = curVal || (provider === 'gemini' ? 'gemini-1.5-flash' : 'gpt-4o-mini');
-          const defLabel = curVal || (provider === 'gemini' ? 'Gemini 1.5 Flash' : 'GPT-4o Mini');
-          modelSelect.innerHTML = `<option value="${escHtml(defVal)}" selected>${escHtml(defLabel)}</option>`;
-        }
-      } catch (err) {
-        const fbVal = curVal || 'gpt-4o-mini';
-        const fbLabel = curVal || 'GPT-4o Mini';
-        modelSelect.innerHTML = `<option value="${escHtml(fbVal)}" selected>${escHtml(fbLabel)}</option>`;
-      }
-    }
-
-    async function saveLLMConfig() {
-      const provider = document.getElementById('llm-provider-select').value;
-      const apiKey = document.getElementById('llm-apikey-input').value;
-      const baseUrl = document.getElementById('llm-baseurl-input').value;
-      const model = document.getElementById('llm-model-select').value;
-
-      const fallbackEnabled = document.getElementById('llm-failsafe-enabled-check')?.checked ? 'true' : 'false';
-      const fallbackProvider = document.getElementById('llm-fallback-provider-select').value;
-      const fallbackApiKey = document.getElementById('llm-fallback-apikey-input').value;
-      const fallbackBaseUrl = document.getElementById('llm-fallback-baseurl-input').value;
-      const fallbackModel = document.getElementById('llm-fallback-model-select').value;
-
-      await apiFetch(`${API_BASE}/llm/config`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          provider,
-          model,
-          apiKey,
-          baseUrl,
-          fallbackProvider,
-          fallbackModel,
-          fallbackApiKey,
-          fallbackBaseUrl,
-          fallbackEnabled,
-        })
-      });
-      alert(`Configuración de IA y Fail-Safe guardada exitosamente:\n• Principal: ${provider} (${model})\n• Respaldo: ${fallbackProvider} (${fallbackModel}) [${fallbackEnabled === 'true' ? 'Activo 🟢' : 'Inactivo 🔴'}]`);
-    }
-
-    // --- PEDIDOS & DEPOSITO ---
-    let pedidosTakingEnabled = true;
-
-    async function loadPedidos() {
-      await loadPedidosToggleStatus();
-      const res = await apiFetch(`${API_BASE}/pedidos`);
-      currentPedidosList = await res.json();
-      renderPedidos();
-    }
-
-    async function loadPedidosToggleStatus() {
-      try {
-        const res = await apiFetch(`${API_BASE}/pedidos/toggle-status`);
-        const data = await res.json();
-        pedidosTakingEnabled = data.enabled !== false;
-        renderPedidosToggleUI();
-      } catch (err) {
-        console.error('Error cargando estado de toma de pedidos:', err);
-      }
-    }
-
-    function renderPedidosToggleUI() {
-      const badge = document.getElementById('pedidos-global-badge');
-      const btn = document.getElementById('pedidos-toggle-action-btn');
-      const select = document.getElementById('config-pedidos-enabled-select');
-
-      if (badge) {
-        badge.className = `badge ${pedidosTakingEnabled ? 'confirmado' : 'rechazado'}`;
-        badge.innerHTML = pedidosTakingEnabled ? 'Habilitada 🟢' : 'Pausada 🔴';
-      }
-      if (btn) {
-        btn.className = `btn-action ${pedidosTakingEnabled ? 'btn-danger' : 'btn-success'}`;
-        btn.innerHTML = pedidosTakingEnabled ? '⏸️ Pausar Toma de Pedidos' : '▶️ Habilitar Toma de Pedidos';
-      }
-      if (select) {
-        select.value = pedidosTakingEnabled ? 'true' : 'false';
-      }
-    }
-
-    async function togglePedidosGlobal() {
-      const targetState = !pedidosTakingEnabled;
-      const confirmMsg = targetState
-        ? '¿Deseas HABILITAR la toma de pedidos por IA en el chat?'
-        : '¿Deseas PAUSAR la toma de pedidos por IA en el chat?\n(El bot orientará cordialmente a los clientes a comprar en kroser.com.uy o sucursales físicas)';
-      if (!confirm(confirmMsg)) return;
-
-      try {
-        const res = await apiFetch(`${API_BASE}/pedidos/toggle`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ enabled: targetState }),
-        });
-        const data = await res.json();
-        pedidosTakingEnabled = data.enabled;
-        renderPedidosToggleUI();
-        alert(`Toma de pedidos ${pedidosTakingEnabled ? 'HABILITADA 🟢' : 'PAUSADA 🔴'}`);
-      } catch (err) {
-        alert('Error cambiando estado: ' + err.message);
-      }
-    }
-
-    async function savePedidosToggleFromSelect() {
-      const select = document.getElementById('config-pedidos-enabled-select');
-      if (!select) return;
-      const targetState = select.value === 'true';
-      try {
-        const res = await apiFetch(`${API_BASE}/pedidos/toggle`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ enabled: targetState }),
-        });
-        const data = await res.json();
-        pedidosTakingEnabled = data.enabled;
-        renderPedidosToggleUI();
-        alert(`Toma de pedidos ${pedidosTakingEnabled ? 'HABILITADA 🟢' : 'PAUSADA 🔴'}`);
-      } catch (err) {
-        alert('Error cambiando estado: ' + err.message);
-      }
-    }
-
-    function filterPedidos(filter, event) {
-      currentFilter = filter;
-      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-      if (event && event.target) event.target.classList.add('active');
-      renderPedidos();
-    }
-
-    function renderPedidos() {
-      let filtered = currentPedidosList;
-      if (currentFilter === 'deposito') {
-        filtered = currentPedidosList.filter(p => p.estado === 'confirmado' || p.estado === 'pendiente' || p.estado === 'en_preparacion');
-      } else if (currentFilter === 'ecommerce') {
-        filtered = currentPedidosList.filter(p => p.origen === 'ecommerce');
-      } else if (currentFilter === 'bot') {
-        filtered = currentPedidosList.filter(p => p.origen === 'bot' || !p.origen);
-      } else if (currentFilter !== 'todos') {
-        filtered = currentPedidosList.filter(p => p.estado === currentFilter);
-      }
-
-      const tbody = document.getElementById('pedidos-table-body');
-      tbody.innerHTML = filtered.map(p => {
-        const cliente = typeof p.cliente === 'string' ? JSON.parse(p.cliente) : (p.cliente || {});
-        
-        let origenBadge = '<span class="badge" style="background:#f3e8ff; color:#6b21a8;">🤖 Bot</span>';
-        if (p.origen === 'ecommerce') {
-          origenBadge = '<span class="badge" style="background:#e0f2fe; color:#0369a1;">🛒 Ecommerce</span>';
-        } else if (p.origen === 'admin') {
-          origenBadge = '<span class="badge" style="background:#f3f4f6; color:#374151;">👤 Admin</span>';
-        }
-
-        let pagoBadge = '<span class="badge" style="background:#f3f4f6; color:#6b7280;">—</span>';
-        if (p.pago_estado === 'pagado') {
-          pagoBadge = '<span class="badge" style="background:#dcfce7; color:#15803d;">💳 Pagado</span>';
-        } else if (p.pago_estado === 'pendiente_pago') {
-          pagoBadge = '<span class="badge" style="background:#fef3c7; color:#b45309;">⏳ Pendiente</span>';
-        }
-
-        return `
-          <tr>
-            <td>#${p.id}</td>
-            <td>${origenBadge}</td>
-            <td><strong>${escHtml(p.ecommerce_order_number || '-')}</strong></td>
-            <td>${escHtml(p.conversation_id || '-')}</td>
-            <td><strong>${escHtml(cliente.nombre || 'Cliente')}</strong></td>
-            <td>${escHtml(cliente.telefono || cliente.whatsapp || '-')}</td>
-            <td>${pagoBadge}</td>
-            <td><span class="badge ${escHtml(p.estado)}">${escHtml(p.estado)}</span></td>
-            <td>
-              <button class="btn-action" onclick="viewPedidoDetails(${p.id})">👁️ Ver / Editar</button>
-            </td>
-          </tr>
-        `;
-      }).join('');
-    }
-
-    async function viewPedidoDetails(id) {
-      const p = currentPedidosList.find(item => item.id === id);
-      if (!p) return;
-      const cliente = typeof p.cliente === 'string' ? JSON.parse(p.cliente) : (p.cliente || {});
-      const items = typeof p.items === 'string' ? JSON.parse(p.items) : (p.items || []);
-
-      let html = `
-        <div style="margin-bottom:1rem; background:#f8fafc; padding:1rem; border-radius:0.5rem; border:1px solid var(--border-subtle);">
-          <p style="margin-bottom:0.3rem;"><strong>Pedido ID:</strong> #${p.id} ${p.ecommerce_order_number ? `(${escHtml(p.ecommerce_order_number)})` : ''} | <strong>Origen:</strong> ${escHtml(p.origen || 'bot')} | <strong>Estado:</strong> <span class="badge ${escHtml(p.estado)}">${escHtml(p.estado)}</span></p>
-          <p style="margin-bottom:0.3rem;"><strong>Estado de Pago:</strong> ${escHtml(p.pago_estado || 'sin_pago')} ${p.pago_referencia ? `(Ref: ${escHtml(p.pago_referencia)})` : ''}</p>
-          <p style="margin-bottom:0.3rem;"><strong>Cliente:</strong> ${escHtml(cliente.nombre || 'No especificado')} | <strong>Tel/WA:</strong> ${escHtml(cliente.telefono || cliente.whatsapp || 'No especificado')}</p>
-          <p style="margin-bottom:0.3rem;"><strong>Email:</strong> ${escHtml(cliente.email || 'No especificado')}</p>
-          <p><strong>Dirección:</strong> ${escHtml(cliente.direccion || 'Retiro en sucursal')}</p>
-        </div>
-
-        <h4 style="margin: 1rem 0 0.5rem;">📦 Productos Solicitados (Edición de Stock)</h4>
-        <table id="pedido-items-table" style="margin-bottom:1rem; min-width:100%;">
-          <thead>
-            <tr>
-              <th>SKU</th>
-              <th>Producto</th>
-              <th>Cant</th>
-              <th>Precio Unit.</th>
-              <th>Acción</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${items.map((item, idx) => `
-              <tr id="item-row-${idx}">
-                <td>${escHtml(item.sku || '-')}</td>
-                <td>${escHtml(item.nombre || item.producto || 'Producto')}</td>
-                <td><input type="number" id="item-cant-${idx}" value="${parseInt(item.cantidad, 10) || 1}" style="width:60px;" min="0"></td>
-                <td>U$S ${parseFloat(item.precio) || 0}</td>
-                <td><button class="btn-action btn-danger" onclick="removeItemRow(${idx})">🗑️ Quitar</button></td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
-
-        <label>Motivo de Modificación / Nota para la IA y el Cliente (ej. Sin stock del ítem X)</label>
-        <textarea id="pedido-motivo-input" rows="2" placeholder="Indicar brevemente si falta stock o se modifica el pedido...">${escHtml(p.motivo_modificacion || '')}</textarea>
-
-        <label>Notas Internas del Depósito</label>
-        <textarea id="pedido-notas-input" rows="2" placeholder="Notas de empaque o preparación...">${escHtml(p.notas || '')}</textarea>
-
-        <div style="margin-top:1.25rem; display:flex; gap:0.5rem; flex-wrap:wrap;">
-          <button class="btn-action btn-success" onclick="savePedidoChanges(${p.id}, 'confirmado')">✅ Confirmar / Pedido Listo</button>
-          <button class="btn-action btn-primary" onclick="savePedidoChanges(${p.id}, 'entregado')">🚚 Marcar Entregado</button>
-          <button class="btn-action btn-danger" onclick="savePedidoChanges(${p.id}, 'rechazado')">❌ Rechazar Pedido</button>
-          <button class="btn-action btn-secondary" onclick="savePedidoChanges(${p.id}, '${escHtml(p.estado)}')">💾 Guardar Cambios</button>
-        </div>
-      `;
-
-      document.getElementById('modal-pedido-title').innerText = `Pedido #${p.id} — Gestión Depósito`;
-      document.getElementById('modal-pedido-content').innerHTML = html;
-      openModal('pedido-modal');
-    }
-
-    function removeItemRow(idx) {
-      const row = document.getElementById(`item-row-${idx}`);
-      if (row) row.remove();
-    }
-
-    async function savePedidoChanges(id, nuevoEstado) {
-      const p = currentPedidosList.find(item => item.id === id);
-      const originalItems = typeof p.items === 'string' ? JSON.parse(p.items) : (p.items || []);
-
-      const newItems = [];
-      originalItems.forEach((item, idx) => {
-        const cantInput = document.getElementById(`item-cant-${idx}`);
-        if (cantInput) {
-          const cant = parseInt(cantInput.value, 10);
-          if (cant > 0) {
-            newItems.push({ ...item, cantidad: cant });
-          }
-        }
-      });
-
-      const motivo = document.getElementById('pedido-motivo-input').value;
-      const notas = document.getElementById('pedido-notas-input').value;
-
-      await apiFetch(`${API_BASE}/pedidos/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          estado: nuevoEstado,
-          items: newItems,
-          motivo_modificacion: motivo,
-          notas: notas
-        })
-      });
-
-      alert(`Pedido #${id} actualizado correctamente.`);
-      closeModal('pedido-modal');
-      loadPedidos();
-    }
-
-    // --- CATALOGO (PAGINADO & BÚSQUEDA) ---
-    let catalogCurrentPage = 1;
-    let catalogTotalPages = 1;
-    let catalogDebounceTimer = null;
-
-    function debouncedLoadProducts() {
-      clearTimeout(catalogDebounceTimer);
-      catalogDebounceTimer = setTimeout(() => {
-        loadProducts(1);
-      }, 300);
-    }
-
-    function changeCatalogPage(delta) {
-      const targetPage = catalogCurrentPage + delta;
-      if (targetPage >= 1 && targetPage <= catalogTotalPages) {
-        loadProducts(targetPage);
-      }
-    }
-
-    async function loadProducts(page = 1) {
-      catalogCurrentPage = page;
-      const q = (document.getElementById('product-search')?.value || '').trim();
-      const cat = (document.getElementById('product-category')?.value || '').trim();
-      const limit = parseInt(document.getElementById('catalog-page-size')?.value || '50', 10);
-
-      const params = new URLSearchParams({
-        page: catalogCurrentPage,
-        limit,
-      });
-      if (q) params.set('search', q);
-      if (cat) params.set('categoria', cat);
-
-      const res = await apiFetch(`${API_BASE}/productos?${params.toString()}`);
-      const data = await res.json();
-
-      const items = Array.isArray(data) ? data : (data.items || []);
-      const total = data.total !== undefined ? data.total : items.length;
-      catalogTotalPages = data.totalPages || 1;
-
-      const summaryEl = document.getElementById('catalog-summary-text');
-      if (summaryEl) {
-        summaryEl.innerText = `Total: ${total.toLocaleString()} productos vectorizados e indexados ($ UYU y U$S)`;
-      }
-      const pageInfoEl = document.getElementById('catalog-page-info');
-      if (pageInfoEl) {
-        pageInfoEl.innerText = `Página ${catalogCurrentPage} de ${catalogTotalPages}`;
-      }
-      const prevBtn = document.getElementById('btn-prev-page');
-      if (prevBtn) prevBtn.disabled = catalogCurrentPage <= 1;
-      const nextBtn = document.getElementById('btn-next-page');
-      if (nextBtn) nextBtn.disabled = catalogCurrentPage >= catalogTotalPages;
-
-      const tbody = document.getElementById('products-table-body');
-      if (items.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:var(--text-muted); padding:1.5rem;">No se encontraron productos coincidentes.</td></tr>`;
-        return;
-      }
-
-      tbody.innerHTML = items.map(p => {
-        const isUyu = (p.moneda || '').toUpperCase() === 'UYU' || (parseFloat(p.precio) >= 200 && (p.moneda || '').toUpperCase() !== 'USD');
-        const priceLabel = isUyu ? `$ ${parseFloat(p.precio) || 0} UYU` : `U$S ${parseFloat(p.precio) || 0}`;
-        const priceBadge = isUyu
-          ? `<span class="badge" style="background:#fef3c7; color:#b45309;">${priceLabel}</span>`
-          : `<span class="badge" style="background:#e0f2fe; color:#0369a1;">${priceLabel}</span>`;
-
-        return `
-          <tr>
-            <td><img src="${p.imagen_url || 'https://via.placeholder.com/45'}" class="img-thumb" alt="img" onerror="this.src='https://via.placeholder.com/45'"></td>
-            <td><code>${escHtml(p.sku)}</code></td>
-            <td><strong>${escHtml(p.nombre)}</strong></td>
-            <td>${priceBadge}</td>
-            <td>${escHtml(p.marca || '-')}</td>
-            <td><span style="font-size:0.8rem; color:var(--text-muted);">${escHtml(p.categoria || 'General')}</span></td>
-            <td><span class="badge ${p.stock_status === 'in_stock' ? 'confirmado' : 'rechazado'}">${escHtml(p.stock_status)}</span></td>
-            <td>
-              ${p.producto_url ? `<a href="${escHtml(p.producto_url)}" target="_blank" class="btn-action" style="padding:0.35rem 0.65rem; font-size:0.75rem; text-decoration:none;">🔗 Ver Web</a>` : '-'}
-            </td>
-          </tr>
-        `;
-      }).join('');
-    }
-
-    // --- LOCALES ---
-    async function loadLocales() {
-      const res = await apiFetch(`${API_BASE}/locales`);
-      const data = await res.json();
-      const tbody = document.getElementById('locales-table-body');
-      tbody.innerHTML = data.map(l => `
-        <tr>
-          <td>#${l.id}</td>
-          <td><strong>${escHtml(l.nombre)}</strong></td>
-          <td>${escHtml(l.zona)}</td>
-          <td>${escHtml(l.direccion)}</td>
-          <td>${escHtml(l.telefono)}</td>
-          <td>${escHtml(l.horario)}</td>
-          <td>
-            <button class="btn-action" onclick='editLocal(${JSON.stringify(l)})'>✏️ Editar</button>
-            <button class="btn-action btn-danger" onclick="deleteLocal(${l.id})">🗑️</button>
-          </td>
-        </tr>
-      `).join('');
-    }
-
-    function openLocalModal(l = null) {
-      document.getElementById('local-id').value = l ? l.id : '';
-      document.getElementById('local-nombre').value = l ? l.nombre : '';
-      document.getElementById('local-zona').value = l ? l.zona : '';
-      document.getElementById('local-direccion').value = l ? l.direccion : '';
-      document.getElementById('local-telefono').value = l ? l.telefono : '';
-      document.getElementById('local-horario').value = l ? l.horario : '';
-      document.getElementById('local-modal-title').innerText = l ? `Editar Sucursal #${l.id}` : 'Agregar Sucursal';
-      openModal('local-modal');
-    }
-
-    function editLocal(l) { openLocalModal(l); }
-
-    async function saveLocal() {
-      const id = document.getElementById('local-id').value;
-      const body = {
-        nombre: document.getElementById('local-nombre').value,
-        zona: document.getElementById('local-zona').value,
-        direccion: document.getElementById('local-direccion').value,
-        telefono: document.getElementById('local-telefono').value,
-        horario: document.getElementById('local-horario').value,
-      };
-      if (id) {
-        await apiFetch(`${API_BASE}/locales/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-      } else {
-        await apiFetch(`${API_BASE}/locales`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-      }
-      closeModal('local-modal');
-      loadLocales();
-    }
-
-    async function deleteLocal(id) {
-      if (!confirm(`¿Eliminar sucursal #${id}?`)) return;
-      await apiFetch(`${API_BASE}/locales/${id}`, { method: 'DELETE' });
-      loadLocales();
-    }
-
-    // --- CONTACTOS & AVISOS ---
-    async function loadContactos() {
-      const res = await apiFetch(`${API_BASE}/configuracion`);
-      const cfg = await res.json();
-      document.getElementById('aviso-email-input').value = cfg.aviso_email_pedido || '';
-      document.getElementById('aviso-telefono-input').value = cfg.aviso_telefono_pedido || '';
-    }
-
-    async function saveContactosConfig() {
-      const email = document.getElementById('aviso-email-input').value;
-      const tel = document.getElementById('aviso-telefono-input').value;
-      await apiFetch(`${API_BASE}/configuracion`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: 'aviso_email_pedido', value: email }) });
-      await apiFetch(`${API_BASE}/configuracion`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: 'aviso_telefono_pedido', value: tel }) });
-      alert('Contactos de alertas guardados.');
-    }
-
-    // --- ZONAS DE ENVIO ---
-    async function loadZonas() {
-      const res = await apiFetch(`${API_BASE}/zonas-envio`);
-      const data = await res.json();
-      const tbody = document.getElementById('zonas-table-body');
-      tbody.innerHTML = data.map(z => `
-        <tr>
-          <td>#${z.id}</td>
-          <td><strong>${escHtml(z.departamento_ciudad)}</strong></td>
-          <td>${escHtml(z.barrio_zona)}</td>
-          <td>$${z.costo_envio}</td>
-          <td><span class="badge ${z.activo ? 'confirmado' : 'rechazado'}">${z.activo ? 'Activa' : 'Inactiva'}</span></td>
-          <td>
-            <button class="btn-action" onclick='editZona(${JSON.stringify(z)})'>✏️ Editar</button>
-            <button class="btn-action btn-danger" onclick="deleteZona(${z.id})">🗑️</button>
-          </td>
-        </tr>
-      `).join('');
-    }
-
-    function openZonaModal(z = null) {
-      document.getElementById('zona-id').value = z ? z.id : '';
-      document.getElementById('zona-depto').value = z ? z.departamento_ciudad : '';
-      document.getElementById('zona-barrio').value = z ? z.barrio_zona : '';
-      document.getElementById('zona-costo').value = z ? z.costo_envio : '';
-      document.getElementById('zona-modal-title').innerText = z ? `Editar Zona #${z.id}` : 'Agregar Zona de Envío';
-      openModal('zona-modal');
-    }
-
-    function editZona(z) { openZonaModal(z); }
-
-    async function saveZona() {
-      const id = document.getElementById('zona-id').value;
-      const body = {
-        departamento_ciudad: document.getElementById('zona-depto').value,
-        barrio_zona: document.getElementById('zona-barrio').value,
-        costo_envio: parseFloat(document.getElementById('zona-costo').value || 0),
-      };
-      if (id) {
-        await apiFetch(`${API_BASE}/zonas-envio/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-      } else {
-        await apiFetch(`${API_BASE}/zonas-envio`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-      }
-      closeModal('zona-modal');
-      loadZonas();
-    }
-
-    async function deleteZona(id) {
-      if (!confirm(`¿Eliminar zona #${id}?`)) return;
-      await apiFetch(`${API_BASE}/zonas-envio/${id}`, { method: 'DELETE' });
-      loadZonas();
-    }
-
-    // --- FORMAS DE PAGO & MERCADOPAGO ---
-    async function loadFormasPago() {
-      const res = await apiFetch(`${API_BASE}/formas-pago`);
-      const data = await res.json();
-      const tbody = document.getElementById('pagos-table-body');
-      tbody.innerHTML = data.map(f => `
-        <tr>
-          <td>#${f.id}</td>
-          <td><strong>${escHtml(f.nombre)}</strong></td>
-          <td>${escHtml(f.descripcion || '-')}</td>
-          <td>${escHtml(f.instrucciones || '-')}</td>
-          <td><span class="badge ${f.activo ? 'confirmado' : 'rechazado'}">${f.activo ? 'Activo' : 'Inactivo'}</span></td>
-          <td>
-            <button class="btn-action" onclick='editFormaPago(${JSON.stringify(f)})'>✏️ Editar</button>
-            <button class="btn-action btn-danger" onclick="deleteFormaPago(${f.id})">🗑️</button>
-          </td>
-        </tr>
-      `).join('');
-
-      await loadMercadoPagoConfig();
-    }
-
-    async function loadMercadoPagoConfig() {
-      try {
-        const res = await apiFetch(`${API_BASE}/configuracion`);
-        const cfg = await res.json();
-        document.getElementById('mp-enabled-select').value = cfg.mercadopago_enabled === 'true' ? 'true' : 'false';
-        document.getElementById('mp-access-token').value = cfg.mercadopago_access_token || '';
-        document.getElementById('mp-public-key').value = cfg.mercadopago_public_key || '';
-        document.getElementById('mp-webhook-secret').value = cfg.mercadopago_webhook_secret || '';
-        document.getElementById('ecommerce-autoconfirm-check').checked = cfg.ecommerce_auto_confirm_paid !== 'false';
-      } catch (err) { console.error('Error cargando config MP:', err); }
-    }
-
-    async function saveMPToggle() {
-      const enabled = document.getElementById('mp-enabled-select').value === 'true';
-      await apiFetch(`${API_BASE}/mercadopago/toggle`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ enabled })
-      });
-      alert(`MercadoPago ${enabled ? 'ACTIVADO 🟢' : 'DESACTIVADO 🔴'}`);
-    }
-
-    async function saveMercadoPagoConfig() {
-      const enabled = document.getElementById('mp-enabled-select').value === 'true';
-      const token = document.getElementById('mp-access-token').value;
-      const pubKey = document.getElementById('mp-public-key').value;
-      const secret = document.getElementById('mp-webhook-secret').value;
-      const autoConfirm = document.getElementById('ecommerce-autoconfirm-check').checked;
-
-      await apiFetch(`${API_BASE}/mercadopago/toggle`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ enabled })
-      });
-      await apiFetch(`${API_BASE}/configuracion`, {
-        method: 'PUT', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ key: 'mercadopago_access_token', value: token })
-      });
-      await apiFetch(`${API_BASE}/configuracion`, {
-        method: 'PUT', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ key: 'mercadopago_public_key', value: pubKey })
-      });
-      await apiFetch(`${API_BASE}/configuracion`, {
-        method: 'PUT', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ key: 'mercadopago_webhook_secret', value: secret })
-      });
-      await apiFetch(`${API_BASE}/configuracion`, {
-        method: 'PUT', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ key: 'ecommerce_auto_confirm_paid', value: autoConfirm ? 'true' : 'false' })
-      });
-
-      alert('Configuración de MercadoPago y E-commerce guardada exitosamente.');
-    }
-
-    function openFormaPagoModal(f = null) {
-      document.getElementById('forma-id').value = f ? f.id : '';
-      document.getElementById('forma-nombre').value = f ? f.nombre : '';
-      document.getElementById('forma-desc').value = f ? f.descripcion : '';
-      document.getElementById('forma-instrucciones').value = f ? f.instrucciones : '';
-      document.getElementById('forma-modal-title').innerText = f ? `Editar Método #${f.id}` : 'Agregar Método de Pago';
-      openModal('forma-pago-modal');
-    }
-
-    function editFormaPago(f) { openFormaPagoModal(f); }
-
-    async function saveFormaPago() {
-      const id = document.getElementById('forma-id').value;
-      const body = {
-        nombre: document.getElementById('forma-nombre').value,
-        descripcion: document.getElementById('forma-desc').value,
-        instrucciones: document.getElementById('forma-instrucciones').value,
-      };
-      if (id) {
-        await apiFetch(`${API_BASE}/formas-pago/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-      } else {
-        await apiFetch(`${API_BASE}/formas-pago`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-      }
-      closeModal('forma-pago-modal');
-      loadFormasPago();
-    }
-
-    async function deleteFormaPago(id) {
-      if (!confirm(`¿Eliminar método #${id}?`)) return;
-      await apiFetch(`${API_BASE}/formas-pago/${id}`, { method: 'DELETE' });
-      loadFormasPago();
-    }
-
-    // --- GUÍAS TÉCNICAS & CÁLCULOS ---
-    async function loadGuias() {
-      try {
-        const res = await apiFetch(`${API_BASE}/guias-tecnicas`);
-        const data = await res.json();
-        const tbody = document.getElementById('guias-table-body');
-        if (!tbody) return;
-        tbody.innerHTML = data.map(g => `
-          <tr>
-            <td>#${g.id}</td>
-            <td><strong>${escHtml(g.titulo)}</strong></td>
-            <td><span class="badge" style="background:#e0f2fe; color:#0369a1;">${escHtml(g.categoria)}</span></td>
-            <td>
-              <div style="font-size:0.83rem; font-weight:600; color:var(--text-main);">${escHtml(g.resumen || '-')}</div>
-              <div style="font-size:0.75rem; color:var(--text-muted); margin-top:2px;">🔑 <em>${escHtml(g.keywords || '-')}</em></div>
-            </td>
-            <td><span class="badge ${g.activo ? 'confirmado' : 'rechazado'}">${g.activo ? 'Activa' : 'Inactiva'}</span></td>
-            <td>
-              <button class="btn-action" onclick='editGuia(${JSON.stringify(g).replace(/'/g, "&#39;")})'>✏️ Editar</button>
-              <button class="btn-action btn-danger" onclick="deleteGuia(${g.id})">🗑️</button>
-            </td>
-          </tr>
-        `).join('');
-      } catch (err) {
-        console.error('Error cargando guías técnicas:', err);
-      }
-    }
-
-    function openGuiaModal(g = null) {
-      document.getElementById('guia-id').value = g ? g.id : '';
-      document.getElementById('guia-titulo').value = g ? g.titulo : '';
-      document.getElementById('guia-categoria').value = g ? g.categoria : 'pintura';
-      document.getElementById('guia-activo').value = g ? (g.activo ? 'true' : 'false') : 'true';
-      document.getElementById('guia-resumen').value = g ? (g.resumen || '') : '';
-      document.getElementById('guia-keywords').value = g ? (g.keywords || '') : '';
-      document.getElementById('guia-contenido').value = g ? (g.contenido || '') : '';
-      document.getElementById('guia-modal-title').innerText = g ? `Editar Guía Técnica #${g.id}` : 'Agregar Guía Técnica';
-      openModal('guia-modal');
-    }
-
-    function editGuia(g) { openGuiaModal(g); }
-
-    async function saveGuia() {
-      const id = document.getElementById('guia-id').value;
-      const body = {
-        titulo: document.getElementById('guia-titulo').value.trim(),
-        categoria: document.getElementById('guia-categoria').value,
-        activo: document.getElementById('guia-activo').value === 'true',
-        resumen: document.getElementById('guia-resumen').value.trim(),
-        keywords: document.getElementById('guia-keywords').value.trim(),
-        contenido: document.getElementById('guia-contenido').value.trim(),
-      };
-      if (!body.titulo || !body.contenido) {
-        alert('Por favor ingrese título y contenido técnico.');
-        return;
-      }
-      if (id) {
-        await apiFetch(`${API_BASE}/guias-tecnicas/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-      } else {
-        await apiFetch(`${API_BASE}/guias-tecnicas`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-      }
-      closeModal('guia-modal');
-      loadGuias();
-    }
-
-    async function deleteGuia(id) {
-      if (!confirm(`¿Eliminar guía técnica #${id}?`)) return;
-      await apiFetch(`${API_BASE}/guias-tecnicas/${id}`, { method: 'DELETE' });
-      loadGuias();
-    }
-
-    // --- SCRAPER ---
-    async function loadScraperStatus() {
-      const res = await apiFetch(`${API_BASE}/scraper/status`);
-      const data = await res.json();
-      document.getElementById('scraper-status').innerText = data.currentRun ? data.currentRun.status.toUpperCase() : 'Inactivo';
-      loadEmbeddingsStatus();
-    }
-
-    async function startScraper() {
-      await apiFetch(`${API_BASE}/scraper/start`, { method: 'POST' });
-      loadScraperStatus();
-    }
-
-    async function stopScraper() {
-      await apiFetch(`${API_BASE}/scraper/stop`, { method: 'POST' });
-      loadScraperStatus();
-    }
-
-    // --- EMBEDDINGS VECTORIALES ---
-    async function loadEmbeddingsStatus() {
-      try {
-        const res = await apiFetch(`${API_BASE}/scraper/embeddings/status`);
-        if (!res.ok) return;
-        const data = await res.json();
-
-        const totalEl = document.getElementById('emb-total-activos');
-        const vectEl = document.getElementById('emb-vectorizados');
-        const pendEl = document.getElementById('emb-pendientes');
-        const cobEl = document.getElementById('emb-cobertura');
-        const badgeEl = document.getElementById('embeddings-provider-badge');
-
-        if (totalEl) totalEl.innerText = (data.total_activos || 0).toLocaleString();
-        if (vectEl) vectEl.innerText = (data.vectorizados || 0).toLocaleString();
-        if (pendEl) pendEl.innerText = (data.pendientes || 0).toLocaleString();
-        if (cobEl) cobEl.innerText = `${data.porcentaje_completado || 0}%`;
-
-        if (badgeEl && data.provider) {
-          const p = data.provider;
-          if (p.isMock) {
-            badgeEl.style.background = '#fef3c7';
-            badgeEl.style.color = '#b45309';
-            badgeEl.innerText = '⚠️ Mock Offline (768d)';
-          } else {
-            badgeEl.style.background = '#ecfdf5';
-            badgeEl.style.color = '#047857';
-            badgeEl.innerText = `🟢 ${p.primaryProvider.toUpperCase()} (${p.dimensions}d)`;
-          }
-        }
-
-        const btnGen = document.getElementById('btn-generate-embeddings');
-        if (btnGen) {
-          if (data.is_running) {
-            btnGen.disabled = true;
-            btnGen.innerText = '⏳ Indexando en progreso...';
-          } else {
-            btnGen.disabled = (data.pendientes || 0) === 0;
-            btnGen.innerText = (data.pendientes || 0) === 0 ? '✅ Todo Vectorizado' : '⚡ Indexar Productos Pendientes';
-          }
-        }
-      } catch (err) {
-        console.error('Error cargando estado de embeddings:', err);
-      }
-    }
-
-    async function triggerEmbeddingsGeneration() {
-      const msgEl = document.getElementById('embeddings-action-msg');
-      if (msgEl) msgEl.innerText = 'Iniciando generación de vectores...';
-      try {
-        const res = await apiFetch(`${API_BASE}/scraper/embeddings/generate`, { method: 'POST' });
-        const data = await res.json();
-        if (msgEl) msgEl.innerText = data.message || 'Proceso iniciado';
-        setTimeout(loadEmbeddingsStatus, 1500);
-      } catch (err) {
-        if (msgEl) msgEl.innerText = 'Error al iniciar indexación';
-      }
-    }
-
-    // Initialization on Page Load
-    document.addEventListener('DOMContentLoaded', () => {
-      loadDashboard();
-      initSimulator();
-      loadEmbeddingsStatus();
-    });
-  </script>
+    <script src="js/admin.js"></script>
 </body>
 </html>

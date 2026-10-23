@@ -4,9 +4,12 @@ const configuracionRepo = require('../repositories/configuracionRepository');
 const llmService = require('../services/llm/llmService');
 const redis = require('../config/redis');
 
+const businessHours = require('../utils/businessHours');
+
 describe('Derivation Agent Assignment & Label Application', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    jest.spyOn(businessHours, 'isWithinBusinessHours').mockReturnValue({ isWithin: true, reason: 'within_hours' });
   });
 
   describe('chatwootService.getAgents', () => {

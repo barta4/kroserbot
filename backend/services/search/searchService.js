@@ -102,7 +102,7 @@ async function hybridSearch(rawQuery, { limit = 5, skipVector = false } = {}) {
       vectorPromise = (async () => {
         try {
           const queryEmbedding = await embeddingProvider.generateSingleEmbedding(vectorQuery);
-          if (queryEmbedding && queryEmbedding.length > 0) {
+          if (queryEmbedding && queryEmbedding.length > 0 && !embeddingProvider.isMock) {
             const vectorFilters = {};
             if (attrs.marca) vectorFilters.marca = attrs.marca;
             const rawVector = await productosRepo.searchVectorFiltered(queryEmbedding, vectorFilters, limit);
@@ -123,7 +123,7 @@ async function hybridSearch(rawQuery, { limit = 5, skipVector = false } = {}) {
     for (const r of textResults) {
       addCandidates(r);
     }
-    if (vectorResults && vectorResults.length > 0) {
+    if (vectorResults && vectorResults.length > 0 && !embeddingProvider.isMock) {
       addCandidates(vectorResults);
       logger.info('[HybridSearch] Parallel vector search added candidates', {
         vectorCount: vectorResults.length,
@@ -140,8 +140,8 @@ async function hybridSearch(rawQuery, { limit = 5, skipVector = false } = {}) {
     logger.warn('[HybridSearch] Textual search error', { error: err.message });
   }
 
-  // ── STEP 4: Fallback vector search (for mock provider during test/dev if needed)
-  if (!skipVector && candidates.length < limit && embeddingProvider && embeddingProvider.isMock) {
+  // ── STEP 4: Fallback vector search (ONLY in unit test environment when mock is specifically tested)
+  if (process.env.NODE_ENV === 'test' && !skipVector && candidates.length < limit && embeddingProvider && embeddingProvider.isMock) {
     try {
       const vectorQuery = (attrs.synonyms && attrs.synonyms.length > 0)
         ? `${query} ${attrs.synonyms.join(' ')}`

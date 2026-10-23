@@ -3,10 +3,8 @@ const configuracionRepo = require('../../repositories/configuracionRepository');
 const conversacionesRepo = require('../../repositories/conversacionesRepository');
 const llmService = require('../llm/llmService');
 const chatwootService = require('../chatwoot/chatwootService');
-const emailService = require('../email/emailService');
 const pedidosService = require('../pedidos/pedidosService');
 const ecommerceOrderService = require('../ecommerce/ecommerceOrderService');
-const mediaService = require('../media/mediaService');
 const intentDetector = require('./intentDetector');
 const promptBuilder = require('./promptBuilder');
 const customerMemoryService = require('../customer/customerMemoryService');
@@ -16,11 +14,13 @@ const orderTrackingService = require('../pedidos/orderTrackingService');
 const debounceService = require('./debounceService');
 const logger = require('../../config/logger');
 const orderExtractor = require('../pedidos/orderExtractor');
-const derivationNoteService = require('../chatwoot/derivationNoteService');
 const autoResolveService = require('../chatwoot/autoResolveService');
-const businessHours = require('../../utils/businessHours');
-const urlInterpreterService = require('../media/urlInterpreterService');
 const messageSplitter = require('../../utils/messageSplitter');
+
+// Modular pipeline handlers
+const webhookLifecycle = require('./webhookLifecycleHandler');
+const webhookMedia = require('./webhookMediaHandler');
+const webhookEscalation = require('./webhookEscalationHandler');
 
 const IDEMPOTENCY_TTL = 3600; // 1 hour
 const HUMAN_ACTIVE_TTL = 86400; // 24 hours
@@ -74,82 +74,6 @@ async function releaseLockAndDrainBuffer(lockKey, bufferKey, conversationId, pay
   }
 }
 
-async function isChannelDisabled(payload, conversation) {
-  const rawConfig = await configuracionRepo.get('canales_desactivados');
-  if (!rawConfig) return false;
-
-  let disabledList = [];
-  try {
-    const trimmed = rawConfig.trim();
-    if (trimmed.startsWith('[')) {
-      disabledList = JSON.parse(trimmed);
-    } else {
-      disabledList = trimmed.split(',').map((s) => s.trim().toLowerCase()).filter(Boolean);
-    }
-  } catch (_e) {
-    disabledList = rawConfig.split(',').map((s) => s.trim().toLowerCase()).filter(Boolean);
-  }
-
-  if (!Array.isArray(disabledList) || disabledList.length === 0) return false;
-
-  const normalizedDisabled = disabledList.map((item) => String(item).toLowerCase().trim());
-
-  const channelType = (
-    conversation.channel ||
-    conversation.inbox?.channel_type ||
-    payload.inbox?.channel_type ||
-    payload.channel ||
-    payload.channel_type ||
-    ''
-  ).toLowerCase();
-
-  const inboxName = (
-    conversation.inbox?.name ||
-    payload.inbox?.name ||
-    ''
-  ).toLowerCase();
-
-  const inboxId = String(
-    conversation.inbox_id ||
-    conversation.inbox?.id ||
-    payload.inbox?.id ||
-    ''
-  );
-
-  for (const disabled of normalizedDisabled) {
-    if (!disabled) continue;
-
-    // Check by channel type (e.g. 'instagram', 'channel::instagram', 'whatsapp', 'email', 'webwidget')
-    if (channelType) {
-      const match =
-        channelType === disabled ||
-        (disabled.length >= 3 && channelType.includes(disabled)) ||
-        (channelType.length >= 3 && disabled.includes(channelType));
-      if (match) {
-        return { disabled: true, match: disabled, channelType };
-      }
-    }
-
-    // Check by inbox ID (e.g. '3', 'inbox:3')
-    if (inboxId && (disabled === inboxId || disabled === `inbox:${inboxId}`)) {
-      return { disabled: true, match: disabled, inboxId };
-    }
-
-    // Check by inbox name (e.g. 'instagram oficial')
-    if (inboxName) {
-      const match =
-        inboxName === disabled ||
-        (disabled.length >= 3 && inboxName.includes(disabled)) ||
-        (inboxName.length >= 3 && disabled.includes(inboxName));
-      if (match) {
-        return { disabled: true, match: disabled, inboxName };
-      }
-    }
-  }
-
-  return false;
-}
-
 module.exports = {
   async processWebhookEvent(payload) {
     const correlationId = `conv_${payload.conversation?.id || 'unknown'}_${Date.now()}`;
@@ -162,34 +86,7 @@ module.exports = {
 
     // 0. Handle Conversation Assignment & Status Changes (Chatwoot conversation_updated / conversation_status_changed)
     if (payload.event === 'conversation_updated' || payload.event === 'conversation_status_changed') {
-      const assigneeId = conversation.assignee_id || conversation.meta?.assignee?.id || conversation.assignee?.id;
-      const status = conversation.status || payload.status;
-
-      if (conversationId) {
-        if (status === 'resolved') {
-          await redis.del(`human_active:${conversationId}`);
-          debounceService.cancel(conversationId);
-          await redis.del(`conv_buffer:${conversationId}`);
-          await botLoopDetector.resetTurns(conversationId);
-          logger.info('Conversation resolved in Uruchat. Human active flag cleared.', { correlationId, conversationId });
-          return { status: 'processed', action: 'conversation_resolved_cleared', conversationId };
-        }
-
-        if (assigneeId && botAgentId && String(assigneeId) !== String(botAgentId)) {
-          await redis.set(`human_active:${conversationId}`, '1', 'EX', HUMAN_ACTIVE_TTL);
-          debounceService.cancel(conversationId);
-          await redis.del(`conv_buffer:${conversationId}`);
-          await botLoopDetector.resetTurns(conversationId);
-          autoResolveService.cancelScheduledResolve(conversationId);
-          logger.info('Conversation assigned to human agent. Bot silenced.', { correlationId, conversationId, assigneeId });
-          return { status: 'processed', action: 'human_assigned', conversationId, assigneeId };
-        } else if (!assigneeId || (botAgentId && String(assigneeId) === String(botAgentId))) {
-          await redis.del(`human_active:${conversationId}`);
-          logger.info('Conversation unassigned or assigned to bot. Bot reactivated.', { correlationId, conversationId });
-          return { status: 'processed', action: 'bot_reactivated', conversationId };
-        }
-      }
-      return { status: 'ignored', reason: 'conversation_event_unhandled' };
+      return await webhookLifecycle.handleConversationEvent(payload, { correlationId, botAgentId });
     }
 
     const message = payload.message || payload;
@@ -241,52 +138,16 @@ module.exports = {
 
     // 2b. Outgoing Message Handling: Bot Self-Message vs Human Agent Takeover
     if (isOutgoing) {
-      // Detect if this outgoing message was sent by the bot (avoid bot self-takeover loops)
-      const isBotSent = messageId ? await redis.get(`bot_sent_msg:${messageId}`) : null;
-      const isBotSending = conversationId ? await redis.get(`bot_sending:${conversationId}`) : null;
-      const lastBotReply = conversationId ? await redis.get(`last_bot_reply:${conversationId}`) : null;
-      const isContentMatch = Boolean(
-        lastBotReply &&
-        content &&
-        (content === lastBotReply ||
-          (content.length >= 25 && (lastBotReply.includes(content) || content.includes(lastBotReply))))
-      );
-
-      const isBotSender = Boolean(
-        isBotSent ||
-        isBotSending ||
-        isContentMatch ||
-        senderType === 'bot' ||
-        sender.type === 'agent_bot' ||
-        (botAgentId && sender.id && String(sender.id) === String(botAgentId))
-      );
-
-      if (isBotSender) {
-        logger.info('Bot self-message ignored', { correlationId, messageId });
-        // If human_active was mistakenly set in this conversation, clear it!
-        if (conversationId) {
-          await redis.del(`human_active:${conversationId}`);
-        }
-        return { status: 'ignored', reason: 'bot_self_message' };
-      }
-
-      // If outgoing and NOT sent by the bot, a human agent is intervening in Chatwoot/Uruchat
-      const isHumanAgent = senderType === 'agent' || senderType === 'user' || !senderType;
-      if (isHumanAgent) {
-        logger.info('Human agent message detected. Silencing bot.', { correlationId, conversationId });
-        if (conversationId) {
-          await redis.set(`human_active:${conversationId}`, '1', 'EX', HUMAN_ACTIVE_TTL);
-          debounceService.cancel(conversationId);
-          await redis.del(`conv_buffer:${conversationId}`);
-          await botLoopDetector.resetTurns(conversationId);
-          autoResolveService.cancelScheduledResolve(conversationId);
-        }
-        return { status: 'ignored', reason: 'agent_message' };
-      }
-
-      // Other outgoing or bot messages
-      logger.info('Outgoing/bot message ignored', { correlationId });
-      return { status: 'ignored', reason: 'bot_or_outgoing_message' };
+      return await webhookLifecycle.handleOutgoingMessage(payload, {
+        correlationId,
+        conversationId,
+        botAgentId,
+        message,
+        messageId,
+        sender,
+        senderType,
+        content,
+      });
     }
 
     // Active customer message: cancel any pending auto-resolve for this conversation
@@ -295,7 +156,7 @@ module.exports = {
     }
 
     // 4. Channel / Inbox Blocking: Check if bot is disabled for this specific channel/inbox
-    const channelCheck = await isChannelDisabled(payload, conversation);
+    const channelCheck = await webhookLifecycle.isChannelDisabled(payload, conversation);
     if (channelCheck) {
       logger.info('Bot disabled for channel/inbox. Silencing bot for human attention.', {
         correlationId,
@@ -311,133 +172,33 @@ module.exports = {
       };
     }
 
-    // 5. Human Assignment Check: If conversation is currently assigned to a human agent, silence bot
-    const assigneeId = conversation.assignee_id || conversation.meta?.assignee?.id || conversation.assignee?.id;
-    if (assigneeId && botAgentId && String(assigneeId) !== String(botAgentId)) {
-      logger.info('Conversation currently assigned to human agent. Bot silenced.', { correlationId, conversationId, assigneeId });
-      if (conversationId) {
-        await redis.set(`human_active:${conversationId}`, '1', 'EX', HUMAN_ACTIVE_TTL);
-        debounceService.cancel(conversationId);
-        await redis.del(`conv_buffer:${conversationId}`);
-      }
-      return { status: 'ignored', reason: 'assigned_to_human' };
-    }
-
-    // 6. Human Active Flag Check in Redis
-    if (conversationId) {
-      const isHumanActive = await redis.get(`human_active:${conversationId}`);
-      if (isHumanActive) {
-        logger.info('Human agent active in conversation. Bot silenced.', { correlationId, conversationId });
-        return { status: 'ignored', reason: 'human_active' };
-      }
+    // 5 & 6. Human Assignment & Human Active Flag Check
+    const humanCheck = await webhookLifecycle.checkHumanActive({
+      conversation,
+      conversationId,
+      botAgentId,
+      correlationId,
+    });
+    if (humanCheck.isHuman) {
+      return { status: 'ignored', reason: humanCheck.reason };
     }
 
     // 6b. Bot Loop Shield: Server Bounce & No-Reply Filter (noreply & bounce handling)
-    const emailData = botLoopDetector.extractEmailData(payload);
-
-    // 1) Si es No-Reply: NO CONTESTAR (descartar en silencio para evitar respuestas a casillas automáticas)
-    const noReplyCheck = botLoopDetector.isNoReply(emailData);
-    if (noReplyCheck) {
-      logger.info('No-Reply email detected. Bot will not respond (ignoring).', {
-        correlationId,
-        conversationId,
-        reason: noReplyCheck.reason,
-        email: emailData.email,
-      });
-      if (conversationId) {
-        debounceService.cancel(conversationId);
-      }
-      return {
-        status: 'ignored',
-        reason: 'noreply_email',
-        senderEmail: emailData.email,
-        matchedReason: noReplyCheck.reason,
-      };
+    const bounceCheck = await webhookLifecycle.handleServerBounceAndNoReply({
+      payload,
+      conversationId,
+      accountId,
+      correlationId,
+    });
+    if (bounceCheck.handled) {
+      return bounceCheck.result;
     }
 
-    // 2) Si rebota del servidor (Mailer-Daemon / Delivery Failure): APLICAR EL SHIELD
-    const bounceCheck = botLoopDetector.isServerBounce(emailData);
-    if (bounceCheck) {
-      logger.warn('Server bounce detected. Applying Bot Loop Shield to prevent bounce loops.', {
-        correlationId,
-        conversationId,
-        reason: bounceCheck.reason,
-        email: emailData.email,
-      });
-      if (conversationId) {
-        await redis.set(`human_active:${conversationId}`, '1', 'EX', HUMAN_ACTIVE_TTL);
-        debounceService.cancel(conversationId);
-        await redis.del(`conv_buffer:${conversationId}`);
-        await botLoopDetector.resetTurns(conversationId);
-        autoResolveService.cancelScheduledResolve(conversationId);
-      }
-      if (conversationId && accountId) {
-        const bounceDetail = emailData.email || bounceCheck.email || bounceCheck.matchedBody || bounceCheck.reason || 'Mailer-Daemon';
-        await chatwootService.addPrivateNote(
-          accountId,
-          conversationId,
-          `🛑 [Auto-Shield] Rebote de servidor detectado (${bounceDetail}). El bot ha sido silenciado para evitar un bucle de rebotes.`
-        );
-        await chatwootService.addLabels(accountId, conversationId, ['rebote-email', 'auto-shield']);
-      }
-      return {
-        status: 'ignored',
-        reason: 'server_bounce_shield_applied',
-        shieldApplied: true,
-        conversationId,
-        matchedReason: bounceCheck.reason,
-        senderEmail: emailData.email,
-      };
-    }
-
-    // 7. Process Attachments (Multimodal: Audio voice notes & Images / Visual Parts Finder)
+    // 7 & 7b. Process Attachments (Multimodal) and URLs
     let visualKeywords = [];
-    if (attachments && attachments.length > 0) {
-      logger.info('Processing message attachments', { correlationId, count: attachments.length });
-      try {
-        const { mediaSummaries, transcribedTexts, visualSearchTerms } = await mediaService.processMessageAttachments(attachments);
-        const partsToAdd = [];
-        if (transcribedTexts.length > 0) {
-          partsToAdd.push(transcribedTexts.join('\n'));
-        }
-        // Preserve non-audio media summaries (visual parts identification, documents) so images are never dropped
-        const nonAudioSummaries = mediaSummaries.filter(s => !s.startsWith('[Audio transcripto:'));
-        if (nonAudioSummaries.length > 0) {
-          partsToAdd.push(nonAudioSummaries.join('\n'));
-        } else if (transcribedTexts.length === 0 && mediaSummaries.length > 0) {
-          partsToAdd.push(mediaSummaries.join('\n'));
-        }
-        if (partsToAdd.length > 0) {
-          content = content ? `${content}\n${partsToAdd.join('\n')}` : partsToAdd.join('\n');
-        }
-        if (visualSearchTerms && visualSearchTerms.length > 0) {
-          visualKeywords = visualSearchTerms;
-        }
-      } catch (mediaErr) {
-        logger.warn('Error processing attachments in webhook', { correlationId, error: mediaErr.message });
-      }
-    }
-
-    // 7b. Process Message URLs (Mercado Libre, Kroser & general e-commerce links)
-    if (content && typeof content === 'string') {
-      try {
-        const urlResult = await urlInterpreterService.processMessageUrls(content);
-        if (urlResult.hasUrls) {
-          logger.info('URLs detected and interpreted in user message', {
-            correlationId,
-            urlCount: urlResult.urls.length,
-            platforms: urlResult.urls.map((u) => u.platform),
-            terms: urlResult.combinedSearchTerms,
-          });
-          content = urlResult.enrichedContent;
-          if (urlResult.combinedSearchTerms && visualKeywords.length === 0) {
-            visualKeywords = urlResult.combinedSearchTerms.split(' ').filter(Boolean);
-          }
-        }
-      } catch (urlErr) {
-        logger.warn('Error interpreting URLs in webhook message', { correlationId, error: urlErr.message });
-      }
-    }
+    const mediaResult = await webhookMedia.processAttachmentsAndUrls(content, attachments, { correlationId });
+    content = mediaResult.content;
+    visualKeywords = mediaResult.visualKeywords;
 
     // 8. Mailer Daemon / Bounce Filter (Fallback)
     const secondaryBounceCheck = botLoopDetector.isServerBounce(content);
@@ -582,8 +343,6 @@ module.exports = {
 
       if (guardrail.shouldEscalate) {
         const area = guardrail.escalationArea || 'info';
-
-        // Check human business hours & derivation config
         const channel = (
           conversation.channel ||
           conversation.inbox?.channel_type ||
@@ -593,93 +352,20 @@ module.exports = {
           'whatsapp'
         ).toLowerCase();
 
-        const bConfig = await configuracionRepo.getMultiple([
-          `assignee_id_${area}`,
-          'derivation_agent_id',
-          'chatwoot_default_assignee_id',
-          'derivation_label',
-          'msg_derivacion',
-          'business_hours_weekday_start',
-          'business_hours_weekday_end',
-          'business_hours_saturday_enabled',
-          'business_hours_saturday_start',
-          'business_hours_saturday_end',
-          'contact_alternative_email',
-          'msg_fuera_de_horario',
-        ]);
-
-        const areaAssignee = bConfig[`assignee_id_${area}`];
-        const defaultAssignee = bConfig.derivation_agent_id || bConfig.chatwoot_default_assignee_id;
-        const rawAssignee = areaAssignee || defaultAssignee || 1;
-        const assigneeId = Number(rawAssignee) || rawAssignee;
-
-        const derivationLabel = (bConfig.derivation_label && bConfig.derivation_label.trim()) || 'derivar';
-        const msgDerivacion =
-          bConfig.msg_derivacion ||
-          'Le estamos derivando con un asesor especializado que podrá brindarle una atención personalizada. Por favor aguarde un instante.';
-
-        const hoursStatus = businessHours.isWithinBusinessHours(new Date(), bConfig);
-        const nextBusinessDay = businessHours.getNextBusinessDayString(new Date(), bConfig);
-        const isOutOfHours = !hoursStatus.isWithin;
-
-        let msgToSend = msgDerivacion;
-        if (isOutOfHours) {
-          msgToSend = businessHours.getOutHoursMessage({
-            channel,
-            nextBusinessDay,
-            alternativeEmail: bConfig.contact_alternative_email || 'atencion@kroser.com.uy',
-            customTemplate: bConfig.msg_fuera_de_horario,
-          });
-        }
-
-        if (conversationId && !isOutOfHours) {
-          await redis.set(`human_active:${conversationId}`, '1', 'EX', HUMAN_ACTIVE_TTL);
-          debounceService.cancel(conversationId);
-          await redis.del(`conv_buffer:${conversationId}`);
-        } else if (conversationId && isOutOfHours) {
-          debounceService.cancel(conversationId);
-          await redis.del(`conv_buffer:${conversationId}`);
-        }
-
-        if (!isOutOfHours) {
-          await chatwootService.assignAgent(accountId, conversationId, assigneeId);
-        }
-        await chatwootService.sendMessage(accountId, conversationId, msgToSend);
-
-        // Apply derivation label (default 'derivar') + out-of-hours tags
-        const labels = [derivationLabel];
-        if (isOutOfHours) {
-          labels.push('fuera-de-horario');
-          if (hoursStatus.reason === 'weekend') labels.push('fin-de-semana');
-        }
-        await chatwootService.addLabels(accountId, conversationId, labels);
-
-        // Generate executive summary & action plan as private note for agent
-        await derivationNoteService.generateAndSendDerivationNote({
-          accountId,
-          conversationId,
+        const escResult = await webhookEscalation.handleEscalation({
           area,
+          reason: guardrail.reason || 'Guardrail de seguridad activado por conducta reiterada',
           sender,
-          reason: isOutOfHours
-            ? `[Fuera de Horario - ${hoursStatus.reason.toUpperCase()}] ${guardrail.reason || 'Guardrail activado'}. Atención humana retoma ${nextBusinessDay}.`
-            : (guardrail.reason || 'Guardrail de seguridad activado por conducta reiterada'),
+          conversationId,
+          accountId,
+          channel,
           history: [{ role: 'user', content: fullContent }],
           ragContextStr: '',
-        });
-
-        await emailService.sendDerivationAlert({
-          area,
-          clienteNombre: sender.name,
-          clienteTelefono: sender.phone_number,
-          clienteMail: sender.email,
-          conversationId,
-          motivo: isOutOfHours
-            ? `[FUERA DE HORARIO - ${hoursStatus.reason.toUpperCase()}] ${guardrail.reason || 'Guardrail activado'}`
-            : (guardrail.reason || 'Guardrail de seguridad activado por conducta reiterada'),
+          actionName: 'guardrail_escalation',
         });
 
         await releaseLockAndDrainBuffer(lockKey, bufferKey, conversationId, payload, module.exports.processWebhookEvent);
-        return { status: 'processed', action: 'guardrail_escalation', category: guardrail.category, isOutOfHours };
+        return { status: 'processed', action: 'guardrail_escalation', category: guardrail.category, isOutOfHours: escResult.isOutOfHours };
       }
 
       // Send firm, respectful guardrail response
@@ -741,8 +427,7 @@ module.exports = {
     // 14. Smart Instant Handling for Pure Greetings & Farewells (Efficiency + Natural Variety)
     if (intentResult.isPureGreeting && history.length <= 1) {
       const greetingReply = intentResult.getGreetingMessage(sender.name);
-      
-      // Simulate realistic typing indicator and slight delay
+
       await chatwootService.toggleTypingStatus(accountId, conversationId, 'on');
       await new Promise((resolve) => setTimeout(resolve, Math.floor(Math.random() * 400) + 400));
       await chatwootService.toggleTypingStatus(accountId, conversationId, 'off');
@@ -762,7 +447,6 @@ module.exports = {
     if (intentResult.isPureFarewell && history.length > 0) {
       const farewellReply = intentResult.getFarewellMessage();
 
-      // Simulate realistic typing indicator and slight delay
       await chatwootService.toggleTypingStatus(accountId, conversationId, 'on');
       await new Promise((resolve) => setTimeout(resolve, Math.floor(Math.random() * 400) + 400));
       await chatwootService.toggleTypingStatus(accountId, conversationId, 'off');
@@ -795,18 +479,15 @@ module.exports = {
       const olderMessages = history.slice(0, history.length - 12);
       let recentMessages = history.slice(-12);
 
-      // Ensure recent window starts with a user message for natural dialog flow
       if (recentMessages.length > 0 && recentMessages[0].role === 'assistant') {
         recentMessages = recentMessages.slice(1);
       }
 
-      // Compact summary of older turns for the System Prompt
       conversationSummaryStr = olderMessages
         .map((m) => `${m.role === 'user' ? 'Cliente' : 'Asesor'}: ${m.content}`)
         .join(' | ')
         .slice(-600);
 
-      // Keep processedHistory strictly containing user/assistant dialog messages
       processedHistory = recentMessages;
     }
 
@@ -926,7 +607,6 @@ module.exports = {
     });
 
     // 17. Call LLM with Agentic Tools & Typing Indicator Active
-    // Extend lock during LLM call to prevent parallel collisions on long inferences
     if (lockKey && !payload._alreadyDebounced) {
       await redis.expire(lockKey, 25);
     }
@@ -984,8 +664,6 @@ module.exports = {
     if (/DERIVAR:\s*\[?(\w+)\]?/i.test(llmReply)) {
       const match = llmReply.match(/DERIVAR:\s*\[?(\w+)\]?/i);
       const area = match ? match[1].toLowerCase() : 'info';
-
-      // Check human business hours & derivation settings
       const channel = (
         conversation.channel ||
         conversation.inbox?.channel_type ||
@@ -995,73 +673,20 @@ module.exports = {
         'whatsapp'
       ).toLowerCase();
 
-      const bConfig = await configuracionRepo.getMultiple([
-        `assignee_id_${area}`,
-        'derivation_agent_id',
-        'chatwoot_default_assignee_id',
-        'derivation_label',
-        'msg_derivacion',
-        'business_hours_weekday_start',
-        'business_hours_weekday_end',
-        'business_hours_saturday_enabled',
-        'business_hours_saturday_start',
-        'business_hours_saturday_end',
-        'contact_alternative_email',
-        'msg_fuera_de_horario',
-      ]);
-
-      const areaAssignee = bConfig[`assignee_id_${area}`];
-      const defaultAssignee = bConfig.derivation_agent_id || bConfig.chatwoot_default_assignee_id;
-      const rawAssignee = areaAssignee || defaultAssignee || 1;
-      const assigneeId = Number(rawAssignee) || rawAssignee;
-
-      const derivationLabel = (bConfig.derivation_label && bConfig.derivation_label.trim()) || 'derivar';
-      const defaultMsgDerivacion =
-        bConfig.msg_derivacion ||
-        'Le estamos derivando con un asesor especializado que podrá brindarle una atención personalizada. Por favor aguarde un instante.';
-
-      const hoursStatus = businessHours.isWithinBusinessHours(new Date(), bConfig);
-      const nextBusinessDay = businessHours.getNextBusinessDayString(new Date(), bConfig);
-      const isOutOfHours = !hoursStatus.isWithin;
-
-      let msgToSend = defaultMsgDerivacion;
-      if (area === 'administracion' && !msgToSend.includes('2218 5987')) {
-        msgToSend += ' También puede comunicarse directamente con nuestra Central de Reclamos a los teléfonos 2218 5987 / 2218 5988.';
-      }
-      if (isOutOfHours) {
-        msgToSend = businessHours.getOutHoursMessage({
-          channel,
-          nextBusinessDay,
-          alternativeEmail: bConfig.contact_alternative_email || 'atencion@kroser.com.uy',
-          customTemplate: bConfig.msg_fuera_de_horario,
-        });
-      }
-
-      // Silence the bot ONLY if within business hours (human is ready to respond immediately).
-      // If out-of-hours / weekend, do NOT silence the bot permanently so customer can keep asking about products/catalog!
-      if (conversationId && !isOutOfHours) {
-        await redis.set(`human_active:${conversationId}`, '1', 'EX', HUMAN_ACTIVE_TTL);
-        debounceService.cancel(conversationId);
-        await redis.del(`conv_buffer:${conversationId}`);
-        autoResolveService.cancelScheduledResolve(conversationId);
-      } else if (conversationId && isOutOfHours) {
-        // Cancel pending debounce & scheduled resolve, but keep bot awake for catalog queries
-        debounceService.cancel(conversationId);
-        await redis.del(`conv_buffer:${conversationId}`);
-        autoResolveService.cancelScheduledResolve(conversationId);
-      }
-
-      await chatwootService.toggleTypingStatus(accountId, conversationId, 'off');
-
-      // Assign in Chatwoot only if within business hours so bot is not silenced during off-hours/weekends
-      if (!isOutOfHours) {
-        await chatwootService.assignAgent(accountId, conversationId, assigneeId);
-      }
-      await chatwootService.sendMessage(accountId, conversationId, msgToSend);
-      await conversacionesRepo.logMessage(conversationId, msgToSend, 'assistant');
+      const escResult = await webhookEscalation.handleEscalation({
+        area,
+        reason: content,
+        sender,
+        conversationId,
+        accountId,
+        channel,
+        history,
+        ragContextStr: toolsUsed.length > 0 ? JSON.stringify(toolsUsed) : '',
+        actionName: 'human_escalation',
+      });
 
       // Persist escalation or out-of-hours response in Redis memory
-      history.push({ role: 'assistant', content: msgToSend });
+      history.push({ role: 'assistant', content: escResult.msgToSend });
       if (history.length > CONTEXT_WINDOW_LIMIT) {
         history = history.slice(-CONTEXT_WINDOW_LIMIT);
         if (history.length > 0 && history[0].role === 'assistant') {
@@ -1070,46 +695,13 @@ module.exports = {
       }
       await redis.set(sessionKey, JSON.stringify(history), 'EX', 86400);
 
-      // Add derivation label (default 'derivar') + out-of-hours tags in Chatwoot
-      const labels = [derivationLabel];
-      if (isOutOfHours) {
-        labels.push('fuera-de-horario');
-        if (hoursStatus.reason === 'weekend') labels.push('fin-de-semana');
-      }
-      await chatwootService.addLabels(accountId, conversationId, labels);
-
-      // Generate executive summary & action plan as private note for agent
-      await derivationNoteService.generateAndSendDerivationNote({
-        accountId,
-        conversationId,
-        area,
-        sender,
-        reason: isOutOfHours
-          ? `Derivación fuera de horario (${hoursStatus.reason.toUpperCase()}). Atención humana retoma ${nextBusinessDay}. Consulta original: "${content}"`
-          : content,
-        history,
-        ragContextStr: toolsUsed.length > 0 ? JSON.stringify(toolsUsed) : '',
-      });
-
-      // Send email alert to internal area
-      await emailService.sendDerivationAlert({
-        area,
-        clienteNombre: sender.name,
-        clienteTelefono: sender.phone_number,
-        clienteMail: sender.email,
-        conversationId,
-        motivo: isOutOfHours
-          ? `[FUERA DE HORARIO - ${hoursStatus.reason.toUpperCase()}] ${content}`
-          : content,
-      });
-
       await releaseLockAndDrainBuffer(lockKey, bufferKey, conversationId, payload, module.exports.processWebhookEvent);
       return {
-        status: 'processed',
-        action: 'human_escalation',
-        area,
-        isOutOfHours,
-        reason: hoursStatus.reason,
+        status: escResult.status,
+        action: escResult.action,
+        area: escResult.area,
+        isOutOfHours: escResult.isOutOfHours,
+        reason: escResult.reason,
       };
     }
 

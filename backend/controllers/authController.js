@@ -31,7 +31,7 @@ const USERS = {
 };
 
 function generateToken(username, role) {
-  return jwt.sign({ username, role }, JWT_SECRET, { expiresIn: TOKEN_EXPIRES_IN });
+  return jwt.sign({ username, role }, JWT_SECRET, { expiresIn: TOKEN_EXPIRES_IN, algorithm: 'HS256' });
 }
 
 function setAuthCookie(res, token) {

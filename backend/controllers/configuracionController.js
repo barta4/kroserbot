@@ -46,6 +46,9 @@ const ALLOWED_EXACT_KEYS = new Set([
   'msg_fuera_de_horario',
   'cotizacion_usd',
   'message_chunking_enabled',
+  'equus_margen_porcentaje',
+  'equus_costo_incluye_iva',
+  'equus_aplicar_iva_venta',
 ]);
 
 const ALLOWED_PREFIXES = ['msg_', 'assignee_id_'];

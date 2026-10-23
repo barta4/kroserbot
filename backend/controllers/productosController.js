@@ -1,9 +1,16 @@
-const db = require('../config/db');
+const pricingCalculator = require('../utils/pricingCalculator');
+const productosRepo = require('../repositories/productosRepository');
+
+function sanitizeProductForPublic(product, isStaff = false) {
+  if (!product || typeof product !== 'object' || isStaff) return product;
+  const { precio_costo, margen_aplicado, iva_aplicado, fuente_origen, ...safeProduct } = product;
+  return safeProduct;
+}
 
 module.exports = {
   async listProductos(req, res, next) {
     try {
-      const { search, categoria, limit = 50, offset = 0, page } = req.query;
+      const { search, categoria, marca, fuente_origen, promo_id, limit = 50, offset = 0, page } = req.query;
       const parsedLimit = Math.max(1, parseInt(limit, 10) || 50);
       let parsedOffset = Math.max(0, parseInt(offset, 10) || 0);
       if (page) {
@@ -11,59 +18,86 @@ module.exports = {
         parsedOffset = (parsedPage - 1) * parsedLimit;
       }
 
-      let countSql = 'SELECT COUNT(*) as total FROM productos WHERE 1=1';
-      let sql = 'SELECT id, sku, nombre, precio, precio_oferta, moneda, marca, categoria, imagen_url, producto_url, stock_status, discontinuado, updated_at FROM productos WHERE 1=1';
-      const params = [];
+      const { items, total } = await productosRepo.listWithPromociones({
+        search,
+        categoria,
+        marca,
+        fuente_origen,
+        promo_id,
+        limit: parsedLimit,
+        offset: parsedOffset,
+      });
 
-      if (search) {
-        params.push(`%${search}%`);
-        const clause = ` AND (nombre ILIKE $${params.length} OR sku ILIKE $${params.length} OR marca ILIKE $${params.length})`;
-        countSql += clause;
-        sql += clause;
-      }
-
-      if (categoria) {
-        params.push(categoria);
-        const clause = ` AND categoria = $${params.length}`;
-        countSql += clause;
-        sql += clause;
-      }
-
-      let total = 0;
-      try {
-        const countRes = await db.query(countSql, params);
-        total = parseInt(countRes.rows[0]?.total || 0, 10);
-      } catch (_e) {
-        total = 0;
-      }
-
-      sql += ` ORDER BY updated_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
-      const queryParams = [...params, parsedLimit, parsedOffset];
-
-      let rows = [];
-      try {
-        const result = await db.query(sql, queryParams);
-        rows = result.rows;
-      } catch (_err) {
-        // Fallback demo product list if DB empty/offline
-        rows = [
-          { id: 1, sku: 'KROS-PINT-01', nombre: 'Pintura Látex Interior 20L', precio: 2490, marca: 'Inca', categoria: 'Pinturas', stock_status: 'in_stock', discontinuado: false },
-          { id: 2, sku: 'KROS-HERR-02', nombre: 'Taladro Percutor 750W', precio: 3890, marca: 'Bosch', categoria: 'Herramientas', stock_status: 'in_stock', discontinuado: false },
-        ];
-        total = rows.length;
-      }
+      // Enriquecer con cálculo de precios según cliente o promoción activa
+      const client = req.cliente || (req.user && req.user.role === 'cliente' ? req.user : null);
+      const enrichedRows = pricingCalculator.enrichProductsWithPricing(items, client);
+      const isStaff = Boolean(req.user && ['admin', 'supervisor'].includes(req.user.role));
+      const safeRows = enrichedRows.map((p) => sanitizeProductForPublic(p, isStaff));
 
       const currentPage = Math.floor(parsedOffset / parsedLimit) + 1;
       const totalPages = Math.ceil(total / parsedLimit) || 1;
 
       res.json({
-        items: rows,
+        items: safeRows,
         total,
         page: currentPage,
         totalPages,
         limit: parsedLimit,
         offset: parsedOffset,
+        clienteDescuento: client ? {
+          categoria: client.categoria,
+          descuento_porcentaje: pricingCalculator.getEffectiveDiscount(client),
+        } : null,
       });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  async getProducto(req, res, next) {
+    try {
+      const { id } = req.params;
+      const parsedId = parseInt(id, 10);
+      if (isNaN(parsedId) || parsedId <= 0) {
+        return res.status(400).json({ error: 'ID de producto inválido' });
+      }
+
+      const producto = await productosRepo.findByIdWithPromocion(parsedId);
+      if (!producto) {
+        return res.status(404).json({ error: 'Producto no encontrado' });
+      }
+
+      const client = req.cliente || (req.user && req.user.role === 'cliente' ? req.user : null);
+      const enriched = pricingCalculator.calculateProductPrice(producto, client);
+      const isStaff = Boolean(req.user && ['admin', 'supervisor'].includes(req.user.role));
+
+      let alternativas = [];
+      try {
+        alternativas = await productosRepo.getAlternatives({
+          categoria: enriched.categoria,
+          marca: enriched.marca,
+          excludeSku: enriched.sku,
+          limit: 4,
+        });
+        alternativas = pricingCalculator.enrichProductsWithPricing(alternativas, client);
+      } catch (_e) {
+        alternativas = [];
+      }
+
+      res.json({
+        success: true,
+        producto: sanitizeProductForPublic(enriched, isStaff),
+        alternativas: alternativas.map((p) => sanitizeProductForPublic(p, isStaff)),
+      });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  async getCategorias(req, res, next) {
+    try {
+      const categorias = await productosRepo.getCategoriasStats();
+      res.json({ success: true, categorias });
     } catch (err) {
       next(err);
     }
@@ -76,8 +110,9 @@ module.exports = {
       if (isNaN(parsedId) || parsedId <= 0) {
         return res.status(400).json({ error: 'ID de producto inválido' });
       }
-      const result = await db.query('DELETE FROM productos WHERE id = $1', [parsedId]);
-      if (result.rowCount === 0) {
+
+      const deleted = await productosRepo.deleteById(parsedId);
+      if (!deleted) {
         return res.status(404).json({ error: 'Producto no encontrado' });
       }
       res.json({ success: true, message: `Producto #${parsedId} eliminado` });

@@ -69,6 +69,10 @@ async function runMigrations() {
     } else if (direction === 'down') {
       console.log('[DB Migration] Rollback requested. Resetting schema...');
       await client.query(`
+        DROP TABLE IF EXISTS promocion_productos CASCADE;
+        DROP TABLE IF EXISTS promociones_especiales CASCADE;
+        DROP TABLE IF EXISTS proveedores_scraper CASCADE;
+        DROP TABLE IF EXISTS clientes_usuarios CASCADE;
         DROP TABLE IF EXISTS scraper_runs CASCADE;
         DROP TABLE IF EXISTS conversaciones CASCADE;
         DROP TABLE IF EXISTS pedidos_historial CASCADE;

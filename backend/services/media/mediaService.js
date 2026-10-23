@@ -48,7 +48,20 @@ async function getApiKeys() {
  * Downloads media from URL as base64 and determines mimeType
  */
 async function fetchMediaAsBase64(url) {
-  if (!axios || !url) return null;
+  if (!url) return null;
+  // Handle direct Base64 Data URLs (e.g. from web app microphone recording or file picker)
+  if (typeof url === 'string' && url.startsWith('data:')) {
+    const match = url.match(/^data:([^;]+);base64,(.+)$/);
+    if (match) {
+      const mimeType = match[1];
+      const base64 = match[2];
+      if (base64.length > 20 * 1024 * 1024) return null; // 15MB binary limit
+      const buffer = Buffer.from(base64, 'base64');
+      return { base64, mimeType, buffer };
+    }
+  }
+
+  if (!axios) return null;
   try {
     let targetUrl = url;
     const dbUrl = await configuracionRepo.get('chatwoot_base_url');
@@ -58,17 +71,50 @@ async function fetchMediaAsBase64(url) {
     } else if (targetUrl.startsWith('/') && !targetUrl.startsWith('//')) {
       targetUrl = `${baseUrl.replace(/\/+$/, '')}${targetUrl}`;
     }
-    const headers = { 'User-Agent': 'Kroserbot/1.9.5' };
+    let parsedUrl;
+    try {
+      parsedUrl = new URL(targetUrl);
+    } catch {
+      logger.warn('Invalid media attachment URL', { url: targetUrl });
+      return null;
+    }
+
+    if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
+      logger.warn('Blocked disallowed protocol for media download', { protocol: parsedUrl.protocol });
+      return null;
+    }
+
+    const host = parsedUrl.hostname.toLowerCase();
+    const isLoopbackOrMeta = ['localhost', '127.0.0.1', '::1', '0.0.0.0', '169.254.169.254', 'metadata.google.internal'].includes(host);
+    const isPrivateIp = /^10\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(host) ||
+      /^127\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(host) ||
+      /^172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3}$/.test(host) ||
+      /^192\.168\.\d{1,3}\.\d{1,3}$/.test(host) ||
+      /^169\.254\.\d{1,3}\.\d{1,3}$/.test(host) ||
+      host.endsWith('.local') || host.endsWith('.internal');
+
+    if (isLoopbackOrMeta || isPrivateIp) {
+      logger.warn('SSRF protection: blocked private or internal host', { host });
+      return null;
+    }
+
+    const headers = { 'User-Agent': 'Kroserbot/2.3.2' };
     const dbToken = await configuracionRepo.get('chatwoot_api_token');
     const token = (dbToken && dbToken.trim()) || process.env.CHATWOOT_API_ACCESS_TOKEN || process.env.CHATWOOT_API_TOKEN;
-    const baseHost = baseUrl.replace(/^https?:\/\//i, '').split('/')[0].toLowerCase();
-    if (token && (targetUrl.includes('uruchat.com') || targetUrl.includes('kroser.uy') || (baseHost && targetUrl.toLowerCase().includes(baseHost)) || targetUrl.startsWith('/'))) {
+    const baseHost = baseUrl.replace(/^https?:\/\//i, '').split('/')[0].split(':')[0].toLowerCase();
+    const isUruchatHost = host === 'uruchat.com' || host.endsWith('.uruchat.com');
+    const isKroserHost = host === 'kroser.uy' || host.endsWith('.kroser.uy');
+    const isBaseHost = Boolean(baseHost && (host === baseHost || host.endsWith(`.${baseHost}`)));
+
+    if (token && (isUruchatHost || isKroserHost || isBaseHost)) {
       headers['api_access_token'] = token;
     }
     const response = await axios.get(targetUrl, {
       responseType: 'arraybuffer',
-      timeout: 15000,
-      maxRedirects: 5,
+      timeout: 10000,
+      maxRedirects: 3,
+      maxContentLength: 15 * 1024 * 1024,
+      maxBodyLength: 15 * 1024 * 1024,
       headers,
     });
     const contentType = response.headers['content-type'] || 'application/octet-stream';
@@ -144,17 +190,21 @@ async function transcribeAudio({ url, data_url, mime_type, extension }) {
           };
 
           let res = null;
-          let apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${geminiKey}`;
+          let apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent`;
+          const geminiHeaders = {
+            'Content-Type': 'application/json',
+            'x-goog-api-key': geminiKey,
+          };
           try {
-            res = await axios.post(apiUrl, requestBody, { timeout: 20000 });
+            res = await axios.post(apiUrl, requestBody, { timeout: 20000, headers: geminiHeaders });
           } catch (modelErr) {
             if (geminiModel !== 'gemini-1.5-flash') {
               logger.info('Gemini custom model failed for audio transcription, retrying with gemini-1.5-flash', {
                 triedModel: geminiModel,
                 error: modelErr.message,
               });
-              apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`;
-              res = await axios.post(apiUrl, requestBody, { timeout: 20000 });
+              apiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
+              res = await axios.post(apiUrl, requestBody, { timeout: 20000, headers: geminiHeaders });
             } else {
               throw modelErr;
             }
@@ -184,7 +234,8 @@ async function transcribeAudio({ url, data_url, mime_type, extension }) {
         const { toFile } = require('openai');
         let ext = (extension?.replace('.', '') || '').toLowerCase();
         if (!ext || ext === 'octet-stream') {
-          if (mediaUrl.includes('.ogg') || mediaUrl.includes('.opus') || (mime_type && mime_type.includes('ogg'))) ext = 'ogg';
+          if (mediaUrl.includes('webm') || (mime_type && mime_type.includes('webm')) || extension?.includes('webm')) ext = 'webm';
+          else if (mediaUrl.includes('.ogg') || mediaUrl.includes('.opus') || (mime_type && mime_type.includes('ogg'))) ext = 'ogg';
           else if (mediaUrl.includes('.mp3') || (mime_type && mime_type.includes('mp3'))) ext = 'mp3';
           else if (mediaUrl.includes('.wav') || (mime_type && mime_type.includes('wav'))) ext = 'wav';
           else if (mediaUrl.includes('.m4a') || (mime_type && mime_type.includes('m4a'))) ext = 'm4a';
@@ -278,9 +329,13 @@ DETALLE: <Explicación breve de 1 o 2 oraciones para el cliente sobre qué pieza
         },
       ],
     };
-    let apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${geminiKey}`;
+    let apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent`;
+    const geminiHeaders = {
+      'Content-Type': 'application/json',
+      'x-goog-api-key': geminiKey,
+    };
     try {
-      const res = await axios.post(apiUrl, visionPayload, { timeout: 20000 });
+      const res = await axios.post(apiUrl, visionPayload, { timeout: 20000, headers: geminiHeaders });
       return res.data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || null;
     } catch (visErr) {
       if (geminiModel !== 'gemini-1.5-flash') {
@@ -288,8 +343,8 @@ DETALLE: <Explicación breve de 1 o 2 oraciones para el cliente sobre qué pieza
           triedModel: geminiModel,
           error: visErr.message,
         });
-        apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`;
-        const res = await axios.post(apiUrl, visionPayload, { timeout: 20000 });
+        apiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
+        const res = await axios.post(apiUrl, visionPayload, { timeout: 20000, headers: geminiHeaders });
         return res.data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || null;
       }
       throw visErr;

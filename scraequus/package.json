@@ -1,0 +1,31 @@
+{
+  "name": "scraequus",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Scraper inteligente de Equus.uy con API propia",
+  "main": "dist/index.js",
+  "scripts": {
+    "prototype": "tsx src/prototype.ts",
+    "api": "tsx src/server.ts",
+    "sync": "tsx src/sync.ts",
+    "build": "tsc",
+    "start": "node dist/index.js"
+  },
+  "keywords": [
+    "scraper",
+    "equus",
+    "uruguay"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@fastify/rate-limit": "^11.2.1",
+    "cheerio": "^1.0.0",
+    "fastify": "^5.12.5"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3"
+  }
+}

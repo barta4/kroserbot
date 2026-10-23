@@ -14,6 +14,8 @@ const CROSS_SELLING_MAP = require('../../utils/crossSellingMap');
 const { formatCurrencyPrice } = require('../../utils/formatCurrency');
 const { normalize } = require('../../utils/textNormalizer');
 const { extractEnrichedProductQuery } = require('../../utils/queryAnalyzer');
+const pricingCalculator = require('../../utils/pricingCalculator');
+const traductorTecnico = require('../../utils/traductorTecnico');
 
 /**
  * Standard definitions of available tools (JSON Schema)
@@ -173,16 +175,33 @@ async function executeBuscarProductos({ consulta = '' }, context = {}) {
     };
   }
 
+  // 1. ROL: El Traductor Técnico
+  // Limpia el mensaje del cliente, remueve verbos de compra y traduce modismos vulgares a nombres oficiales de catálogo
+  const fichaTecnicaMsg = lastUserMsg ? traductorTecnico.generarFichaTecnica(lastUserMsg) : null;
+  const fichaTecnicaQuery = rawQuery ? traductorTecnico.generarFichaTecnica(rawQuery) : null;
+  const fichaTecnica = (fichaTecnicaMsg && (fichaTecnicaMsg.fue_traducido || fichaTecnicaMsg.faltante))
+    ? fichaTecnicaMsg
+    : (fichaTecnicaQuery || { consulta_tecnica: effectiveQuery, especificaciones: {}, faltante: null, fue_traducido: false });
+
   let productos = [];
   let alternativas = [];
   let complementarios = [];
   const lowerQ = effectiveQuery.toLowerCase();
 
+  // 2. ROL: El Encargado del Depósito
+  // Recibe la palabra limpia técnica del catálogo (ej: "tijera corta tubo pvc") para buscar existencias exactas
+  const targetSearch = (fichaTecnica.fue_traducido && fichaTecnica.consulta_tecnica)
+    ? fichaTecnica.consulta_tecnica
+    : effectiveQuery;
+
   // 1. Hybrid search (exact + textual + vector with re-ranking)
   try {
-    productos = await searchService.hybridSearch(effectiveQuery, { limit: 5 });
-    // If enriched query yielded 0 results, fall back to LLM's original rawQuery
-    if (productos.length === 0 && rawQuery && rawQuery !== effectiveQuery) {
+    productos = await searchService.hybridSearch(targetSearch, { limit: 5 });
+    // Si la búsqueda con targetSearch dio 0, probamos con effectiveQuery o rawQuery
+    if (productos.length === 0 && targetSearch !== effectiveQuery) {
+      productos = await searchService.hybridSearch(effectiveQuery, { limit: 5 });
+    }
+    if (productos.length === 0 && rawQuery && rawQuery !== effectiveQuery && rawQuery !== targetSearch) {
       logger.info('executeBuscarProductos: enriched query found 0, falling back to rawQuery', {
         effectiveQuery,
         rawQuery,
@@ -191,6 +210,16 @@ async function executeBuscarProductos({ consulta = '' }, context = {}) {
     }
   } catch (pErr) {
     logger.error('Error in hybrid search tool', { error: pErr.message });
+  }
+
+  // Si el cliente especificó una medida exacta (ej: 42 mm), priorizar esa variante en el depósito
+  if (fichaTecnica.especificaciones?.milimetros && productos.length > 1) {
+    const mmBuscado = String(fichaTecnica.especificaciones.milimetros);
+    productos.sort((a, b) => {
+      const matchA = (a.nombre || '').includes(mmBuscado) ? -1 : 0;
+      const matchB = (b.nombre || '').includes(mmBuscado) ? -1 : 0;
+      return matchA - matchB;
+    });
   }
 
   // 2. Smart substitutions: ONLY if a specific searched item was found but is out of stock.
@@ -211,7 +240,7 @@ async function executeBuscarProductos({ consulta = '' }, context = {}) {
     logger.warn('Error in getAlternatives tool', { error: aErr.message });
   }
 
-  // 3. Cross-selling suggestions (only if products were found)
+  // 3. Cross-selling suggestions (only if productos were found)
   try {
     if (productos.length > 0) {
       const searchTargets = [lowerQ, ...productos.map((p) => `${p.categoria || ''} ${p.nombre || ''}`.toLowerCase())].join(' ');
@@ -234,14 +263,30 @@ async function executeBuscarProductos({ consulta = '' }, context = {}) {
 
   if (productos.length === 0) {
     directivaVendedor = EMPTY_SEARCH_DIRECTIVE;
+  } else if (productos.length > 1 && fichaTecnica.faltante) {
+    // 3. ROL: El Vendedor del Mostrador (Variantes en depósito pero falta dato técnico clave)
+    const variantesTexto = productos.slice(0, 3).map((p) => `${p.nombre} (${formatCurrencyPrice(p)})`).join(' y ');
+    directivaVendedor = `El Encargado del Depósito confirmó stock de ${productos.length} opciones (${variantesTexto}). El Traductor Técnico indica que falta definir: ${fichaTecnica.faltante}. Como Vendedor del Mostrador, confirme amablemente que tenemos en stock, mencione las opciones disponibles con sus precios, y consulte de forma cálida el dato faltante para asesorar al cliente.`;
   }
+
+  const client = context?.cliente;
 
   const res = {
     productos: productos.slice(0, 4).map((p) => {
+      let precioTexto = formatCurrencyPrice(p);
+      if (client) {
+        const priced = pricingCalculator.calculateProductPrice(p, client);
+        if (priced && priced.descuento_porcentaje > 0) {
+          precioTexto = `${formatCurrencyPrice(p)} (Tu precio ${client.categoria || 'cliente'} con ${priced.descuento_porcentaje}% OFF: $ ${priced.precio_final})`;
+        }
+      }
       const item = {
+        id: p.id,
         sku: p.sku,
         nombre: p.nombre,
-        precio: formatCurrencyPrice(p),
+        precio: precioTexto,
+        precio_numerico: parseFloat(p.precio_oferta || p.precio) || 0,
+        moneda: p.moneda || 'UYU',
         stock_status: p.stock_status,
       };
       if (p.marca && p.marca !== 'N/A') item.marca = p.marca;
@@ -261,6 +306,29 @@ async function executeBuscarProductos({ consulta = '' }, context = {}) {
     total_coincidencias: productos.length,
     directiva_vendedor: directivaVendedor,
   };
+
+  // Ficha técnica del Traductor y Reporte del Depósito para enriquecer la decisión del Vendedor
+  if (fichaTecnica.fue_traducido || fichaTecnica.faltante) {
+    res.nota_traductor = {
+      termino_cliente: lastUserMsg || rawQuery,
+      termino_tecnico_catalogo: fichaTecnica.consulta_tecnica,
+      dato_pendiente: fichaTecnica.faltante || null,
+      especificaciones_detectadas: fichaTecnica.especificaciones || {},
+    };
+  }
+
+  if (productos.length > 0) {
+    res.reporte_deposito = {
+      stock_confirmado: true,
+      articulos_encontrados: productos.length,
+      opciones: productos.slice(0, 3).map((p) => ({
+        sku: p.sku,
+        nombre: p.nombre,
+        precio: formatCurrencyPrice(p),
+        stock: p.stock_status,
+      })),
+    };
+  }
 
   if (alternativas.length > 0) {
     res.alternativas = alternativas.slice(0, 2).map((p) => {
@@ -433,13 +501,47 @@ async function executeRegistrarPedido({ cliente = {}, items = [] }, context = {}
   }
 
   try {
-    const normalizedItems = items.map((it) => ({
-      sku: String(it.sku || 'SKU-TEMP'),
-      nombre: String(it.nombre || 'Artículo'),
-      cantidad: parseInt(it.cantidad, 10) || 1,
-      precio: parseFloat(it.precio) || 0,
-      subtotal: (parseInt(it.cantidad, 10) || 1) * (parseFloat(it.precio) || 0),
-    }));
+    const client = context?.cliente;
+    const normalizedItems = [];
+    for (const it of items) {
+      const rawCant = parseInt(it.cantidad, 10);
+      const cant = (isNaN(rawCant) || rawCant < 1) ? 1 : Math.min(999, rawCant);
+
+      let finalUnitPrecio = 0;
+      let finalSku = String(it.sku || 'SKU-TEMP').trim().slice(0, 50);
+      let finalNombre = String(it.nombre || 'Artículo').trim().slice(0, 150);
+
+      // Si el producto existe en el catálogo, tomar el precio oficial y evitar manipulación por LLM prompt injection
+      let catalogProd = null;
+      try {
+        if (it.sku && typeof productosRepo.findBySku === 'function') {
+          catalogProd = await productosRepo.findBySku(it.sku);
+        }
+        if (!catalogProd && it.id && typeof productosRepo.findByIdWithPromocion === 'function') {
+          catalogProd = await productosRepo.findByIdWithPromocion(it.id);
+        }
+      } catch (_catErr) {
+        catalogProd = null;
+      }
+
+      if (catalogProd) {
+        finalSku = catalogProd.sku || finalSku;
+        finalNombre = catalogProd.nombre || finalNombre;
+        const priced = pricingCalculator.calculateProductPrice(catalogProd, client);
+        finalUnitPrecio = priced?.precio_final || parseFloat(catalogProd.precio_oferta || catalogProd.precio) || 0;
+      } else {
+        const itemPrice = parseFloat(it.precio);
+        finalUnitPrecio = (!isNaN(itemPrice) && itemPrice >= 0 && itemPrice < 1000000) ? itemPrice : 0;
+      }
+
+      normalizedItems.push({
+        sku: finalSku,
+        nombre: finalNombre,
+        cantidad: cant,
+        precio: Math.round(finalUnitPrecio * 100) / 100,
+        subtotal: Math.round(cant * finalUnitPrecio * 100) / 100,
+      });
+    }
 
     const normalizedCliente = {
       nombre,

@@ -228,6 +228,24 @@ module.exports = {
         refunded: 'reembolsado',
       };
 
+      // Validate payment amount against order total to prevent underpayment exploits
+      const paidAmount = parseFloat(paymentInfo.transactionAmount);
+      const expectedTotal = parseFloat(pedido.total);
+
+      if (paymentInfo.status === 'approved') {
+        if (!isNaN(paidAmount) && !isNaN(expectedTotal) && paidAmount < (expectedTotal - 0.05)) {
+          logger.warn(`[MercadoPago] Underpayment detected for pedido #${pedidoId}: paid ${paidAmount}, expected ${expectedTotal}`);
+          await pedidosRepo.updatePagoEstado(pedidoId, 'pago_parcial', `mp_${data.id}`);
+          return {
+            processed: true,
+            action: 'underpayment_detected',
+            pedidoId,
+            paidAmount,
+            expectedTotal,
+          };
+        }
+      }
+
       const pagoEstado = statusMap[paymentInfo.status] || 'pendiente_pago';
       await pedidosRepo.updatePagoEstado(pedidoId, pagoEstado, `mp_${data.id}`);
 

@@ -1,5 +1,7 @@
+const logger = require('../config/logger');
+
 module.exports = function errorHandler(err, req, res, _next) {
-  console.error('[Unhandled Error]', err.stack || err.message || err);
+  logger.error('[Unhandled Error]', { error: err.message, stack: err.stack });
 
   const statusCode = err.statusCode || (typeof err.status === 'number' ? err.status : 500);
   const isProduction = process.env.NODE_ENV === 'production';

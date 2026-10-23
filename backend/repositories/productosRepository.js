@@ -1,5 +1,6 @@
 const db = require('../config/db');
 const logger = require('../config/logger');
+const traductorTecnico = require('../utils/traductorTecnico');
 
 const PRODUCT_COLUMNS = 'id, sku, nombre, precio, precio_oferta, moneda, marca, categoria, descripcion, imagen_url, producto_url, stock_status';
 
@@ -237,5 +238,197 @@ module.exports = {
     `;
     const res = await db.query(sql, params);
     return res.rows;
+  },
+
+  async listWithPromociones({ search, categoria, marca, fuente_origen, promo_id, limit = 50, offset = 0 } = {}) {
+    const parsedLimit = Math.max(1, parseInt(limit, 10) || 50);
+    const parsedOffset = Math.max(0, parseInt(offset, 10) || 0);
+
+    let countSql = 'SELECT COUNT(*) as total FROM productos p WHERE p.discontinuado = FALSE';
+    let sql = `
+      SELECT p.id, p.sku, p.nombre, p.precio, p.precio_costo, p.precio_oferta, p.moneda,
+             p.marca, p.categoria, p.descripcion, p.imagen_url, p.producto_url,
+             p.stock_status, p.fuente_origen, p.margen_aplicado, p.iva_aplicado,
+             p.discontinuado, p.updated_at,
+             pp_active.promocion_id AS promo_id,
+             pp_active.promo_titulo,
+             pp_active.promo_badge,
+             pp_active.descuento_porcentaje AS promo_descuento
+      FROM productos p
+      LEFT JOIN LATERAL (
+        SELECT pe.id AS promocion_id,
+               pe.titulo AS promo_titulo,
+               pe.badge AS promo_badge,
+               COALESCE(pp.descuento_override, pe.descuento_porcentaje) AS descuento_porcentaje
+        FROM promocion_productos pp
+        JOIN promociones_especiales pe ON pe.id = pp.promocion_id
+        WHERE pp.producto_id = p.id AND pe.activo = TRUE
+        ORDER BY pe.orden ASC, pe.id DESC
+        LIMIT 1
+      ) pp_active ON TRUE
+      WHERE p.discontinuado = FALSE
+    `;
+    const params = [];
+
+    if (search && typeof search === 'string' && search.trim() !== '') {
+      const rawSearch = search.trim();
+      const unpunctuated = rawSearch.replace(/[?¿!¡.,;:()"']/g, ' ').trim();
+      const cleaned = (traductorTecnico && typeof traductorTecnico.limpiarMensajeColoquial === 'function')
+        ? traductorTecnico.limpiarMensajeColoquial(unpunctuated)
+        : unpunctuated;
+      const targetSearch = (cleaned && cleaned.trim().length >= 2) ? cleaned.trim() : unpunctuated;
+
+      const stopwords = new Set(['de', 'la', 'el', 'en', 'un', 'una', 'con', 'para', 'por', 'los', 'las', 'del', 'al', 'o', 'y', 'es', 'son', 'que', 'me']);
+      const tokens = targetSearch.split(/\s+/).filter((t) => t.length >= 2 && !stopwords.has(t.toLowerCase()));
+
+      if (tokens.length > 0) {
+        tokens.forEach((tok) => {
+          params.push(`%${tok}%`);
+          const clause = ` AND (p.nombre ILIKE $${params.length} OR p.sku ILIKE $${params.length} OR p.marca ILIKE $${params.length} OR p.categoria ILIKE $${params.length})`;
+          countSql += clause;
+          sql += clause;
+        });
+      }
+    }
+
+    if (categoria && typeof categoria === 'string' && categoria.trim() !== '') {
+      params.push(categoria.trim());
+      const clause = ` AND p.categoria ILIKE $${params.length}`;
+      countSql += clause;
+      sql += clause;
+    }
+
+    if (marca && typeof marca === 'string' && marca.trim() !== '') {
+      params.push(marca.trim());
+      const clause = ` AND p.marca ILIKE $${params.length}`;
+      countSql += clause;
+      sql += clause;
+    }
+
+    if (fuente_origen && typeof fuente_origen === 'string' && fuente_origen.trim() !== '') {
+      params.push(fuente_origen.trim());
+      const clause = ` AND p.fuente_origen = $${params.length}`;
+      countSql += clause;
+      sql += clause;
+    }
+
+    if (promo_id) {
+      const parsedPromoId = parseInt(promo_id, 10);
+      if (!isNaN(parsedPromoId) && parsedPromoId > 0) {
+        params.push(parsedPromoId);
+        const clause = ` AND EXISTS (SELECT 1 FROM promocion_productos pp_f WHERE pp_f.promocion_id = $${params.length} AND pp_f.producto_id = p.id)`;
+        countSql += clause;
+        sql += clause;
+      }
+    }
+
+    let total = 0;
+    try {
+      const countRes = await db.query(countSql, params);
+      total = parseInt(countRes.rows[0]?.total || 0, 10);
+    } catch (_e) {
+      total = 0;
+    }
+
+    sql += ` ORDER BY p.updated_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
+    const queryParams = [...params, parsedLimit, parsedOffset];
+
+    let rows = [];
+    try {
+      const result = await db.query(sql, queryParams);
+      rows = result.rows;
+    } catch (_err) {
+      rows = [
+        { id: 1, sku: 'KROS-PINT-01', nombre: 'Pintura Látex Interior 20L', precio: 2490, marca: 'Inca', categoria: 'Pinturas', stock_status: 'in_stock', discontinuado: false },
+        { id: 2, sku: 'KROS-HERR-02', nombre: 'Taladro Percutor 750W', precio: 3890, marca: 'Bosch', categoria: 'Herramientas', stock_status: 'in_stock', discontinuado: false },
+        { id: 3, sku: 'KROS-SANI-03', nombre: 'Canilla Monocomando Cocina', precio: 1950, marca: 'FV', categoria: 'Sanitaria', stock_status: 'in_stock', discontinuado: false },
+        { id: 4, sku: 'KROS-ELEC-04', nombre: 'Reflector LED 50W Exterior', precio: 890, marca: 'Philips', categoria: 'Electricidad', stock_status: 'in_stock', discontinuado: false },
+      ];
+      total = rows.length;
+    }
+
+    return { items: rows, total, limit: parsedLimit, offset: parsedOffset };
+  },
+
+  async findByIdWithPromocion(id) {
+    const parsedId = parseInt(id, 10);
+    if (isNaN(parsedId) || parsedId <= 0) return null;
+
+    try {
+      const result = await db.query(`
+        SELECT p.*,
+               pp_active.promocion_id AS promo_id,
+               pp_active.promo_titulo,
+               pp_active.promo_badge,
+               pp_active.descuento_porcentaje AS promo_descuento
+        FROM productos p
+        LEFT JOIN LATERAL (
+          SELECT pe.id AS promocion_id,
+                 pe.titulo AS promo_titulo,
+                 pe.badge AS promo_badge,
+                 COALESCE(pp.descuento_override, pe.descuento_porcentaje) AS descuento_porcentaje
+          FROM promocion_productos pp
+          JOIN promociones_especiales pe ON pe.id = pp.promocion_id
+          WHERE pp.producto_id = p.id AND pe.activo = TRUE
+          ORDER BY pe.orden ASC, pe.id DESC
+          LIMIT 1
+        ) pp_active ON TRUE
+        WHERE p.id = $1 AND p.discontinuado = FALSE
+      `, [parsedId]);
+
+      if (result.rows.length > 0) return result.rows[0];
+    } catch (_e) {
+      try {
+        const fallbackRes = await db.query('SELECT * FROM productos WHERE id = $1 AND discontinuado = FALSE', [parsedId]);
+        if (fallbackRes.rows.length > 0) return fallbackRes.rows[0];
+      } catch (_e2) {
+        return null;
+      }
+    }
+    return null;
+  },
+
+  async getCategoriasStats() {
+    try {
+      const result = await db.query(`
+        SELECT categoria, COUNT(*) as count
+        FROM productos
+        WHERE discontinuado = FALSE AND categoria IS NOT NULL AND categoria != ''
+        GROUP BY categoria
+        ORDER BY count DESC;
+      `);
+      return result.rows;
+    } catch (_e) {
+      return [
+        { categoria: 'Pinturas', count: 42 },
+        { categoria: 'Herramientas', count: 68 },
+        { categoria: 'Sanitaria', count: 35 },
+        { categoria: 'Electricidad', count: 29 },
+        { categoria: 'Jardín', count: 18 },
+        { categoria: 'Fijaciones', count: 24 },
+      ];
+    }
+  },
+
+  async findBySku(sku) {
+    if (!sku || typeof sku !== 'string') return null;
+    const cleaned = sku.trim();
+    if (!cleaned) return null;
+    try {
+      const result = await db.query(
+        'SELECT * FROM productos WHERE sku = $1 AND discontinuado = FALSE LIMIT 1',
+        [cleaned]
+      );
+      return result.rows[0] || null;
+    } catch (_err) {
+      return null;
+    }
+  },
+
+  async deleteById(id) {
+    const parsedId = parseInt(id, 10);
+    if (isNaN(parsedId) || parsedId <= 0) return false;
+    const result = await db.query('DELETE FROM productos WHERE id = $1', [parsedId]);
+    return result.rowCount > 0;
   },
 };

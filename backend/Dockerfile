@@ -21,6 +21,7 @@ COPY --from=builder --chown=node:node /app/node_modules ./node_modules
 COPY --chown=node:node package*.json ./
 COPY --chown=node:node backend ./backend
 COPY --chown=node:node admin ./admin
+COPY --chown=node:node public ./public
 COPY --chown=node:node db ./db
 
 USER node

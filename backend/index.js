@@ -50,10 +50,8 @@ app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 // Serve static admin files
 app.use('/admin', express.static(path.join(__dirname, '../admin')));
 
-// Friendly root and dashboard redirects
-app.get('/', (req, res) => {
-  res.redirect('/admin/');
-});
+// Serve static public landing page for Cotibot
+app.use(express.static(path.join(__dirname, '../public')));
 
 app.get('/deposito', (req, res) => {
   res.redirect('/admin/deposito.html');

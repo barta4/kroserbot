@@ -52,14 +52,15 @@ module.exports = async function validateMercadopagoSignature(req, res, next) {
       return res.status(401).json({ error: 'Acceso denegado: timestamp expirado o inválido' });
     }
 
-    const dataId = req.body?.data?.id || req.query?.['data.id'] || '';
-    const manifest = `id:${dataId};request-id:${requestId || ''};ts:${ts};`;
+    const rawDataId = req.body?.data?.id ?? req.query?.['data.id'] ?? '';
+    const dataId = String(rawDataId).trim();
+    const manifest = `id:${dataId};request-id:${String(requestId || '').trim()};ts:${ts};`;
     const computedHmac = crypto.createHmac('sha256', secret).update(manifest).digest('hex');
 
-    const computedHmacBuf = Buffer.from(computedHmac, 'utf8');
-    const v1Buf = Buffer.from(v1, 'utf8');
+    const computedHmacBuf = crypto.createHash('sha256').update(computedHmac, 'utf8').digest();
+    const v1Buf = crypto.createHash('sha256').update(v1.trim(), 'utf8').digest();
 
-    if (computedHmacBuf.length !== v1Buf.length || !crypto.timingSafeEqual(computedHmacBuf, v1Buf)) {
+    if (!crypto.timingSafeEqual(computedHmacBuf, v1Buf)) {
       logger.warn('[MercadoPago Security] Invalid signature match');
       return res.status(401).json({ error: 'Acceso denegado: firma inválida' });
     }

@@ -151,6 +151,32 @@ const mercadopagoPreferenceSchema = z.object({
   pedido_id: z.union([z.number(), z.string()]),
 });
 
+const categoriaCreateSchema = z.object({
+  codigo: z.string().min(1, 'El código es obligatorio').trim(),
+  nombre: z.string().min(1, 'El nombre es obligatorio').trim(),
+  descuento_porcentaje: z.union([z.number(), z.string()]).optional().default(0).transform(v => parseFloat(v) || 0),
+  orden: z.union([z.number(), z.string()]).optional().default(0).transform(v => parseInt(v, 10) || 0),
+  activo: z.boolean().optional().default(true),
+  descripcion: z.string().nullable().optional(),
+});
+
+const categoriaUpdateSchema = z.object({
+  nombre: z.string().trim().optional(),
+  descuento_porcentaje: z.union([z.number(), z.string()]).optional().transform(v => v !== undefined ? parseFloat(v) : undefined),
+  orden: z.union([z.number(), z.string()]).optional().transform(v => v !== undefined ? parseInt(v, 10) : undefined),
+  activo: z.boolean().optional(),
+  descripcion: z.string().nullable().optional(),
+});
+
+const clienteUpdateSchema = z.object({
+  categoria: z.string().optional(),
+  descuento_porcentaje: z.union([z.number(), z.string()]).optional().transform(v => v !== undefined ? parseFloat(v) : undefined),
+  activo: z.boolean().optional(),
+  nombre: z.string().optional(),
+  telefono: z.string().optional(),
+  empresa_razon_social: z.string().optional(),
+});
+
 module.exports = {
   webhookPayloadSchema,
   pedidoCreateSchema,
@@ -164,4 +190,7 @@ module.exports = {
   llmModelsSchema,
   mercadopagoToggleSchema,
   mercadopagoPreferenceSchema,
+  categoriaCreateSchema,
+  categoriaUpdateSchema,
+  clienteUpdateSchema,
 };

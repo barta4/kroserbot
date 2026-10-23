@@ -20,8 +20,17 @@ function requireAuth(req, res, next) {
     return res.status(401).json({ error: 'Acceso denegado. Token requerido.' });
   }
 
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    return res.status(500).json({ error: 'Configuración de autenticación del servidor incompleta' });
+  }
+
   try {
-    const decoded = jwt.verify(token, JWT_SECRET);
+    const decoded = jwt.verify(token, secret, { algorithms: ['HS256'] });
+    // Seguridad (H5): Denegar tokens de clientes en rutas administrativas o de depósito
+    if (!decoded || decoded.role === 'cliente' || (decoded.role !== 'admin' && decoded.role !== 'deposito')) {
+      return res.status(403).json({ error: 'Acceso denegado: se requieren credenciales de personal administrativo.' });
+    }
     req.user = { username: decoded.username, role: decoded.role };
     next();
   } catch (err) {

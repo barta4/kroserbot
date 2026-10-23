@@ -21,7 +21,7 @@ LABEL org.opencontainers.image.title="KroserBot" \
       org.opencontainers.image.description="Asistente de IA, RAG y Gestión de Pedidos para Kroser Uruguay" \
       org.opencontainers.image.authors="alfredobartaburu" \
       org.opencontainers.image.source="https://github.com/barta4/kroserbot" \
-      org.opencontainers.image.version="2.1.8"
+      org.opencontainers.image.version="2.3.2"
 
 ENV NODE_ENV=production \
     PORT=3000
@@ -34,6 +34,7 @@ COPY --from=dependencies --chown=node:node /app/node_modules ./node_modules
 COPY --chown=node:node package*.json ./
 COPY --chown=node:node backend ./backend
 COPY --chown=node:node admin ./admin
+COPY --chown=node:node public ./public
 COPY --chown=node:node db ./db
 
 # Switch to non-root user for container security

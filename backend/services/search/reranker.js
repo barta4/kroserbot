@@ -76,10 +76,29 @@ function scoreProduct(product, normalizedQuery, attrs = {}, options = {}) {
     breakdown.exact = WEIGHTS.EXACT_SKU;
   }
 
+  // Helpers for word-boundary matching to prevent short tokens matching inside unrelated words (e.g. 'cal' in 'incalux' or 'escalera')
+  const matchesToken = (text, token) => {
+    if (!text || !token) return false;
+    if (token.length <= 4) {
+      const regex = new RegExp(`(?:^|\\s|[.,;()\\-_/])${token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?:$|\\s|[.,;()\\-_/])`, 'i');
+      return regex.test(text);
+    }
+    const prefixRegex = new RegExp(`(?:^|\\s|[.,;()\\-_/])${token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'i');
+    return prefixRegex.test(text);
+  };
+
+  const matchesFull = (text, target) => {
+    if (!text || !target) return false;
+    if (target.length <= 4) {
+      return matchesToken(text, target);
+    }
+    return text.includes(target);
+  };
+
   // ── 2. Text Score
   if (normalizedQuery) {
     // Full name match (using either raw normalized query or substantive query without stopwords)
-    if (nombre.includes(normalizedQuery) || (cleanQuery && nombre.includes(cleanQuery))) {
+    if (matchesFull(nombre, normalizedQuery) || (cleanQuery && matchesFull(nombre, cleanQuery))) {
       breakdown.text += WEIGHTS.TEXT_NOMBRE_FULL;
     } else {
       // Token-level matching (isolated to substantive query tokens)
@@ -87,7 +106,7 @@ function scoreProduct(product, normalizedQuery, attrs = {}, options = {}) {
       const queryTokens = targetQuery.split(/\s+/).filter((t) => t.length >= 2);
       let tokenMatchCount = 0;
       for (const token of queryTokens) {
-        if (nombre.includes(token) || descripcion.includes(token)) {
+        if (matchesToken(nombre, token) || matchesToken(descripcion, token)) {
           tokenMatchCount++;
         }
       }
@@ -263,17 +282,30 @@ function scoreProduct(product, normalizedQuery, attrs = {}, options = {}) {
       if (isUnrelated) {
         breakdown.penalty += WEIGHTS.CATEGORY_INCOHERENCE_PENALTY;
       }
+    } else if (attrs.categoriaHint === 'construccion') {
+      const isPaintOrUnrelated =
+        categoria.includes('pintura') ||
+        categoria.includes('iluminacion') ||
+        categoria.includes('climatizacion') ||
+        categoria.includes('herramienta') ||
+        categoria.includes('bazar');
+      const hasExplicitPaintTerms = /\b(?:pintura|membrana|caucho|impermeabilizante|esmalte|latex|color)\b/i.test(normalizedQuery);
+      const hasToolTerms = /\b(?:grapa|engrampadora|calibre|herramienta)\b/i.test(normalizedQuery);
+      if (isPaintOrUnrelated && !hasExplicitPaintTerms && !hasToolTerms) {
+        breakdown.penalty += -100;
+      }
     }
   }
 
-  // ── Total
-  const totalScore =
-    breakdown.exact +
-    breakdown.text +
-    breakdown.vector +
-    breakdown.attribute +
-    breakdown.business +
-    breakdown.penalty;
+  // ── Substantive match check: business score is a tiebreaker only, cannot make an irrelevant item match
+  const hasSubstantiveMatch = breakdown.exact > 0 || breakdown.text > 0 || breakdown.vector > 0 || breakdown.attribute > 0;
+
+
+
+  // ── Total: business bonus only applies if there is a substantive match; otherwise score retains penalty (e.g. < 0) or 0
+  const totalScore = hasSubstantiveMatch
+    ? (breakdown.exact + breakdown.text + breakdown.vector + breakdown.attribute + breakdown.business + breakdown.penalty)
+    : breakdown.penalty;
 
   return {
     ...product,

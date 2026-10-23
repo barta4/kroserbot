@@ -51,6 +51,7 @@ const KNOWN_BRANDS = [
 
 // ──────────────────────────────────────────── Colors (normalized, no accents)
 const COLORS = [
+  'verde cemento', 'gris cemento',
   'blanco', 'negro', 'rojo', 'azul', 'verde', 'amarillo', 'gris',
   'marron', 'beige', 'transparente', 'natural', 'cedro', 'roble',
   'caoba', 'nogal', 'chocolate', 'naranja', 'celeste', 'crema',
@@ -70,6 +71,7 @@ const CATEGORY_HINTS = {
   parrillas: ['medio tanque', 'parrilla', 'barbacoa', 'chulengo', 'carbon', 'fogonero', 'churrasquera', 'parrillero', 'parrilleros'],
   adhesivos: ['silicona', 'sellador', 'pegamento', 'cola', 'adhesivo', 'epoxi', 'cianoacrilato'],
   abrasivos: ['lija', 'disco corte', 'disco desbaste', 'piedra', 'muela', 'disco flap'],
+  construccion: ['cemento', 'portland', 'cal', 'arena', 'pedregullo', 'hormigon', 'ladrillo', 'bloque', 'mezcla'],
 };
 
 // ──────────────────────────────────────────── Local Uruguayan Hardware Synonyms
@@ -78,6 +80,14 @@ const LOCAL_SYNONYMS = {
   'medio tanque': ['parrilla', 'chulengo', 'barbacoa', 'parrillero'],
   'parrillero': ['parrilla', 'chulengo', 'barbacoa', 'medio tanque'],
   'parrillera': ['parrilla', 'chulengo', 'barbacoa', 'medio tanque'],
+  'cortador de cano': ['tijera corta tubo pvc'],
+  'cortador de cano pvc': ['tijera corta tubo pvc'],
+  'cortador de tubo': ['tijera corta tubo pvc'],
+  'corta cano': ['tijera corta tubo pvc'],
+  'corta cano pvc': ['tijera corta tubo pvc'],
+  'corta tubo': ['tijera corta tubo pvc'],
+  'cortatubo': ['tijera corta tubo pvc'],
+  'cortacano': ['tijera corta tubo pvc'],
   'trincheta': ['cutter', 'cuchilla'],
   'cuerito': ['canilla', 'grifo', 'griferia'],
   'cueritos': ['canilla', 'grifo', 'griferia'],
@@ -339,6 +349,11 @@ function extractAttributes(query) {
         if (kw === 'tubo' && cat === 'iluminacion') {
           const isSanitaryContext = /\b(?:pvc|desague|termofusion|agua|caño|caños|plomeria|cloacal|fusion)\b/i.test(normalized);
           if (isSanitaryContext) continue;
+        }
+        // Disambiguation: if "cemento" matched in construccion but is preceded by "verde" or "gris", it's a color
+        if (kw === 'cemento' && cat === 'construccion') {
+          const isColorContext = /\b(?:verde|gris)\s+cemento\b/i.test(normalized);
+          if (isColorContext) continue;
         }
         attrs.categoriaHint = cat;
         break;
