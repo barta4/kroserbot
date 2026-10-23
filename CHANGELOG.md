@@ -3,6 +3,24 @@
 Todos los cambios notables en este proyecto están documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/), y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.4.html).
 
+## [2.3.4] - 2026-10-23
+
+### 🎨 Landing del Cotizador — Modernización
+* **Responsive real**: eliminación del overflow horizontal en móvil (390 px), navbar compacta con iconos y acciones de 44 px, hero y buscador reorganizados.
+* **Nueva franja de valor**: 40 años, stock real, asesoramiento técnico y envío/retiro; refuerzo de confianza debajo del buscador.
+* **Footer profesional**: catálogo, sucursales, contacto, Central de Reclamos y acceso a cuenta.
+* **Iconografía SVG**: reemplazo de emojis por iconos consistentes en buscador, catálogo, drawer, checkout y estados vacíos.
+* **Precios consistentes**: formato `es-UY` con separador de miles en tarjetas, cotización y resumen (`$ 4.390`).
+* **Estados de carga y error**: spinner accesible, reintento y placeholders de imagen con identidad Kroser.
+* **Accesibilidad**: contraste mejorado (texto secundario y enlaces azules), `aria-busy`, `aria-labels`, botones con `type`, foco visible y objetivos táctiles de 44 px.
+* **SEO/social**: `theme-color`, Open Graph, Twitter Cards y JSON-LD de tienda.
+
+### ✅ Verificación
+* Suite completa: **31 suites / 423 tests** en verde.
+* Sin overflow horizontal en 1440, 820 y 390 px; drawer y modales validados en ambos tamaños.
+
+---
+
 ## [2.3.3] - 2026-10-23
 
 ### 🚀 Nuevas Funcionalidades

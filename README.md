@@ -1,4 +1,4 @@
-# Cotizador Kroser Martínez (Kroserbot v2.3.3) — RAG + Pedidos + Scraper + Panel Admin
+# Cotizador Kroser Martínez (Kroserbot v2.3.4) — RAG + Pedidos + Scraper + Panel Admin
 
 Sistema integral de atención inteligente, recomendación técnica, búsqueda híbrida de catálogo (Full-Text + Vectorial RAG), cotización web y módulo de gestión de pedidos para **Kroser Uruguay**.
 
@@ -82,7 +82,7 @@ curl -b admin_cookie.txt "http://localhost:3000/api/facturapp/estimate?mode=init
 ## 🐳 Docker Hub & Despliegue en Producción
 
 ### Imágenes Oficiales en Docker Hub (`alfredobartaburu/kroserbot`):
-- `alfredobartaburu/kroserbot:v2.3.3`
+- `alfredobartaburu/kroserbot:v2.3.4`
 - `alfredobartaburu/kroserbot:latest`
 
 ### Despliegue en Dokploy / Easypanel / Servidores Linux:

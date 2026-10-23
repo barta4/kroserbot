@@ -1,6 +1,6 @@
 # Guía de Contexto y Reglas de Desarrollo para Agentes de IA — Kroserbot
 
-Bienvenido al repositorio de **Kroserbot** (Versión actual: **v2.3.3**), nombre técnico del **Cotizador Kroser Martínez**, canal web público desarrollado para **Kroser Uruguay**.  
+Bienvenido al repositorio de **Kroserbot** (Versión actual: **v2.3.4**), nombre técnico del **Cotizador Kroser Martínez**, canal web público desarrollado para **Kroser Uruguay**.  
 Este documento define la arquitectura general, las reglas de oro del negocio, los patrones de código obligatorios y los flujos de prueba y despliegue que cualquier agente de IA o desarrollador humano debe respetar al modificar este codebase.
 
 ---
@@ -120,10 +120,10 @@ npx jest backend/tests/llm_failsafe.test.js
 * **Usuario Docker Hub**: `alfredobartaburu`
 * **Imagen Backend**: `alfredobartaburu/kroserbot:<VERSION>` y `alfredobartaburu/kroserbot:latest`
 * **Arquitectura obligatoria**: `--platform linux/amd64`
-* **Regla de Etiquetado Incremental**: Dokploy y Easypanel cachean imágenes localmente en el servidor. **Siempre incrementa la versión semántica** (ej. `v2.3.2` ➔ `v2.3.3`) al compilar nuevas imágenes.
+* **Regla de Etiquetado Incremental**: Dokploy y Easypanel cachean imágenes localmente en el servidor. **Siempre incrementa la versión semántica** (ej. `v2.3.3` ➔ `v2.3.4`) al compilar nuevas imágenes.
 * **Comando de Build y Push**:
   ```bash
-  docker buildx build --platform linux/amd64 -t alfredobartaburu/kroserbot:v2.3.3 -t alfredobartaburu/kroserbot:latest . --push
+  docker buildx build --platform linux/amd64 -t alfredobartaburu/kroserbot:v2.3.4 -t alfredobartaburu/kroserbot:latest . --push
   ```
 * **Git**: Sincronizar siempre a la rama `main` en `https://github.com/barta4/kroserbot.git`.
 * **Desarrollo local**: Mantener bind-mounts y claves dummy en `docker-compose.override.yml` (ignorado en `.gitignore` para no sobreescribir producción).
@@ -172,10 +172,10 @@ kroserbot/
 ├── docker-compose.override.yml   # Overrides para desarrollo local (ignorado en Git)
 ├── Dockerfile                    # Multi-stage build no-root optimizado (Node 20 Alpine)
 ├── FACTURAPP_SYNC.md             # Análisis, estrategia y operación de la sync Facturapp
-├── package.json                  # Dependencias y scripts del proyecto (v2.3.3)
+├── package.json                  # Dependencias y scripts del proyecto (v2.3.4)
 └── README.md                     # Documentación de inicio rápido
 ```
 
 ---
 
-*Última actualización de contexto: Release v2.3.3 — Cotizador Kroser Martínez + sincronización de catálogo Facturapp (incremental diaria, presupuesto de créditos, reanudación y scheduler).*
+*Última actualización de contexto: Release v2.3.4 — Cotizador Kroser Martínez + sincronización Facturapp + landing responsive modernizada (accesibilidad, precios formateados y footer profesional).*

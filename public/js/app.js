@@ -7,6 +7,19 @@
 
 const API_BASE = '/api';
 
+// Formato de moneda consistente para tarjetas, carrito y resúmenes (es-UY).
+const MONEY_FORMATTER = new Intl.NumberFormat('es-UY', {
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 2,
+});
+
+function formatMoney(value, currency = 'UYU') {
+  const amount = parseFloat(value);
+  const isUsd = String(currency).toUpperCase() === 'USD' || currency === 'U$S';
+  const symbol = isUsd ? 'U$S' : '$';
+  return `${symbol} ${MONEY_FORMATTER.format(Number.isFinite(amount) ? amount : 0)}`;
+}
+
 const AppState = {
   cliente: null,
   cart: [],
@@ -89,7 +102,7 @@ function updateSearchInputUI() {
 
   if (isList) {
     if (pill) pill.style.display = 'inline-flex';
-    if (btnText) btnText.textContent = '📋 Cotizar Lista de Materiales';
+    if (btnText) btnText.textContent = 'Cotizar lista de materiales';
   } else {
     if (pill) pill.style.display = 'none';
     if (btnText) btnText.textContent = 'Cotizar';
@@ -577,9 +590,10 @@ async function loadProducts() {
   if (!grid) return;
 
   AppState.isLoadingProducts = true;
+  grid.setAttribute('aria-busy', 'true');
   grid.innerHTML = `
-    <div style="grid-column: 1/-1; text-align: center; padding: 3rem; color: var(--text-dim);">
-      <div style="font-size: 2rem; margin-bottom: 0.5rem; animation: spin 1s linear infinite;">⏳</div>
+    <div class="catalog-loading" role="status" aria-live="polite">
+      <span class="spinner" aria-hidden="true"></span>
       <p>Consultando catálogo y calculando descuentos...</p>
     </div>
   `;
@@ -601,12 +615,18 @@ async function loadProducts() {
     renderPagination();
   } catch (err) {
     grid.innerHTML = `
-      <div style="grid-column: 1/-1; text-align: center; padding: 3rem; color: var(--coti-danger);">
-        <p>No se pudieron cargar los productos. Verifique la conexión al servidor.</p>
+      <div class="catalog-loading" role="alert">
+        <svg class="empty-state-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/>
+        </svg>
+        <h3 style="color:#fff; margin:0;">No pudimos cargar el catálogo</h3>
+        <p style="margin:0;">Revisá tu conexión e intentá nuevamente.</p>
+        <button type="button" class="retry-btn" onclick="loadProducts()">Reintentar</button>
       </div>
     `;
   } finally {
     AppState.isLoadingProducts = false;
+    grid.setAttribute('aria-busy', 'false');
   }
 }
 
@@ -616,13 +636,13 @@ function renderProductsGrid() {
 
   if (AppState.products.length === 0) {
     grid.innerHTML = `
-      <div style="grid-column: 1/-1; text-align: center; padding: 4rem 1rem; color: var(--text-dim);">
-        <div style="font-size: 3rem; margin-bottom: 0.75rem;">🔍</div>
-        <h3 style="color:#fff; margin-bottom: 0.5rem;">No se encontraron artículos</h3>
-        <p style="margin-bottom: 1.25rem;">Pruebe con otros términos o consulte a <strong>Cotibot IA</strong> en el asistente flotante.</p>
-        <button class="cat-pill active" onclick="clearCatalogSearch()" style="cursor:pointer; display:inline-flex; align-items:center; gap:0.5rem; padding:0.6rem 1.4rem; font-size:0.95rem; font-weight:600; border-radius:30px; background:var(--coti-accent); color:#fff; border:none; margin:0 auto; box-shadow:0 4px 12px rgba(245,158,11,0.25);">
-          <span>🔄 Ver todos los artículos</span>
-        </button>
+      <div class="catalog-loading">
+        <svg class="empty-state-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>
+        </svg>
+        <h3 style="color:#fff; margin:0;">No encontramos artículos</h3>
+        <p style="margin:0;">Probá con otros términos o consultá a <strong>Cotibot</strong> en el asistente.</p>
+        <button type="button" class="retry-btn" onclick="clearCatalogSearch()">Ver todos los artículos</button>
       </div>
     `;
     return;
@@ -636,12 +656,15 @@ function renderProductsGrid() {
     const inStock = p.stock_status === 'in_stock';
     const hasDiscount = p.descuento_porcentaje && p.descuento_porcentaje > 0;
     const isPublicOffer = p.es_oferta_publica;
-    const currency = (p.moneda || 'UYU') === 'USD' ? 'U$S' : '$';
+    const safeName = escapeHtml(p.nombre || 'Artículo');
+    const finalPrice = formatMoney(p.precio_final || p.precio, p.moneda);
+    const listPrice = formatMoney(p.precio_lista || p.precio, p.moneda);
+    const savingAmount = formatMoney(p.ahorro_monto, p.moneda);
 
     card.innerHTML = `
       <div class="product-thumb-wrap">
         <span class="badge-stock ${inStock ? 'badge-in-stock' : 'badge-out-stock'}">
-          ${inStock ? '✓ En Stock' : 'Sin Stock'}
+          <span class="stock-dot" aria-hidden="true"></span>${inStock ? 'En stock' : 'Sin stock'}
         </span>
         ${hasDiscount ? `
           <span class="badge-discount-tag">
@@ -649,10 +672,12 @@ function renderProductsGrid() {
           </span>
         ` : ''}
         ${p.imagen_url ? `
-          <img class="product-thumb" src="${p.imagen_url}" alt="${p.nombre}" loading="lazy" onerror="this.style.display='none'">
+          <img class="product-thumb" src="${p.imagen_url}" alt="${safeName}" loading="lazy" decoding="async" onerror="this.style.display='none'; this.parentElement.classList.add('thumb-fallback');">
         ` : `
           <div class="product-thumb-placeholder">
-            <span>📦</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="m21 8-9-5-9 5 9 5 9-5Z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/>
+            </svg>
             <small>Kroser Catálogo</small>
           </div>
         `}
@@ -660,34 +685,35 @@ function renderProductsGrid() {
 
       <div class="product-content">
         <div class="product-meta-row">
-          <span class="product-sku">SKU: ${p.sku || 'N/A'}</span>
-          <span class="product-brand">${p.marca || 'Kroser'}</span>
+          <span class="product-sku">SKU: ${escapeHtml(p.sku || 'N/A')}</span>
+          <span class="product-brand">${escapeHtml(p.marca || 'Kroser')}</span>
         </div>
 
-        <h3 class="product-title" title="${p.nombre}">${p.nombre}</h3>
+        <h3 class="product-title" title="${safeName}">${safeName}</h3>
 
         <div class="product-pricing-box">
           <div class="price-row-regular">
             ${(hasDiscount || isPublicOffer) ? `
-              <span class="price-strike">${currency} ${p.precio_lista || p.precio}</span>
+              <span class="price-strike">${listPrice}</span>
             ` : ''}
             <span class="price-final ${(hasDiscount || isPublicOffer) ? 'discounted' : ''}">
-              ${currency} ${p.precio_final || p.precio}
+              ${finalPrice}
             </span>
           </div>
           ${p.ahorro_monto && p.ahorro_monto > 0 ? `
             <div class="savings-label">
-              <span>🏷️ Ahorro: ${currency} ${p.ahorro_monto} (${p.motivo_descuento || 'Bonificado'})</span>
+              <span>Ahorrás ${savingAmount}${p.motivo_descuento ? ` · ${escapeHtml(p.motivo_descuento)}` : ''}</span>
             </div>
           ` : ''}
         </div>
 
         <div class="product-actions-row">
-          <button class="btn-add-quote" onclick="addToQuote(${p.id})" aria-label="Agregar ${escapeHtml(p.nombre)} a mi cotización">
-            <span>➕ Agregar a Cotización</span>
+          <button class="btn-add-quote" onclick="addToQuote(${p.id})" aria-label="Agregar ${safeName} a mi cotización">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+            <span>Agregar</span>
           </button>
-          <button class="btn-view-detail" onclick="viewProductDetail(${p.id})" title="Ver detalles y alternativas" aria-label="Ver detalles técnicos de ${escapeHtml(p.nombre)}">
-            <span>ℹ️</span>
+          <button class="btn-view-detail" onclick="viewProductDetail(${p.id})" title="Ver detalles y alternativas" aria-label="Ver detalles técnicos de ${safeName}">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/></svg>
           </button>
         </div>
       </div>
@@ -833,7 +859,7 @@ function renderQuoteDrawer() {
   if (AppState.cart.length === 0) {
     listEl.innerHTML = `
       <div class="drawer-empty-msg">
-        <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">📋</div>
+        <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="margin-bottom:0.6rem; color:var(--text-dim);"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M9 12h6M9 16h6"/></svg>
         <p>Tu lista de cotización está vacía.</p>
         <small>Agrega artículos desde el catálogo o pídele ayuda a Cotibot.</small>
       </div>
@@ -863,12 +889,11 @@ function renderQuoteDrawer() {
 
     const row = document.createElement('div');
     row.className = 'quote-item-row';
-    const currency = isUSD ? 'U$S' : '$';
 
     row.innerHTML = `
       <div class="quote-item-info">
         <h4 class="quote-item-title">${escapeHtml(item.nombre)}</h4>
-        <div class="quote-item-price">${currency} ${item.precio_final} <small style="color:var(--text-dim)">(x${item.cantidad} = ${currency} ${itemTotal.toFixed(2)})</small></div>
+        <div class="quote-item-price">${formatMoney(item.precio_final, item.moneda)} <small style="color:var(--text-dim)">(x${item.cantidad} = ${formatMoney(itemTotal, item.moneda)})</small></div>
       </div>
       <div class="quote-qty-control">
         <button class="qty-btn" onclick="updateCartQty(${index}, -1)" aria-label="Disminuir una unidad de ${escapeHtml(item.nombre)}">-</button>
@@ -902,26 +927,26 @@ function updateQuoteSummary(amounts) {
   const totalEl = document.getElementById('summaryTotal');
 
   if (!amounts || typeof amounts !== 'object') {
-    if (subtotalEl) subtotalEl.textContent = '$ 0.00';
-    if (discountEl) discountEl.textContent = '-$ 0.00';
-    if (totalEl) totalEl.textContent = '$ 0.00';
+    if (subtotalEl) subtotalEl.textContent = formatMoney(0, 'UYU');
+    if (discountEl) discountEl.textContent = `-${formatMoney(0, 'UYU')}`;
+    if (totalEl) totalEl.textContent = formatMoney(0, 'UYU');
     return;
   }
 
   const { subtotalUYU = 0, totalUYU = 0, ahorroUYU = 0, subtotalUSD = 0, totalUSD = 0, ahorroUSD = 0 } = amounts;
 
   if (totalUSD > 0 && totalUYU > 0) {
-    if (subtotalEl) subtotalEl.textContent = `$ ${subtotalUYU.toFixed(2)} + U$S ${subtotalUSD.toFixed(2)}`;
-    if (discountEl) discountEl.textContent = (ahorroUYU > 0 ? `-$ ${ahorroUYU.toFixed(2)}` : '') + (ahorroUSD > 0 ? ` -U$S ${ahorroUSD.toFixed(2)}` : (ahorroUYU === 0 ? '-$ 0.00' : ''));
-    if (totalEl) totalEl.innerHTML = `$ ${totalUYU.toFixed(2)} <span style="font-size:0.85rem; font-weight:600; color:var(--text-muted);">+ U$S ${totalUSD.toFixed(2)}</span>`;
+    if (subtotalEl) subtotalEl.textContent = `${formatMoney(subtotalUYU, 'UYU')} + ${formatMoney(subtotalUSD, 'USD')}`;
+    if (discountEl) discountEl.textContent = `${ahorroUYU > 0 ? `-${formatMoney(ahorroUYU, 'UYU')}` : ''}${ahorroUSD > 0 ? ` -${formatMoney(ahorroUSD, 'USD')}` : (ahorroUYU === 0 ? `-${formatMoney(0, 'UYU')}` : '')}`;
+    if (totalEl) totalEl.innerHTML = `${formatMoney(totalUYU, 'UYU')} <span style="font-size:0.85rem; font-weight:600; color:var(--text-muted);">+ ${formatMoney(totalUSD, 'USD')}</span>`;
   } else if (totalUSD > 0) {
-    if (subtotalEl) subtotalEl.textContent = `U$S ${subtotalUSD.toFixed(2)}`;
-    if (discountEl) discountEl.textContent = `-U$S ${ahorroUSD.toFixed(2)}`;
-    if (totalEl) totalEl.textContent = `U$S ${totalUSD.toFixed(2)}`;
+    if (subtotalEl) subtotalEl.textContent = formatMoney(subtotalUSD, 'USD');
+    if (discountEl) discountEl.textContent = `-${formatMoney(ahorroUSD, 'USD')}`;
+    if (totalEl) totalEl.textContent = formatMoney(totalUSD, 'USD');
   } else {
-    if (subtotalEl) subtotalEl.textContent = `$ ${subtotalUYU.toFixed(2)}`;
-    if (discountEl) discountEl.textContent = `-$ ${ahorroUYU.toFixed(2)}`;
-    if (totalEl) totalEl.textContent = `$ ${totalUYU.toFixed(2)}`;
+    if (subtotalEl) subtotalEl.textContent = formatMoney(subtotalUYU, 'UYU');
+    if (discountEl) discountEl.textContent = `-${formatMoney(ahorroUYU, 'UYU')}`;
+    if (totalEl) totalEl.textContent = formatMoney(totalUYU, 'UYU');
   }
 }
 
@@ -1042,11 +1067,11 @@ function openOrderModal() {
   if (countEl) countEl.textContent = `${totalItems} artículo${totalItems === 1 ? '' : 's'} en la lista`;
   if (totalEl) {
     if (totalUSD > 0 && totalUYU > 0) {
-      totalEl.textContent = `$ ${totalUYU.toFixed(2)} + U$S ${totalUSD.toFixed(2)}`;
+      totalEl.textContent = `${formatMoney(totalUYU, 'UYU')} + ${formatMoney(totalUSD, 'USD')}`;
     } else if (totalUSD > 0) {
-      totalEl.textContent = `U$S ${totalUSD.toFixed(2)}`;
+      totalEl.textContent = formatMoney(totalUSD, 'USD');
     } else {
-      totalEl.textContent = `$ ${totalUYU.toFixed(2)}`;
+      totalEl.textContent = formatMoney(totalUYU, 'UYU');
     }
   }
 
@@ -1169,7 +1194,7 @@ async function handleOrderSubmit(e) {
         </div>
         <div style="display:flex; justify-content:space-between; margin-top:0.5rem; padding-top:0.5rem; border-top:1px solid rgba(255,255,255,0.1);">
           <span>Total estimado:</span>
-          <strong style="font-size:1.05rem; color:#34d399;">$ ${data.pedido.total.toFixed(2)} UYU</strong>
+          <strong style="font-size:1.05rem; color:#34d399;">${formatMoney(data.pedido.total, 'UYU')} UYU</strong>
         </div>
       `;
     }
@@ -1183,7 +1208,7 @@ async function handleOrderSubmit(e) {
     updateCartBadge();
     renderQuoteDrawer();
 
-    showToast(`¡Pedido ${data.pedido.referencia} registrado con éxito! 🎉`);
+    showToast(`¡Pedido ${data.pedido.referencia} registrado con éxito!`);
   } catch (err) {
     showToast(err.message || 'Error al enviar pedido');
   } finally {
