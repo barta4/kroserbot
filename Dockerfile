@@ -1,6 +1,6 @@
 # ==========================================================
-# KroserBot - Production Multi-Stage Dockerfile
-# Repository: alfredobartaburu/kroserbot
+# Krosmart - Production Multi-Stage Dockerfile
+# Repository: alfredobartaburu/krosmart
 # ==========================================================
 
 # --- Stage 1: Dependencies Builder ---
@@ -17,11 +17,11 @@ RUN npm ci --omit=dev --ignore-scripts
 FROM node:20-alpine AS runner
 WORKDIR /app
 
-LABEL org.opencontainers.image.title="KroserBot" \
-      org.opencontainers.image.description="Asistente de IA, RAG y Gestión de Pedidos para Kroser Uruguay" \
+LABEL org.opencontainers.image.title="Krosmart" \
+      org.opencontainers.image.description="Krosmart — Asistente de IA, RAG y Gestión de Pedidos para Kroser Martínez" \
       org.opencontainers.image.authors="alfredobartaburu" \
       org.opencontainers.image.source="https://github.com/barta4/kroserbot" \
-      org.opencontainers.image.version="2.3.6"
+      org.opencontainers.image.version="2.3.7"
 
 ENV NODE_ENV=production \
     PORT=3000

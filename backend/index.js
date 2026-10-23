@@ -69,7 +69,7 @@ app.use(errorHandler);
 
 if (require.main === module) {
   const server = app.listen(PORT, () => {
-    logger.info(`[Bot Kroser Backend] Server running on port ${PORT} (env: ${process.env.NODE_ENV || 'development'})`);
+    logger.info(`[Krosmart Backend] Server running on port ${PORT} (env: ${process.env.NODE_ENV || 'development'})`);
 
     try {
       const { startFacturappScheduler } = require('./services/facturapp/facturappScheduler');

@@ -334,7 +334,7 @@ describe('Cotibot — Landing, Client Auth & Discount System Tests', () => {
     test('GET /admin/ sigue sirviendo el panel administrativo existente', async () => {
       const res = await request(app).get('/admin/');
       expect(res.status).toBe(200);
-      expect(res.text).toContain('KroserBot AI');
+      expect(res.text).toContain('Krosmart AI');
     });
   });
 

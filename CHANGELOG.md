@@ -3,6 +3,22 @@
 Todos los cambios notables en este proyecto están documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/), y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.4.html).
 
+## [2.3.7] - 2026-10-23
+
+### 🏷️ Rebranding de despliegue: Krosmart
+* Nombre comercial y de despliegue unificado como **Krosmart** (Kroser Martínez).
+* Imágenes Docker oficiales: `alfredobartaburu/krosmart:v2.3.7` y `alfredobartaburu/krosmart:latest`.
+* Imagen del scraper: `alfredobartaburu/krosmart-scraper:v1.5` (y alias `v1.0` de compatibilidad).
+* Panel admin y manuales renombrados a **Krosmart AI 2.0**.
+* Se conservan como nombres técnicos internos `kroserbot` para GitHub, base de datos, contenedores y volúmenes, evitando migraciones destructivas.
+* `kroserbot:latest` se restauró a `v2.3.2` para no afectar el proyecto anterior.
+
+### ✅ Verificación
+* Suite completa: **33 suites / 442 tests** en verde.
+* Pytest: **24 tests** en verde.
+
+---
+
 ## [2.3.6] - 2026-10-23
 
 ### 🔀 Integración de `origin/main` (v2.3.0–v2.3.2)

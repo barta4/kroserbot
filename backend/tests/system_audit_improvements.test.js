@@ -14,7 +14,7 @@ describe('System Audit Improvements & Uruchat Rebranding Verification', () => {
       const htmlContent = fs.readFileSync(htmlPath, 'utf8');
 
       // Check title
-      expect(htmlContent).toContain('<title>KroserBot AI — Panel de Control & Consola Uruchat</title>');
+      expect(htmlContent).toContain('<title>Krosmart AI — Panel de Control & Consola Uruchat</title>');
       expect(htmlContent).not.toContain('Simulador Chatwoot');
 
       // Check Sandbox console heading

@@ -1,7 +1,7 @@
 {
-  "name": "kroserbot",
-  "version": "2.3.6",
-  "description": "Cotibot — Asistente de Cotizaciones, Catálogo y RAG (Kroser Martínez)",
+  "name": "krosmart",
+  "version": "2.3.7",
+  "description": "Krosmart — Asistente de Cotizaciones, Catálogo y RAG (Kroser Martínez)",
   "main": "backend/index.js",
   "scripts": {
     "dev:backend": "node backend/index.js",

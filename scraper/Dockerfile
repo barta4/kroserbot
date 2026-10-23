@@ -1,6 +1,6 @@
 # ==========================================================
-# KroserBot - Python Scraper Dockerfile
-# Repository: alfredobartaburu/kroserbot-scraper
+# Krosmart - Python Scraper Dockerfile
+# Repository: alfredobartaburu/krosmart-scraper
 # ==========================================================
 
 # --- Stage 1: Dependencies Builder ---
@@ -13,8 +13,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 FROM python:3.10-slim AS runner
 WORKDIR /app
 
-LABEL org.opencontainers.image.title="KroserBot Scraper" \
-      org.opencontainers.image.description="Scraper e Ingestión de Catálogo para Kroser Uruguay" \
+LABEL org.opencontainers.image.title="Krosmart Scraper" \
+      org.opencontainers.image.description="Scraper e Ingestión de Catálogo para Kroser Martínez" \
       org.opencontainers.image.authors="alfredobartaburu" \
       org.opencontainers.image.version="1.5.0"
 
