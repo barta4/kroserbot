@@ -86,6 +86,7 @@
     const TAB_TITLES = {
       dashboard: 'Dashboard de Operaciones & Chat IA',
       catalogo: 'Catálogo de Productos Scrapeados (USD)',
+      facturapp: 'Servicio API Facturapp — Catálogo & Créditos',
       locales: 'Locales Kroser Martínez (2)',
       zonas: 'Zonas y Tarifas de Envío',
       pagos: 'Formas y Métodos de Pago',
@@ -104,6 +105,7 @@
     const TAB_PARENT_GROUPS = {
       dashboard: null,
       catalogo: 'trigger-catalogo',
+      facturapp: 'trigger-catalogo',
       locales: 'trigger-catalogo',
       zonas: 'trigger-catalogo',
       pagos: 'trigger-catalogo',
@@ -234,6 +236,7 @@
         loadClientesAdmin();
       }
       if (tabName === 'scraper') loadScraperStatus();
+      if (tabName === 'facturapp') loadFacturappPanel();
 
       // Smooth scroll to top on mobile
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -2648,6 +2651,144 @@
         }
       } catch (err) {
         alert('Error de conexión: ' + err.message);
+      }
+    }
+
+    // --- FACTURAPP API PANEL ---
+    function facturappDate(value) {
+      if (!value) return '-';
+      const d = new Date(value);
+      return Number.isNaN(d.getTime()) ? String(value) : d.toLocaleString('es-UY');
+    }
+
+    function setFacturappText(id, value) {
+      const el = document.getElementById(id);
+      if (el) el.textContent = value == null || value === '' ? '-' : String(value);
+    }
+
+    function facturappStatusBadge(status) {
+      const colors = {
+        completed: '#16a34a',
+        running: '#2563eb',
+        paused: '#d97706',
+        failed: '#dc2626',
+        cancelled: '#6b7280',
+      };
+      const color = colors[status] || '#6b7280';
+      return `<span style="display:inline-block; padding:0.15rem 0.5rem; border-radius:999px; background:${color}1a; color:${color}; font-weight:700; font-size:0.75rem;">${escHtml(status)}</span>`;
+    }
+
+    function showFacturappAlert(message, isError = true) {
+      const el = document.getElementById('facturapp-alert');
+      if (!el) return;
+      el.style.display = message ? 'block' : 'none';
+      el.textContent = message || '';
+      el.style.borderLeftColor = isError ? '#dc2626' : '#16a34a';
+      el.style.background = isError ? '#fef2f2' : '#f0fdf4';
+      el.style.color = isError ? '#991b1b' : '#166534';
+    }
+
+    function renderFacturappStatus(data) {
+      const b = data.balance || {};
+      const state = data.state || {};
+      setFacturappText('facturapp-configured', data.configured ? 'Configurada' : 'Sin clave');
+      setFacturappText('facturapp-plan', b.plan || '-');
+      setFacturappText('facturapp-available', b.disponiblesMes != null ? b.disponiblesMes : '-');
+      setFacturappText('facturapp-used', b.usadosMes != null ? `${b.usadosMes} / ${b.mensuales != null ? b.mensuales : '-'}` : '-');
+      setFacturappText('facturapp-renewal', b.vigenteHasta ? facturappDate(b.vigenteHasta) : '-');
+      setFacturappText('facturapp-last-success', facturappDate(state.last_success_at));
+      setFacturappText('facturapp-pending', state.pending_mode || 'Ninguna');
+      setFacturappText('facturapp-pending-id', state.pending_desde_id != null ? state.pending_desde_id : '-');
+      setFacturappText('facturapp-cutoff', facturappDate(state.last_cutoff || state.pending_cutoff));
+
+      if (!data.configured) {
+        showFacturappAlert('FACTURAPP_API_KEY no está configurada en el servidor. Agregala en el Environment del backend y redeployá.', true);
+      } else if (data.apiError) {
+        showFacturappAlert(`Error al consultar Facturapp: ${data.apiError}`, true);
+      } else {
+        showFacturappAlert('', true);
+      }
+
+      const tbody = document.getElementById('facturapp-runs-body');
+      if (!tbody) return;
+      const runs = Array.isArray(data.runs) ? data.runs : [];
+      if (runs.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="11" style="text-align:center; color:var(--text-muted);">Sin sincronizaciones registradas.</td></tr>';
+        return;
+      }
+      tbody.innerHTML = runs.map((r) => `
+        <tr>
+          <td>${r.id}</td>
+          <td>${escHtml(r.mode)}</td>
+          <td>${facturappStatusBadge(r.status)}</td>
+          <td>${facturappDate(r.started_at)}</td>
+          <td>${r.pages_processed != null ? r.pages_processed : 0}</td>
+          <td>${r.articles_received != null ? r.articles_received : 0}</td>
+          <td style="color:#16a34a; font-weight:700;">${r.inserted != null ? r.inserted : 0}</td>
+          <td style="color:#2563eb; font-weight:700;">${r.updated != null ? r.updated : 0}</td>
+          <td>${r.unchanged != null ? r.unchanged : 0}</td>
+          <td>${r.credits_consumed != null ? r.credits_consumed : 0}</td>
+          <td>${escHtml(r.last_error || r.stop_reason || '')}${r.last_request_id ? `<br><small style="color:var(--text-muted);">${escHtml(r.last_request_id)}</small>` : ''}</td>
+        </tr>
+      `).join('');
+    }
+
+    async function loadFacturappPanel() {
+      const tbody = document.getElementById('facturapp-runs-body');
+      if (tbody) tbody.innerHTML = '<tr><td colspan="11" style="text-align:center; color:var(--text-muted);">Cargando...</td></tr>';
+      try {
+        const res = await apiFetch(`${API_BASE}/facturapp/status`);
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+        renderFacturappStatus(data);
+      } catch (err) {
+        showFacturappAlert(`No se pudo consultar el estado de Facturapp: ${err.message}`, true);
+        if (tbody) tbody.innerHTML = '<tr><td colspan="11" style="text-align:center; color:var(--danger);">Error al cargar el historial.</td></tr>';
+      }
+    }
+
+    async function estimateFacturapp(mode) {
+      const msg = document.getElementById('facturapp-sync-msg');
+      if (msg) msg.textContent = 'Calculando estimación...';
+      try {
+        const res = await apiFetch(`${API_BASE}/facturapp/estimate?mode=${encodeURIComponent(mode)}`);
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || data.message || `HTTP ${res.status}`);
+        const pages = data.pages == null ? 'sin estimar' : data.pages;
+        const cost = data.estimatedCost == null ? 'sin estimar' : data.estimatedCost;
+        const available = data.available == null ? '?' : data.available;
+        const warning = data.sufficient === false ? ' ⚠️ No alcanza el saldo disponible.' : '';
+        if (msg) msg.textContent = `${mode === 'initial' ? 'Inicial' : 'Incremental'}: ~${pages} páginas, costo ~${cost} créditos, disponibles ${available}.${warning}`;
+      } catch (err) {
+        if (msg) msg.textContent = `Error al estimar: ${err.message}`;
+      }
+    }
+
+    async function syncFacturapp(mode) {
+      if (mode === 'initial' && !confirm('La sincronización inicial recorre todo el catálogo y consume créditos. ¿Querés continuar?')) return;
+      const msg = document.getElementById('facturapp-sync-msg');
+      const maxPagesEl = document.getElementById('facturapp-max-pages');
+      const maxPages = maxPagesEl ? parseInt(maxPagesEl.value, 10) : undefined;
+      if (msg) msg.textContent = 'Iniciando sincronización...';
+      try {
+        const res = await apiFetch(`${API_BASE}/facturapp/sync`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            mode,
+            confirmInitial: mode === 'initial',
+            maxPages: Number.isFinite(maxPages) ? maxPages : undefined,
+          }),
+        });
+        const data = await res.json();
+        if (res.status === 202) {
+          if (msg) msg.textContent = `Sincronización iniciada (run #${data.runId}). Actualizando estado...`;
+          setTimeout(loadFacturappPanel, 2500);
+        } else {
+          if (msg) msg.textContent = data.message || data.error || `No se pudo iniciar (HTTP ${res.status}).`;
+        }
+      } catch (err) {
+        if (msg) msg.textContent = `Error al iniciar la sincronización: ${err.message}`;
       }
     }
 

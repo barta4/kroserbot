@@ -1,6 +1,6 @@
 # Guía de Contexto y Reglas de Desarrollo para Agentes de IA — Krosmart
 
-Bienvenido al repositorio de **Krosmart** (Versión actual: **v2.3.7**), nombre comercial del **Cotizador Kroser Martínez**, desarrollado para **Kroser Martínez** (Kroser Uruguay). El nombre técnico del repositorio de GitHub, la base de datos, los contenedores y los volúmenes sigue siendo `kroserbot` por compatibilidad.  
+Bienvenido al repositorio de **Krosmart** (Versión actual: **v2.3.8**), nombre comercial del **Cotizador Kroser Martínez**, desarrollado para **Kroser Martínez** (Kroser Uruguay). El nombre técnico del repositorio de GitHub, la base de datos, los contenedores y los volúmenes sigue siendo `kroserbot` por compatibilidad.  
 Este documento define la arquitectura general, las reglas de oro del negocio, los patrones de código obligatorios y los flujos de prueba y despliegue que cualquier agente de IA o desarrollador humano debe respetar al modificar este codebase.
 
 ---
@@ -120,10 +120,10 @@ npx jest backend/tests/llm_failsafe.test.js
 * **Usuario Docker Hub**: `alfredobartaburu`
 * **Imagen Backend**: `alfredobartaburu/krosmart:<VERSION>` y `alfredobartaburu/krosmart:latest`
 * **Arquitectura obligatoria**: `--platform linux/amd64`
-* **Regla de Etiquetado Incremental**: Dokploy y Easypanel cachean imágenes localmente en el servidor. **Siempre incrementa la versión semántica** (ej. `v2.3.6` ➔ `v2.3.7`) al compilar nuevas imágenes.
+* **Regla de Etiquetado Incremental**: Dokploy y Easypanel cachean imágenes localmente en el servidor. **Siempre incrementa la versión semántica** (ej. `v2.3.7` ➔ `v2.3.8`) al compilar nuevas imágenes.
 * **Comando de Build y Push**:
   ```bash
-  docker buildx build --platform linux/amd64 -t alfredobartaburu/krosmart:v2.3.7 -t alfredobartaburu/krosmart:latest . --push
+  docker buildx build --platform linux/amd64 -t alfredobartaburu/krosmart:v2.3.8 -t alfredobartaburu/krosmart:latest . --push
   ```
 * **Git**: Sincronizar siempre a la rama `main` en `https://github.com/barta4/kroserbot.git`.
 * **Desarrollo local**: Mantener bind-mounts y claves dummy en `docker-compose.override.yml` (ignorado en `.gitignore` para no sobreescribir producción).
@@ -173,7 +173,7 @@ krosmart/
 ├── docker-compose.override.yml   # Overrides para desarrollo local (ignorado en Git)
 ├── Dockerfile                    # Multi-stage build no-root optimizado (Node 20 Alpine)
 ├── FACTURAPP_SYNC.md             # Análisis, estrategia y operación de la sync Facturapp
-├── package.json                  # Dependencias y scripts del proyecto (v2.3.7)
+├── package.json                  # Dependencias y scripts del proyecto (v2.3.8)
 └── README.md                     # Documentación de inicio rápido
 ```
 

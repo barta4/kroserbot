@@ -1082,3 +1082,26 @@
       table { background: white; color: black; border: 1px solid #ccc; min-width: 100%; }
       th, td { border: 1px solid #ccc; color: black; }
     }
+
+    /* Facturapp API panel */
+    .facturapp-label {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .facturapp-value {
+      font-size: 1.45rem;
+      font-weight: 800;
+      color: var(--text-main);
+      margin-top: 0.25rem;
+      line-height: 1.2;
+    }
+
+    @media (max-width: 768px) {
+      .facturapp-value {
+        font-size: 1.2rem;
+      }
+    }

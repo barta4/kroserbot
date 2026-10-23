@@ -3,6 +3,23 @@
 Todos los cambios notables en este proyecto están documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/), y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.4.html).
 
+## [2.3.8] - 2026-10-23
+
+### 🔗 Panel de Control de la API Facturapp
+* Nueva pestaña **API Facturapp & Créditos** en Catálogo & Logística del panel admin.
+* Muestra plan, créditos disponibles, consumidos del mes, vigencia y estado de la clave.
+* Última sincronización: último éxito, modo pendiente, `desdeId` y corte usado.
+* Historial de corridas: páginas, artículos recibidos, insertados, actualizados, sin cambios, créditos consumidos y `requestId`.
+* Acciones: estimar incremental/inicial y sincronizar; la inicial pide confirmación.
+* La **API key no se expone ni se edita desde el navegador**: se configura en `FACTURAPP_API_KEY` del entorno del backend. El panel muestra el bloque de variables y el estado “Configurada/Sin clave”.
+
+### ✅ Verificación
+* Panel validado con respuestas simuladas (sin consumir créditos reales).
+* Suite completa: **33 suites / 442 tests** en verde.
+* Pytest: **24 tests** en verde.
+
+---
+
 ## [2.3.7] - 2026-10-23
 
 ### 🏷️ Rebranding de despliegue: Krosmart

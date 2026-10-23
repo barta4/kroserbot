@@ -53,6 +53,10 @@
                 <span>📦</span>
                 <span>Catálogo de Productos (3.4k)</span>
               </button>
+              <button class="dropdown-item-btn" id="nav-btn-facturapp" onclick="switchTab('facturapp', event)">
+                <span>🔗</span>
+                <span>API Facturapp & Créditos</span>
+              </button>
               <button class="dropdown-item-btn" id="nav-btn-locales" onclick="switchTab('locales', event)">
                 <span>🏪</span>
                 <span>Locales Kroser Martínez (2)</span>
@@ -183,6 +187,9 @@
       <div class="mobile-section-header">📦 Catálogo & Logística</div>
       <button class="mobile-nav-link" id="mob-btn-catalogo" onclick="switchTab('catalogo', event)">
         <span>📦</span> <span>Catálogo (3.4k USD)</span>
+      </button>
+      <button class="mobile-nav-link" id="mob-btn-facturapp" onclick="switchTab('facturapp', event)">
+        <span>🔗</span> <span>API Facturapp</span>
       </button>
       <button class="mobile-nav-link" id="mob-btn-locales" onclick="switchTab('locales', event)">
         <span>🏪</span> <span>Locales (2)</span>
@@ -838,6 +845,101 @@
           <button class="btn-action" onclick="loadEmbeddingsStatus()">🔄 Actualizar Estado</button>
           <span id="embeddings-action-msg" style="font-size:0.85rem; font-weight:600; color:var(--text-muted);"></span>
         </div>
+      </div>
+    </section>
+
+    <!-- ========================================================
+         TAB 6B: FACTURAPP API (CATÁLOGO & LOGÍSTICA)
+         ======================================================== -->
+    <section id="tab-facturapp" class="tab-view-section">
+      <div class="card-box">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:1rem; flex-wrap:wrap;">
+          <div>
+            <h3>🔗 Servicio API Facturapp — Catálogo & Créditos</h3>
+            <p style="color:var(--text-muted); font-size:0.85rem; margin-top:0.25rem;">
+              Control de la sincronización del catálogo desde Facturapp: saldo de créditos, consultas realizadas, productos extraídos y actualizados.
+            </p>
+          </div>
+          <button class="btn-action" onclick="loadFacturappPanel()">🔄 Actualizar</button>
+        </div>
+
+        <div id="facturapp-alert" style="display:none; margin-top:1rem; border-left:4px solid #dc2626; background:#fef2f2; color:#991b1b; padding:0.9rem; border-radius:0.4rem; font-size:0.88rem;"></div>
+
+        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:1rem; margin-top:1.25rem;">
+          <div style="background:var(--bg-surface-subtle); padding:1rem; border-radius:0.5rem; border:1px solid var(--border-subtle);">
+            <div class="facturapp-label">Estado de la clave</div>
+            <div class="facturapp-value" id="facturapp-configured">-</div>
+          </div>
+          <div style="background:var(--bg-surface-subtle); padding:1rem; border-radius:0.5rem; border:1px solid var(--border-subtle);">
+            <div class="facturapp-label">Plan</div>
+            <div class="facturapp-value" id="facturapp-plan">-</div>
+          </div>
+          <div style="background:var(--bg-surface-subtle); padding:1rem; border-radius:0.5rem; border:1px solid var(--border-subtle);">
+            <div class="facturapp-label">Créditos disponibles</div>
+            <div class="facturapp-value" id="facturapp-available" style="color:var(--success);">-</div>
+          </div>
+          <div style="background:var(--bg-surface-subtle); padding:1rem; border-radius:0.5rem; border:1px solid var(--border-subtle);">
+            <div class="facturapp-label">Usados este mes</div>
+            <div class="facturapp-value" id="facturapp-used">-</div>
+          </div>
+          <div style="background:var(--bg-surface-subtle); padding:1rem; border-radius:0.5rem; border:1px solid var(--border-subtle);">
+            <div class="facturapp-label">Vigencia / renovación</div>
+            <div class="facturapp-value" id="facturapp-renewal" style="font-size:1rem;">-</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card-box" style="margin-top:1.5rem;">
+        <h3>📊 Última sincronización</h3>
+        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:1rem; margin-top:1rem;">
+          <div><div class="facturapp-label">Último éxito</div><strong id="facturapp-last-success">-</strong></div>
+          <div><div class="facturapp-label">Modo pendiente</div><strong id="facturapp-pending">-</strong></div>
+          <div><div class="facturapp-label">Desde ID pendiente</div><strong id="facturapp-pending-id">-</strong></div>
+          <div><div class="facturapp-label">Corte usado</div><strong id="facturapp-cutoff">-</strong></div>
+        </div>
+        <div style="margin-top:1.25rem; display:flex; gap:0.75rem; flex-wrap:wrap; align-items:center;">
+          <label style="font-size:0.8rem; color:var(--text-muted);">Máx. páginas
+            <input id="facturapp-max-pages" type="number" min="1" max="1000" value="40" style="width:82px; padding:0.35rem; border:1px solid var(--border-subtle); border-radius:4px; margin-left:0.35rem;">
+          </label>
+          <button class="btn-action btn-success" onclick="syncFacturapp('incremental')">▶️ Sincronizar cambios</button>
+          <button class="btn-action" onclick="estimateFacturapp('incremental')">🧮 Estimar incremental</button>
+          <button class="btn-action" onclick="estimateFacturapp('initial')">🧮 Estimar inicial</button>
+          <button class="btn-action" style="background:#b45309; color:#fff;" onclick="syncFacturapp('initial')">⚠️ Sincronizar inicial</button>
+        </div>
+        <div id="facturapp-sync-msg" style="margin-top:0.85rem; font-size:0.85rem; color:var(--text-muted);"></div>
+      </div>
+
+      <div class="card-box" style="margin-top:1.5rem;">
+        <h3>📜 Historial de consultas y productos</h3>
+        <div class="table-container" style="overflow-x:auto; margin-top:1rem;">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th><th>Modo</th><th>Estado</th><th>Inicio</th>
+                <th>Páginas</th><th>Recibidos</th><th>Insertados</th><th>Actualizados</th>
+                <th>Sin cambios</th><th>Créditos</th><th>Error / requestId</th>
+              </tr>
+            </thead>
+            <tbody id="facturapp-runs-body">
+              <tr><td colspan="11" style="text-align:center; color:var(--text-muted);">Cargando...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card-box" style="margin-top:1.5rem;">
+        <h3>🔐 Configuración del servicio</h3>
+        <p style="color:var(--text-muted); font-size:0.85rem; margin-top:0.25rem;">
+          La API key se configura exclusivamente en el servidor. Por seguridad no se muestra ni se edita desde el navegador.
+        </p>
+        <pre style="margin-top:0.75rem; background:#0b1220; color:#e2e8f0; padding:0.85rem; border-radius:0.45rem; font-size:0.8rem; overflow-x:auto;">FACTURAPP_API_KEY=tu_clave
+FACTURAPP_EXPECTED_ARTICLES=10000
+FACTURAPP_SYNC_ENABLED=true
+FACTURAPP_SYNC_HOUR=4
+FACTURAPP_SYNC_RESERVE_CREDITS=5</pre>
+        <p style="color:var(--text-muted); font-size:0.8rem; margin-top:0.6rem;">
+          En Dokploy/Easypanel: <strong>backend → Environment</strong>, guardar las variables y redeployar. La clave nunca se envía al navegador.
+        </p>
       </div>
     </section>
 
