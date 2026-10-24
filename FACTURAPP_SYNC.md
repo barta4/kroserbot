@@ -348,3 +348,82 @@ Resultado: **20 tests** dentro de la suite total (**31 suites / 423 tests**).
 8. Revisar `GET /api/facturapp/runs` después de la primera corrida.
 
 > **No ejecutar la sincronización inicial sin antes definir `FACTURAPP_EXPECTED_ARTICLES` y validar el saldo.** El sistema se detiene solo, pero la estimación evita iniciar un proceso que no podrá completarse.
+
+---
+
+## 9. Prueba controlada de 2 páginas (validación del cliente)
+
+Objetivo: extraer una muestra de hasta 2 páginas (máximo 400 artículos con `cantidad=200`) sin recorrer todo el catálogo ni consumir créditos de más.
+
+### Antes de empezar
+
+1. **Desactivar el scheduler temporalmente** en Dokploy:
+   ```env
+   FACTURAPP_SYNC_ENABLED=false
+   ```
+   Es importante: si queda en `true`, el scheduler diario puede retomar la corrida pendiente con `FACTURAPP_SYNC_MAX_PAGES=40` a la hora configurada.
+
+2. Verificar que el panel muestre **“Estado de la clave: Configurada”**. Si dice “Sin clave”, las variables `FACTURAPP_*` no están llegando al contenedor (ver `INFORME_ENTREGA_v2.3.11.md`, sección 5).
+
+3. Confirmar créditos: la corrida necesita **1 crédito por página** más la reserva (`FACTURAPP_SYNC_RESERVE_CREDITS`, por defecto 5). Para 2 páginas debe haber al menos 2 créditos por encima de la reserva.
+
+4. Opcional: para que la estimación refleje 2 páginas, definir `FACTURAPP_EXPECTED_ARTICLES=400` (con 200 la estimación dirá ~1 página, aunque el límite real es “Páginas máx.”).
+
+### Ejecución
+
+1. En **Panel Admin → Catálogo & Logística → API Facturapp & Créditos**, poner **“Páginas máx.” = 2**.
+2. Click en **“Sincronizar inicial”**.
+3. Confirmar el diálogo.
+
+### Qué ocurre
+
+- Se procesan hasta 2 páginas. Si la primera página viene con menos de 200 artículos, la corrida se considera completa en 1 página.
+- Si ambas páginas vienen llenas, la corrida se detiene con:
+  - `status = paused`
+  - `stop_reason = max_pages`
+  - `pending_mode = initial`
+  - `pending_desde_id` con el cursor para continuar.
+- Los artículos quedan insertados/actualizados con upsert por `facturapp_id`; no se duplican.
+- No se recorre el catálogo completo y no se marca la inicial como completada.
+
+### Verificación
+
+En el panel, revisar “Historial”: la última corrida debe figurar como `initial`, `paused`, 2 páginas, ~400 artículos y ~2 créditos.
+
+Por SQL:
+
+```sql
+select mode, status, pages_processed, articles_received,
+       inserted, updated, credits_consumed, last_desde_id, stop_reason
+from facturapp_sync_runs
+order by id desc
+limit 1;
+
+select pending_mode, pending_desde_id, pending_run_id
+from facturapp_sync_state;
+
+select count(*) as productos_facturapp
+from productos
+where fuente_origen = 'facturapp';
+```
+
+### Cómo continuar
+
+1. Poner **“Páginas máx.” = 40** (o el valor deseado).
+2. Click nuevamente en **“Sincronizar inicial”**. El sistema detecta `pending_mode` y reanuda desde `pending_desde_id`; no vuelve a empezar de cero.
+3. Al completar, `pending_mode` queda vacío y `last_success_at` se actualiza.
+4. Recién entonces volver a `FACTURAPP_SYNC_ENABLED=true` si se desea la incremental diaria.
+
+### Casos especiales
+
+| Situación | Comportamiento |
+|---|---|
+| Primera página con menos de 200 artículos | Termina en 1 página (`completed`) |
+| Créditos insuficientes después de la primera página | `paused` con `stop_reason=insufficient_credits` |
+| Ya existe una corrida pendiente | `prepareRun` reutiliza el modo/`desdeId` pendiente; no inicia una nueva |
+| Ya hay una corrida `running` | Responde `already_running` y no duplica |
+| Error retryable (429/5xx) | `paused`; se puede reanudar |
+| Error fatal (401) | `failed`; corregir la clave antes de reintentar |
+
+> Para una prueba sin impacto en producción, usar una base de staging. En producción, 2 páginas son seguras: insertan/actualizan una muestra y dejan el resto pendiente.
+

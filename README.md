@@ -4,6 +4,8 @@ Sistema integral de atención inteligente, recomendación técnica, búsqueda h�
 
 > **Krosmart** (Kroser Martínez) es el nombre comercial y de despliegue del proyecto. `kroserbot` se conserva únicamente como nombre técnico del repositorio de GitHub, la base de datos, los contenedores y los volúmenes existentes, para no romper compatibilidad.
 
+> 📄 **Entrega v2.3.11:** cambios por canal, precisión de búsqueda, despliegue y criterios de aceptación en [`INFORME_ENTREGA_v2.3.11.md`](INFORME_ENTREGA_v2.3.11.md).
+
 ---
 
 ## 🚀 Requisitos Previos
