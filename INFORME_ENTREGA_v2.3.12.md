@@ -2,9 +2,9 @@
 
 **Fecha:** 24/10/2026  
 **Estado:** listo para validación del cliente (no cerrar como aprobado hasta su OK)  
-**Commit:** `PENDIENTE`
+**Commit:** `b5cc709` — `feat(ui): modernizar composer de Cotibot y publicar v2.3.12`
 **Imagen:** `alfredobartaburu/krosmart:v2.3.12` y `:latest` (linux/amd64)
-**Digest:** `PENDIENTE`
+**Digest:** `sha256:74bde5416ac7d8b987025a93352ce27b987fac59e6138cd7e2186d89ffb8d497`
 
 ---
 
