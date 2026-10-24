@@ -3,6 +3,20 @@
 Todos los cambios notables en este proyecto están documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/), y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.4.html).
 
+## [2.3.13] - 2026-10-24
+
+### 🐛 Filtro de promociones persistente
+* Al hacer click en una oferta, el filtro `promo_id` quedaba activo aunque se cambiara de categoría o se volviera al catálogo.
+* `selectCategory()`, `clearCatalogSearch()` y `quickSearchTag()` ahora limpian la promoción activa antes de recargar.
+* El enlace **Catálogo** del header y **Ver artículos** del footer resetean el filtro y muestran todo el catálogo.
+* La barra “Promoción Activa” se oculta y `AppState.activePromoId` queda en `null`.
+
+### ✅ Verificación
+* Playwright: oferta → Catálogo/Todos los artículos vuelve a `/api/productos` sin `promo_id` y muestra todos los productos.
+* Suite completa: **36 suites / 463 tests** en verde.
+
+---
+
 ## [2.3.12] - 2026-10-24
 
 ### 💅 Pulido visual del composer de Cotibot

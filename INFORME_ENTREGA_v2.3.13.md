@@ -1,10 +1,10 @@
-# Informe de entrega — Krosmart v2.3.12
+# Informe de entrega — Krosmart v2.3.13
 
 **Fecha:** 24/10/2026  
 **Estado:** listo para validación del cliente (no cerrar como aprobado hasta su OK)  
-**Commit:** `b5cc709` — `feat(ui): modernizar composer de Cotibot y publicar v2.3.12`
-**Imagen:** `alfredobartaburu/krosmart:v2.3.12` y `:latest` (linux/amd64)
-**Digest:** `sha256:74bde5416ac7d8b987025a93352ce27b987fac59e6138cd7e2186d89ffb8d497`
+**Commit:** `PENDIENTE`
+**Imagen:** `alfredobartaburu/krosmart:v2.3.13` y `:latest` (linux/amd64)
+**Digest:** `PENDIENTE`
 
 ---
 
@@ -20,6 +20,16 @@ Resultado actual:
 - **36 suites / 463 tests Jest en verde**.
 - **15/15 hit@1 y hit@5** en el set de evaluación web.
 - **2/2 ausencias correctas** (consultas que realmente no están en catálogo).
+
+### Filtro de promociones persistente (v2.3.13)
+
+Se corrigió un problema reportado: al hacer click en una oferta quedaba activo el filtro `promo_id` y no se limpiaba al cambiar de categoría ni al volver al catálogo. Ahora:
+
+- `selectCategory()` limpia la promoción activa antes de cargar productos.
+- `clearCatalogSearch()` y `quickSearchTag()` también limpian la promoción.
+- El enlace **Catálogo** del header y **Ver artículos** del footer resetean el filtro y muestran todo el catálogo.
+- La barra “Promoción Activa” se oculta y `AppState.activePromoId` queda en `null`.
+- Verificado con Playwright: tras una oferta, al navegar a Catálogo o pulsar “Todos los artículos” se solicita `/api/productos` sin `promo_id` y se vuelven a mostrar todos los productos.
 
 ### Pulido visual del composer (v2.3.12)
 
@@ -115,9 +125,9 @@ Salida esperada (capa textual, sin vector):
 | `backend/tests/whatsapp_channel.test.js` | Fallback y una sola ronda |
 | `backend/tests/message_splitter.test.js` | WhatsApp no fragmenta |
 | `public/css/landing-v2.css` | Composer moderno, scrollbars finos |
-| `public/js/app.js` | Auto-grow y control de overflow |
+| `public/js/app.js` | Auto-grow, overflow y limpieza del filtro de promociones |
 | `public/js/chatWidget.js` | Placeholder contextual y refresh del alto |
-| `public/index.html` | Píldora de lista más corta |
+| `public/index.html` | Píldora de lista más corta y enlaces de catálogo que resetean filtros |
 | `backend/controllers/configuracionController.js` | `search_vector_threshold` habilitado |
 
 ---
@@ -228,6 +238,7 @@ Estos puntos **no bloquean la aprobación funcional**, pero deben quedar visible
 - [ ] Búsquedas de muestra: caño, cortador de caño, látex, membrana, foco, tornillo, zapatilla.
 - [ ] Facturapp: prueba de 2 páginas y reanudación.
 - [ ] Composer: sin scrollbar nativo, textarea autoexpandible y estética aprobada.
+- [ ] Promociones: al salir de una oferta (categoría o Catálogo) vuelve el catálogo completo.
 - [ ] Panel admin: estado de Facturapp, créditos y historial.
 - [ ] Aprobación explícita del cliente para continuar con las fases pendientes.
 

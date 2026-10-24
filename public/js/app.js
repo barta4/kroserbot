@@ -496,10 +496,20 @@ function renderCategoryPills() {
   });
 }
 
+function resetPromoFilterState() {
+  AppState.activePromoId = null;
+  AppState.activePromoTitle = '';
+  AppState.activePromoBadge = '';
+  AppState.activePromoDiscount = 0;
+  const bar = document.getElementById('activePromoIndicatorBar');
+  if (bar) bar.style.display = 'none';
+}
+
 window.selectCategory = function(cat) {
   AppState.activeCategory = cat;
   AppState.searchQuery = '';
   AppState.currentPage = 1;
+  resetPromoFilterState();
 
   const searchInput = document.getElementById('heroSearchInput');
   if (searchInput) searchInput.value = '';
@@ -521,6 +531,7 @@ window.clearCatalogSearch = function() {
   AppState.searchQuery = '';
   AppState.activeCategory = '';
   AppState.currentPage = 1;
+  resetPromoFilterState();
   const searchInput = document.getElementById('heroSearchInput');
   if (searchInput) searchInput.value = '';
   if (window.updateSearchInputUI) window.updateSearchInputUI();
@@ -537,6 +548,7 @@ window.quickSearchTag = function(term) {
   if (input) input.value = term;
   AppState.searchQuery = term;
   AppState.currentPage = 1;
+  resetPromoFilterState();
   loadProducts();
   const catalogEl = document.getElementById('catalogoSection');
   if (catalogEl) catalogEl.scrollIntoView({ behavior: 'smooth' });
@@ -1281,13 +1293,7 @@ window.applyPromoFilter = async function(promoIdOrTerm, promoTitle = '', promoDi
 };
 
 window.clearPromoFilter = async function(reload = true) {
-  AppState.activePromoId = null;
-  AppState.activePromoTitle = '';
-  AppState.activePromoBadge = '';
-  AppState.activePromoDiscount = 0;
-
-  const bar = document.getElementById('activePromoIndicatorBar');
-  if (bar) bar.style.display = 'none';
+  resetPromoFilterState();
 
   if (reload) {
     AppState.currentPage = 1;
