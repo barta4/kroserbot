@@ -3,6 +3,23 @@
 Todos los cambios notables en este proyecto están documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/), y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.4.html).
 
+## [2.3.9] - 2026-10-23
+
+### 🎨 Rediseño de la landing pública
+* Nueva landing editorial en tema claro centrada en **Cotibot**: hero en dos columnas, sección "Cómo funciona", capacidades accionables, promociones vigentes, locales y footer renovado.
+* **Modo foco del chat**: al iniciar una conversación el asistente pasa a un diálogo central con minimizar, cierre con Escape, trampa de foco y botón flotante para reabrirlo.
+* Cabecera responsive con navegación por secciones, ingreso de clientes y presupuesto, sin desbordes entre 320 px y 1440 px.
+* Imágenes optimizadas (`logo-krosmart-2x.png`, `logo-k-mark-96.png`) y favicon corregido.
+* Accesibilidad: contraste AA, nombres accesibles, foco visible y tarjetas de promoción operables por teclado.
+* Promociones dinámicas restauradas en el nuevo diseño y corrección del filtro por ID numérico en `applyPromoFilter`.
+
+### ✅ Verificación
+* Lighthouse: Accesibilidad **1.0**, Buenas prácticas **1.0**, SEO **1.0**, sin fallos.
+* Layout validado en 320, 360, 390, 430, 640, 820 y 1440 px sin overflow horizontal.
+* HTML balanceado y `node --check` OK en los scripts del cotizador.
+
+---
+
 ## [2.3.8] - 2026-10-23
 
 ### 🔗 Panel de Control de la API Facturapp

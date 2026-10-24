@@ -1272,7 +1272,7 @@ function escapeHtml(str) {
 
 window.applyPromoFilter = async function(promoIdOrTerm, promoTitle = '', promoDiscount = 0, promoBadge = '') {
   const numericId = parseInt(promoIdOrTerm, 10);
-  if (!isNaN(numericId) && numericId > 0 && String(promoIdOrTerm).match(/^d+$/)) {
+  if (!isNaN(numericId) && numericId > 0 && String(promoIdOrTerm).match(/^\d+$/)) {
     AppState.activePromoId = numericId;
     AppState.activePromoTitle = promoTitle || 'Promoción Especial';
     AppState.activePromoBadge = promoBadge || (promoDiscount > 0 ? `${Math.round(promoDiscount)}% OFF` : 'OFERTA');
@@ -1341,6 +1341,7 @@ window.clearPromoFilter = async function(reload = true) {
 async function loadPromocionesBanner() {
   const container = document.getElementById('promocionesCardsGrid');
   if (!container) return;
+  const section = document.getElementById('promocionesBannerSection');
 
   try {
     const res = await fetch(`${API_BASE}/promociones`);
@@ -1374,10 +1375,21 @@ async function loadPromocionesBanner() {
         </div>
       `;
     }).join('');
+
+    if (section) section.hidden = false;
   } catch (err) {
     console.warn('[Cotibot] Error al cargar promociones dinámicas:', err);
   }
 }
+
+// Accesibilidad: las tarjetas de promoción son botones y deben responder al teclado.
+document.addEventListener('keydown', (event) => {
+  if (event.key !== 'Enter' && event.key !== ' ') return;
+  const card = event.target.closest && event.target.closest('.promo-card');
+  if (!card) return;
+  event.preventDefault();
+  card.click();
+});
 
 // Expose quote & drawer utilities globally
 window.saveCartToStorage = saveCartToStorage;

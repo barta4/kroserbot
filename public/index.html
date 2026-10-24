@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Cotizador Kroser Martínez — Ferretería, Pinturas y Herramientas (40 Años)</title>
   <meta name="description" content="Cotizador oficial Kroser Martínez: consultá catálogo, stock y presupuestos en tiempo real con descuentos para profesionales, gremios y empresas.">
-  <meta name="theme-color" content="#060e1d">
-  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#f7f5ef">
+  <meta name="color-scheme" content="light">
   <meta name="robots" content="index,follow">
   <meta property="og:type" content="website">
   <meta property="og:locale" content="es_UY">
@@ -16,7 +16,8 @@
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Cotizador Kroser Martínez">
   <meta name="twitter:description" content="Catálogo, stock y presupuestos en tiempo real para profesionales y particulares.">
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2220%22 fill=%22%23f59e0b%22/><text x=%2250%22 y=%2270%22 font-family=%22Arial-Black,sans-serif%22 font-weight=%22900%22 font-size=%2265%22 fill=%22%23005bb5%22 text-anchor=%22middle%22>K</text></svg>">
+  <link rel="icon" type="image/png" sizes="512x512" href="/img/logo-k-mark.png">
+  <link rel="apple-touch-icon" href="/img/logo-k-mark.png">
   <script type="application/ld+json">
     {
       "@context": "https://schema.org",
@@ -52,8 +53,9 @@
   </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=swap">
   <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/landing-v2.css">
 </head>
 <body>
   <!-- Accessible skip-to-content link -->
@@ -63,52 +65,37 @@
   <div class="ambient-glow"></div>
 
   <!-- Header & Navbar -->
-  <header class="navbar-wrapper">
+  <header class="navbar-wrapper site-header">
     <nav class="navbar" aria-label="Navegación principal">
-      <a href="/" class="brand-container" id="brandLinkHome">
-        <div class="brand-logo-icon">
-          <div class="k-logo-badge">K</div>
-        </div>
-        <div class="brand-text-col">
-          <span class="brand-name">KROSER <span class="brand-subname">MARTÍNEZ</span></span>
-          <span class="brand-tagline">Cotizador Oficial &bull; 40 Años</span>
-        </div>
+      <a href="/" class="brand-container" id="brandLinkHome" aria-label="Krosmart — inicio">
+        <img class="brand-logo-img" src="/img/logo-krosmart-2x.png" alt="Kroser Martínez" width="172" height="45">
       </a>
 
-      <!-- User state and Actions in Navbar -->
+      <div class="site-nav-links" aria-label="Secciones">
+        <a href="#catalogoSection">Catálogo</a>
+        <a href="#comoFunciona">Cómo funciona</a>
+        <a href="#localesSection">Locales</a>
+      </div>
+
       <div class="nav-actions">
-        <!-- Logged-in client badge -->
         <div class="user-badge-header" id="headerUserBadge">
           <span id="headerClientName">Hola, Cliente</span>
           <span class="discount-pill" id="headerDiscountPill">GREMIO 15% OFF</span>
           <button type="button" class="btn-nav-action" id="btnLogout" aria-label="Cerrar sesión de cliente" style="padding:0.25rem 0.6rem; font-size:0.75rem;">Salir</button>
         </div>
 
-        <!-- Guest box -->
         <div id="headerGuestBox" style="display:flex; gap:0.6rem; align-items:center;">
-          <button type="button" class="btn-nav-action" id="btnOpenLogin" aria-label="Iniciar sesión o registrar cuenta">
-            <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
-            <span class="nav-label">Iniciar Sesión</span>
+          <button type="button" class="btn-nav-action" id="btnOpenLogin" aria-label="Ingresar a mi cuenta">
+            <span>Ingresar</span>
           </button>
         </div>
 
-        <!-- Quote cart button -->
-        <button type="button" class="btn-quote-cart" id="btnQuoteCart" aria-label="Abrir bandeja de cotización y presupuesto actual">
-          <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
-          </svg>
-          <span class="quote-text-btn">Presupuesto</span>
+        <button type="button" class="btn-quote-cart" id="btnQuoteCart">
+          <svg class="quote-icon-btn" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+          <span class="quote-text-btn">Mi presupuesto</span>
           <span class="quote-count-badge" id="quoteCountBadge" aria-live="polite">0</span>
+          <span class="sr-only">artículos. Abrir bandeja de cotización</span>
         </button>
-
-        <!-- Access to Admin Panel -->
-        <a href="/admin/" class="btn-nav-action nav-panel-link" aria-label="Acceso a gestión interna" title="Acceso a Gestión Interna">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <circle cx="12" cy="12" r="3"></circle>
-            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-          </svg>
-          <span class="nav-label">Panel</span>
-        </a>
       </div>
     </nav>
   </header>
@@ -116,290 +103,241 @@
   <!-- Main Content Container -->
   <main>
     <!-- Hero Section -->
-    <section class="hero-section" aria-labelledby="heroMainTitle">
-      <div class="hero-pill-announcement">
-        <span class="pill-k-badge">K</span>
-        <span>Kroser Martínez &bull; 40 Años de Trayectoria</span>
-        <span style="opacity:0.4;">|</span>
-        <span>Cotizaciones y Stock en Tiempo Real</span>
-      </div>
-
-      <h1 class="hero-title" id="heroMainTitle">
-        Cotizador Rápido y Catálogo <br>
-        <span class="highlight">Kroser Martínez</span>
-      </h1>
-
-      <p class="hero-subtitle">
-        Consultá stock, precios y especificaciones técnicas, o pegá tu lista de materiales para cotizar al instante con tu descuento de cliente.
-      </p>
-
-      <!-- Central Executive Quote & Search Container -->
-      <div class="chatgpt-hero-container" id="heroChatContainer">
-        <!-- Active Conversation Header (shown when chat is active) -->
-        <div class="stream-canvas-header" id="heroCanvasHeader" style="display:none;">
-          <div class="canvas-agent-info">
-            <div class="canvas-avatar">
-              <span class="avatar-k">K</span>
-            </div>
-            <div class="canvas-title-wrap">
-              <h4>Cotizador & Asesor Técnico — Kroser Martínez</h4>
-              <span>Cálculo inmediato de mostrador con precios bonificados</span>
-            </div>
-          </div>
-          <button type="button" class="btn-canvas-clear" onclick="resetHeroChat()" title="Iniciar nuevo presupuesto" aria-label="Reiniciar consulta e iniciar nuevo presupuesto">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-2px; margin-right:4px;"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>
-            <span>Nuevo Presupuesto</span>
+    <section class="hero-section hero-v2" aria-labelledby="heroMainTitle">
+      <div class="hero-v2-inner">
+        <div class="hero-v2-copy">
+          <div class="hero-eyebrow">Asistente de mostrador · 40 años de Kroser Martínez</div>
+          <h1 class="hero-title" id="heroMainTitle">Contale qué necesitás. El resto lo resolvemos juntos.</h1>
+          <p class="hero-subtitle">Cotibot busca en el catálogo real, compara alternativas y te pasa el precio con tu descuento. Como en el mostrador, pero a la hora que necesites.</p>
+          <button type="button" class="btn-hero-start" onclick="focusAgentChat()">
+            Hablá con Cotibot
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
           </button>
+          <p class="hero-note"><span class="note-item">Sin registro para consultar</span><span class="note-sep" aria-hidden="true">·</span><span class="note-item">2 locales en La Unión</span><span class="note-sep" aria-hidden="true">·</span><span class="note-item">Stock y precios reales</span></p>
         </div>
-
-        <!-- Messages Stream Container (grows downwards, above prompt box) -->
-        <div class="stream-messages-list" id="heroMessagesContainer" style="display:none;">
-          <!-- Messages, answers, product cards and list quotes rendered here -->
-        </div>
-
-        <!-- Suggested Quick Queries (visible initially, hides once chatting) -->
-        <div class="quick-tags" id="heroQuickTags">
-          <span class="quick-tag-label">Consultas frecuentes:</span>
-          <button type="button" class="quick-tag-btn" onclick="submitHeroQuickPrompt('Pintura para humedad exterior en pared')">
-            <svg class="quick-tag-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="14" height="5" rx="1.5"/><path d="M17 6h3v5h-7v3"/><rect x="11" y="14" width="4" height="7" rx="1"/></svg>
-            Humedad en paredes exteriores
-          </button>
-          <button type="button" class="quick-tag-btn" onclick="submitHeroQuickPrompt('1 taladro percutor\n2 cintas aisladoras\n1 pintura latex 20L')">
-            <svg class="quick-tag-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4h6M8 9h8M8 13h8M8 17h5"/></svg>
-            Cotizar lista de obra
-          </button>
-          <button type="button" class="quick-tag-btn" onclick="submitHeroQuickPrompt('¿Qué pegamento necesito para reparar una canilla o caño de PVC?')">
-            <svg class="quick-tag-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3s6 6.2 6 11a6 6 0 1 1-12 0c0-4.8 6-11 6-11Z"/></svg>
-            Reparar fuga o canilla PVC
-          </button>
-          <button type="button" class="quick-tag-btn" onclick="submitHeroQuickPrompt('Taladros y atornilladores inalámbricos')">
-            <svg class="quick-tag-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.3 2.3-2-2 2.3-2.3Z"/></svg>
-            Taladros a batería
-          </button>
-        </div>
-
-        <!-- Main Prompt / Search Box (positioned at the bottom of the conversation) -->
-        <div class="chatgpt-prompt-box" id="heroPromptBox">
-          <!-- Hidden File Inputs -->
-          <input type="file" id="heroFileInput" accept=".pdf,.doc,.docx,.txt,.csv,image/*" style="display:none;">
-          <input type="file" id="heroPhotoInput" accept="image/*" capture="environment" style="display:none;">
-
-          <!-- Multimodal Media Preview & Active Recording Tray -->
-          <div class="chatgpt-media-tray" id="heroMediaTray" style="display:none;">
-            <!-- Attached Image Preview -->
-            <div class="media-preview-card" id="heroImagePreviewCard" style="display:none;">
-              <img id="heroImagePreviewThumb" src="" alt="Foto adjunta" class="media-preview-thumb">
-              <div class="media-preview-info">
-                <span class="media-preview-title" id="heroImagePreviewName">Foto de repuesto</span>
-                <span class="media-preview-tag">Visual Parts Finder activo</span>
+        <div class="hero-v2-agent">
+          <!-- Central Executive Quote & Search Container -->
+          <div class="chatgpt-hero-container" id="heroChatContainer">
+            <div class="hero-agent-intro" id="heroAgentIntro">
+              <img src="/img/logo-k-mark-96.png" alt="" width="36" height="36">
+              <div>
+                <strong>Cotibot</strong>
+                <span>Asistente de mostrador · En línea</span>
               </div>
-              <button type="button" class="btn-media-remove" id="btnRemoveHeroImage" title="Eliminar imagen" aria-label="Eliminar imagen adjunta">✕</button>
             </div>
-
-            <!-- Active Voice Recording Bar -->
-            <div class="voice-recording-bar" id="heroVoiceRecordingBar" style="display:none;">
-              <div class="recording-pulse-indicator">
-                <span class="pulse-dot"></span>
-                <span class="recording-label">Grabando audio...</span>
+            <!-- Active Conversation Header (shown when chat is active) -->
+            <div class="stream-canvas-header" id="heroCanvasHeader" style="display:none;">
+              <div class="canvas-agent-info">
+                <div class="canvas-avatar">
+                  <img src="/img/logo-k-mark-96.png" alt="" width="36" height="36">
+                </div>
+                <div class="canvas-title-wrap">
+                  <h4>Cotibot — Asistente de mostrador</h4>
+                  <span>Precios, stock y alternativas en tiempo real</span>
+                </div>
               </div>
-              <div class="recording-waveform">
-                <span></span><span></span><span></span><span></span><span></span>
-              </div>
-              <span class="recording-timer" id="heroVoiceTimer">00:00</span>
-              <div class="recording-actions">
-                <button type="button" class="btn-voice-cancel" id="btnCancelHeroVoice" title="Cancelar grabación" aria-label="Cancelar grabación de voz">✕</button>
-                <button type="button" class="btn-voice-stop" id="btnStopHeroVoice" title="Finalizar grabación" aria-label="Finalizar y procesar grabación de voz">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" style="vertical-align:-1px; margin-right:4px;"><rect x="6" y="6" width="12" height="12" rx="1.5"/></svg>Listo
+              <div class="canvas-header-actions">
+                <button type="button" class="btn-agent-minimize" onclick="minimizeAgentFocus()" aria-label="Minimizar chat y volver a la página">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+                  <span>Minimizar</span>
+                </button>
+                <button type="button" class="btn-canvas-clear" onclick="resetHeroChat()" title="Iniciar nuevo presupuesto" aria-label="Reiniciar consulta e iniciar nuevo presupuesto">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-2px; margin-right:4px;"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>
+                  <span>Nuevo Presupuesto</span>
                 </button>
               </div>
             </div>
 
-            <!-- Recorded Voice Note Preview -->
-            <div class="media-preview-card voice-preview" id="heroVoicePreviewCard" style="display:none;">
-              <div class="voice-pill-icon" aria-hidden="true">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><path d="M12 19v3"/></svg>
+            <!-- Messages Stream Container (grows downwards, above prompt box) -->
+            <div class="stream-messages-list" id="heroMessagesContainer" style="display:none;">
+              <!-- Messages, answers, product cards and list quotes rendered here -->
+            </div>
+
+            <!-- Suggested Quick Queries (visible initially, hides once chatting) -->
+            <div class="quick-tags" id="heroQuickTags">
+              <span class="quick-tag-label">Consultas frecuentes:</span>
+              <button type="button" class="quick-tag-btn" onclick="submitHeroQuickPrompt('Pintura para humedad exterior en pared')">
+                <svg class="quick-tag-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="14" height="5" rx="1.5"/><path d="M17 6h3v5h-7v3"/><rect x="11" y="14" width="4" height="7" rx="1"/></svg>
+                Humedad en paredes exteriores
+              </button>
+              <button type="button" class="quick-tag-btn" onclick="submitHeroQuickPrompt('1 taladro percutor\n2 cintas aisladoras\n1 pintura latex 20L')">
+                <svg class="quick-tag-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4h6M8 9h8M8 13h8M8 17h5"/></svg>
+                Cotizar lista de obra
+              </button>
+              <button type="button" class="quick-tag-btn" onclick="submitHeroQuickPrompt('¿Qué pegamento necesito para reparar una canilla o caño de PVC?')">
+                <svg class="quick-tag-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3s6 6.2 6 11a6 6 0 1 1-12 0c0-4.8 6-11 6-11Z"/></svg>
+                Reparar fuga o canilla PVC
+              </button>
+              <button type="button" class="quick-tag-btn" onclick="submitHeroQuickPrompt('Taladros y atornilladores inalámbricos')">
+                <svg class="quick-tag-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.3 2.3-2-2 2.3-2.3Z"/></svg>
+                Taladros a batería
+              </button>
+            </div>
+
+            <!-- Main Prompt / Search Box (positioned at the bottom of the conversation) -->
+            <div class="chatgpt-prompt-box" id="heroPromptBox">
+              <!-- Hidden File Inputs -->
+              <input type="file" id="heroFileInput" accept=".pdf,.doc,.docx,.txt,.csv,image/*" style="display:none;">
+              <input type="file" id="heroPhotoInput" accept="image/*" capture="environment" style="display:none;">
+
+              <!-- Multimodal Media Preview & Active Recording Tray -->
+              <div class="chatgpt-media-tray" id="heroMediaTray" style="display:none;">
+                <!-- Attached Image Preview -->
+                <div class="media-preview-card" id="heroImagePreviewCard" style="display:none;">
+                  <img id="heroImagePreviewThumb" src="" alt="Foto adjunta" class="media-preview-thumb">
+                  <div class="media-preview-info">
+                    <span class="media-preview-title" id="heroImagePreviewName">Foto de repuesto</span>
+                    <span class="media-preview-tag">Visual Parts Finder activo</span>
+                  </div>
+                  <button type="button" class="btn-media-remove" id="btnRemoveHeroImage" title="Eliminar imagen" aria-label="Eliminar imagen adjunta">✕</button>
+                </div>
+
+                <!-- Active Voice Recording Bar -->
+                <div class="voice-recording-bar" id="heroVoiceRecordingBar" style="display:none;">
+                  <div class="recording-pulse-indicator">
+                    <span class="pulse-dot"></span>
+                    <span class="recording-label">Grabando audio...</span>
+                  </div>
+                  <div class="recording-waveform">
+                    <span></span><span></span><span></span><span></span><span></span>
+                  </div>
+                  <span class="recording-timer" id="heroVoiceTimer">00:00</span>
+                  <div class="recording-actions">
+                    <button type="button" class="btn-voice-cancel" id="btnCancelHeroVoice" title="Cancelar grabación" aria-label="Cancelar grabación de voz">✕</button>
+                    <button type="button" class="btn-voice-stop" id="btnStopHeroVoice" title="Finalizar grabación" aria-label="Finalizar y procesar grabación de voz">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" style="vertical-align:-1px; margin-right:4px;"><rect x="6" y="6" width="12" height="12" rx="1.5"/></svg>Listo
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Recorded Voice Note Preview -->
+                <div class="media-preview-card voice-preview" id="heroVoicePreviewCard" style="display:none;">
+                  <div class="voice-pill-icon" aria-hidden="true">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><path d="M12 19v3"/></svg>
+                  </div>
+                  <div class="media-preview-info">
+                    <span class="media-preview-title" id="heroVoicePreviewName">Mensaje de voz grabado</span>
+                    <span class="media-preview-tag">Transcripción automática lista</span>
+                    <audio id="heroVoiceAudioPreview" controls class="mini-audio-player"></audio>
+                  </div>
+                  <button type="button" class="btn-media-remove" id="btnRemoveHeroVoice" title="Eliminar audio" aria-label="Eliminar mensaje de voz grabado">✕</button>
+                </div>
               </div>
-              <div class="media-preview-info">
-                <span class="media-preview-title" id="heroVoicePreviewName">Mensaje de voz grabado</span>
-                <span class="media-preview-tag">Transcripción automática lista</span>
-                <audio id="heroVoiceAudioPreview" controls class="mini-audio-player"></audio>
+
+              <div class="chatgpt-prompt-top">
+                <!-- Left Tools: Clip, Camera, Mic -->
+                <div class="chatgpt-input-left-tools">
+                  <button type="button" class="btn-prompt-media-tool" id="btnHeroAttachFile" title="Adjuntar lista de materiales o archivo" aria-label="Adjuntar archivo o lista de materiales">
+                    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/>
+                    </svg>
+                  </button>
+                  <button type="button" class="btn-prompt-media-tool" id="btnHeroAttachPhoto" title="Tomar o adjuntar foto de repuesto o plano (Visual Parts)" aria-label="Tomar o adjuntar foto de repuesto o plano">
+                    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/>
+                      <circle cx="12" cy="13" r="4"/>
+                    </svg>
+                  </button>
+                  <button type="button" class="btn-prompt-media-tool" id="btnHeroRecordVoice" title="Grabar mensaje de voz (Audio)" aria-label="Grabar consulta por mensaje de voz">
+                    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/>
+                      <path d="M19 10v2a7 7 0 01-14 0v-2"/>
+                      <line x1="12" y1="19" x2="12" y2="23"/>
+                      <line x1="8" y1="23" x2="16" y2="23"/>
+                    </svg>
+                  </button>
+                </div>
+
+                <!-- Central Input -->
+                <div class="search-input-field-wrap">
+                  <textarea
+                    id="heroSearchInput"
+                    class="search-input-hero"
+                    rows="1"
+                    placeholder="Preguntá o pegá tu lista..."
+                    autocomplete="off"
+                    aria-label="Escribe tu consulta o lista de materiales para cotizar"
+                  ></textarea>
+                  <div id="heroListDetectionPill" class="hero-list-pill" style="display:none;">
+                    <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-2px; margin-right:4px;"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M9 12h6M9 16h6"/></svg>Lista de materiales detectada — Presupuestando cada ítem</span>
+                  </div>
+                </div>
+
+                <!-- Right Circular Send Button (Upward Arrow) -->
+                <button type="button" class="btn-chatgpt-send-circle" id="btnHeroSearch" title="Enviar (Enter)" aria-label="Enviar consulta al cotizador">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 19V5M5 12l7-7 7 7"/>
+                  </svg>
+                </button>
               </div>
-              <button type="button" class="btn-media-remove" id="btnRemoveHeroVoice" title="Eliminar audio" aria-label="Eliminar mensaje de voz grabado">✕</button>
+
+              <div class="chatgpt-prompt-bottom">
+                <div class="chatgpt-status-badge">
+                  <span>Cotibot analiza imágenes, voz y listas de materiales para cotizar al instante.</span>
+                </div>
+                <div class="chatgpt-prompt-actions">
+                  <button type="button" class="btn-prompt-reset" id="btnResetHeroChat" onclick="resetHeroChat()" aria-label="Reiniciar consulta y cotizar nuevos materiales" style="display:none;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-2px; margin-right:4px;"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>
+                    <span>Nuevo Presupuesto</span>
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
 
-          <div class="chatgpt-prompt-top">
-            <!-- Left Tools: Clip, Camera, Mic -->
-            <div class="chatgpt-input-left-tools">
-              <button type="button" class="btn-prompt-media-tool" id="btnHeroAttachFile" title="Adjuntar lista de materiales o archivo" aria-label="Adjuntar archivo o lista de materiales">
-                <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/>
-                </svg>
-              </button>
-              <button type="button" class="btn-prompt-media-tool" id="btnHeroAttachPhoto" title="Tomar o adjuntar foto de repuesto o plano (Visual Parts)" aria-label="Tomar o adjuntar foto de repuesto o plano">
-                <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/>
-                  <circle cx="12" cy="13" r="4"/>
-                </svg>
-              </button>
-              <button type="button" class="btn-prompt-media-tool" id="btnHeroRecordVoice" title="Grabar mensaje de voz (Audio)" aria-label="Grabar consulta por mensaje de voz">
-                <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/>
-                  <path d="M19 10v2a7 7 0 01-14 0v-2"/>
-                  <line x1="12" y1="19" x2="12" y2="23"/>
-                  <line x1="8" y1="23" x2="16" y2="23"/>
-                </svg>
-              </button>
-            </div>
-
-            <!-- Central Input -->
-            <div class="search-input-field-wrap">
-              <textarea
-                id="heroSearchInput"
-                class="search-input-hero"
-                rows="1"
-                placeholder="Preguntá, pegá tu lista o subí una foto..."
-                autocomplete="off"
-                aria-label="Escribe tu consulta o lista de materiales para cotizar"
-              ></textarea>
-              <div id="heroListDetectionPill" class="hero-list-pill" style="display:none;">
-                <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-2px; margin-right:4px;"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M9 12h6M9 16h6"/></svg>Lista de materiales detectada — Presupuestando cada ítem</span>
-              </div>
-            </div>
-
-            <!-- Right Circular Send Button (Upward Arrow) -->
-            <button type="button" class="btn-chatgpt-send-circle" id="btnHeroSearch" title="Enviar (Enter)" aria-label="Enviar consulta al cotizador">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M12 19V5M5 12l7-7 7 7"/>
-              </svg>
-            </button>
-          </div>
-
-          <div class="chatgpt-prompt-bottom">
-            <div class="chatgpt-status-badge">
-              <span>Cotibot analiza imágenes, voz y listas de materiales para cotizar al instante.</span>
-            </div>
-            <div class="chatgpt-prompt-actions">
-              <button type="button" class="btn-prompt-reset" id="btnResetHeroChat" onclick="resetHeroChat()" aria-label="Reiniciar consulta y cotizar nuevos materiales" style="display:none;">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-2px; margin-right:4px;"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>
-                <span>Nuevo Presupuesto</span>
-              </button>
-            </div>
-          </div>
         </div>
-      </div>
-
-      <div class="hero-cta-row">
-        <a href="#catalogoSection" class="btn-hero-secondary">
-          Explorar catálogo
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-        </a>
-        <span class="hero-cta-note">Consultá sin registrarte. Los descuentos se aplican al iniciar sesión.</span>
-      </div>
-
-      <div class="hero-trust-row" aria-label="Beneficios de Kroser Martínez">
-        <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg> Stock real</span>
-        <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg> 2 locales en La Unión</span>
-        <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 14v-2a8 8 0 0 1 16 0v2"/><path d="M18 19a2 2 0 0 1-2 2h-3"/><rect x="2" y="14" width="4" height="6" rx="2"/><rect x="18" y="14" width="4" height="6" rx="2"/></svg> Asesoramiento técnico</span>
-        <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 3h15v13H1z"/><path d="M16 8h4l3 3v5h-7"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg> Envío o retiro</span>
       </div>
     </section>
 
-    <!-- Value strip -->
-    <section class="value-strip" aria-label="Por qué elegir Kroser Martínez">
-      <div class="value-strip-inner">
-        <article class="value-item">
-          <span class="value-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="6"/><path d="M8.2 13.9 7 22l5-3 5 3-1.2-8.1"/></svg>
-          </span>
-          <div><strong>40 años</strong><span>De trayectoria y confianza en el rubro.</span></div>
-        </article>
-        <article class="value-item">
-          <span class="value-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m21 8-9-5-9 5 9 5 9-5Z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg>
-          </span>
-          <div><strong>Stock real</strong><span>Precios y disponibilidad actualizados al instante.</span></div>
-        </article>
-        <article class="value-item">
-          <span class="value-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/></svg>
-          </span>
-          <div><strong>Asesoramiento técnico</strong><span>Te ayudamos a elegir el material correcto.</span></div>
-        </article>
-        <article class="value-item">
-          <span class="value-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 3h15v13H1z"/><path d="M16 8h4l3 3v5h-7"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
-          </span>
-          <div><strong>Envío o retiro</strong><span>Coordinamos entrega a domicilio o retiro en sucursal.</span></div>
-        </article>
+    <!-- Cómo funciona -->
+    <section class="process-section" id="comoFunciona">
+      <div class="wrap">
+        <div class="section-kicker">Así trabaja</div>
+        <h2 class="section-title">Menos búsqueda. Más conversación.</h2>
+        <p class="section-sub">No es un buscador que devuelve links. Es un asistente que entiende el pedido, consulta el catálogo y te ayuda a decidir.</p>
+        <div class="process-grid">
+          <article class="process-item">
+            <div class="step-num">01</div>
+            <h3>Escucha</h3>
+            <p>Entiende modismos, medidas y listas de materiales escritas a las apuradas.</p>
+          </article>
+          <article class="process-item">
+            <div class="step-num">02</div>
+            <h3>Busca</h3>
+            <p>Consulta stock, precios y alternativas reales del catálogo de Kroser Martínez.</p>
+          </article>
+          <article class="process-item">
+            <div class="step-num">03</div>
+            <h3>Resuelve</h3>
+            <p>Te pasa el precio con tu descuento, arma el presupuesto y te acompaña hasta el pedido.</p>
+          </article>
+        </div>
       </div>
     </section>
 
-    <!-- Special Promotions & Deals Interactive Banner -->
-    <section class="promos-banner-section" id="promocionesBannerSection" aria-label="Promociones especiales y ofertas">
-      <div class="promos-container">
-        <div class="promos-top-bar">
-          <div class="promos-tag-wrap">
-            <svg class="promos-flame-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.07-2.14-.22-4.05 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.15.43-2.29 1-3a2.5 2.5 0 0 0 2.5 2.5Z"/></svg>
-            <span class="promos-heading-tag">PROMOCIONES ESPECIALES & BENEFICIOS</span>
-          </div>
-          <p class="promos-subheading">Aprovecha ofertas destacadas, combos de temporada y bonificaciones exclusivas con entrega rápida.</p>
+    <!-- Lo que podés pedirle -->
+    <section class="capabilities-section">
+      <div class="wrap">
+        <div class="section-kicker">Lo que podés pedirle</div>
+        <h2 class="section-title">Hablá como en el mostrador.</h2>
+        <div class="cap-grid">
+          <button type="button" class="cap-item" onclick="submitHeroQuickPrompt('Necesito pintura para una pared con humedad')"><span>Pintura para humedad</span><span class="arrow" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></button>
+          <button type="button" class="cap-item" onclick="submitHeroQuickPrompt('Tengo una lista de materiales para cotizar')"><span>Una lista de materiales</span><span class="arrow" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></button>
+          <button type="button" class="cap-item" onclick="submitHeroQuickPrompt('Quiero identificar un repuesto por foto')"><span>Un repuesto por foto</span><span class="arrow" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></button>
+          <button type="button" class="cap-item" onclick="submitHeroQuickPrompt('¿Qué locales tienen y en qué horario atienden?')"><span>Stock y locales</span><span class="arrow" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></button>
+          <button type="button" class="cap-item" onclick="submitHeroQuickPrompt('Quiero consultar el estado de mi pedido')"><span>Estado de tu pedido</span><span class="arrow" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></button>
+          <button type="button" class="cap-item" onclick="submitHeroQuickPrompt('Quiero ver precios por categoría')"><span>Precios por categoría</span><span class="arrow" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></button>
         </div>
+      </div>
+    </section>
 
-        <!-- Dynamic Grid of Special Promotions -->
+    <!-- Promociones vigentes (se completan desde /api/promociones) -->
+    <section class="promos-section" id="promocionesBannerSection" aria-labelledby="promosHeading" hidden>
+      <div class="wrap">
+        <div class="section-kicker">Ofertas vigentes</div>
+        <h2 class="section-title" id="promosHeading">Lo que está en oferta.</h2>
         <div class="promos-cards-grid" id="promocionesCardsGrid">
-          <div class="promo-card promo-gradient-amber" onclick="applyPromoFilter('Equus')">
-            <div class="promo-card-top">
-              <span class="promo-badge">⚡ EQUUS DESTACADO</span>
-              <span class="promo-discount-pill">25% OFF</span>
-            </div>
-            <div class="promo-card-body">
-              <h3 class="promo-card-title">Super Oferta Equus: Escaleras Profesionales</h3>
-              <p class="promo-card-desc">Escaleras telescópicas y articuladas de aluminio de alta resistencia con entrega inmediata.</p>
-            </div>
-            <div class="promo-card-footer">
-              <span class="promo-action-btn">Ver Escaleras →</span>
-            </div>
-          </div>
-          <div class="promo-card promo-gradient-emerald" onclick="applyPromoFilter('Pinturas')">
-            <div class="promo-card-top">
-              <span class="promo-badge">PROMO PINTURA</span>
-              <span class="promo-discount-pill">15% OFF</span>
-            </div>
-            <div class="promo-card-body">
-              <h3 class="promo-card-title">Combo Pinturas & Acabados de Temporada</h3>
-              <p class="promo-card-desc">Membrana líquida fibrada, látex antihongo y esmaltes sintéticos con bonificación por balde.</p>
-            </div>
-            <div class="promo-card-footer">
-              <span class="promo-action-btn">Ver Línea Pinturas →</span>
-            </div>
-          </div>
-          <div class="promo-card promo-gradient-blue" onclick="applyPromoFilter('Herramientas')">
-            <div class="promo-card-top">
-              <span class="promo-badge">GREMIO &amp; OBRA</span>
-              <span class="promo-discount-pill">20% OFF</span>
-            </div>
-            <div class="promo-card-body">
-              <h3 class="promo-card-title">Descuentos Exclusivos Profesionales & Gremio</h3>
-              <p class="promo-card-desc">Precios bonificados del 10% al 20% para electricistas, sanitarios, constructores y talleres.</p>
-            </div>
-            <div class="promo-card-footer">
-              <span class="promo-action-btn">Explorar Catálogo →</span>
-            </div>
-          </div>
-          <div class="promo-card promo-gradient-purple" onclick="openAuthModal('register')">
-            <div class="promo-card-top">
-              <span class="promo-badge">CLIENTES KROSER</span>
-              <span class="promo-discount-pill">REGISTRO</span>
-            </div>
-            <div class="promo-card-body">
-              <h3 class="promo-card-title">Registra tu Cuenta Comercial</h3>
-              <p class="promo-card-desc">Accede a cotizaciones automáticas, lista de materiales y precios bonificados al instante.</p>
-            </div>
-            <div class="promo-card-footer">
-              <span class="promo-action-btn">Crear Cuenta Gratis →</span>
-            </div>
-          </div>
+          <!-- Rendered dynamically by app.js -->
         </div>
       </div>
     </section>
@@ -408,8 +346,9 @@
     <section class="catalog-section" id="catalogoSection" aria-labelledby="catalogHeading">
       <div class="catalog-header-bar">
         <div class="catalog-title-col">
-          <h2 id="catalogHeading">Catálogo de Artículos</h2>
-          <p>Precios oficiales y cálculo automático de descuentos para tu cuenta.</p>
+          <div class="section-kicker">Del catálogo a tu presupuesto</div>
+          <h2 id="catalogHeading">Precios reales, sin vueltas.</h2>
+          <p>El asistente consulta el catálogo y te muestra disponibilidad y precio final. Si no alcanza, te ofrece una alternativa.</p>
         </div>
       </div>
 
@@ -449,6 +388,40 @@
       <!-- Pagination -->
       <div class="pagination-wrap" id="paginationContainer">
         <!-- Rendered dynamically by app.js -->
+      </div>
+    </section>
+
+    <!-- Franja de confianza -->
+    <section class="trust-band" aria-label="Confianza Kroser Martínez">
+      <div class="wrap trust-inner">
+        <span><strong>40 años</strong> de mostrador</span>
+        <span><strong>2 locales</strong> en La Unión</span>
+        <span><strong>Stock y precios</strong> reales</span>
+        <span><strong>Atención humana</strong> cuando la necesitás</span>
+      </div>
+    </section>
+
+    <!-- Locales -->
+    <section class="locations-section" id="localesSection">
+      <div class="wrap">
+        <div class="section-kicker">Dónde encontrarnos</div>
+        <h2 class="section-title">Dos puertas, el mismo mostrador.</h2>
+        <div class="loc-grid">
+          <div class="loc-item">
+            <h3>Local 3452</h3>
+            <p>Av. 8 de Octubre 3452, La Unión, Montevideo</p>
+            <p><a href="tel:+59825083100">2508 3100</a> · <a href="tel:+59825097508">2509 7508</a></p>
+            <p>WhatsApp: <a href="https://wa.me/59894985189" target="_blank" rel="noopener">094 985 189</a> · <a href="https://wa.me/59895141194" target="_blank" rel="noopener">095 141 194</a></p>
+            <div class="loc-hours">Lunes a Viernes 08:00–18:00<br>Sábados 08:00–14:00 · Domingos cerrado</div>
+          </div>
+          <div class="loc-item">
+            <h3>Barraca 3451</h3>
+            <p>Av. 8 de Octubre 3451, La Unión, Montevideo</p>
+            <p><a href="tel:+59825083100">2508 3100</a> · <a href="tel:+59825097508">2509 7508</a></p>
+            <p>WhatsApp: <a href="https://wa.me/59894985189" target="_blank" rel="noopener">094 985 189</a> · <a href="https://wa.me/59895141194" target="_blank" rel="noopener">095 141 194</a></p>
+            <div class="loc-hours">Lunes a Viernes 08:00–18:00<br>Sábados 08:00–14:00 · Domingos cerrado</div>
+          </div>
+        </div>
       </div>
     </section>
   </main>
@@ -706,60 +679,41 @@
   </div>
 
   <!-- Footer -->
-  <footer class="footer-wrapper">
-    <div class="footer-grid">
-      <div class="footer-brand">
-        <a href="/" class="brand-container" aria-label="Kroser Martínez — inicio">
-          <div class="brand-logo-icon"><div class="k-logo-badge">K</div></div>
-          <div class="brand-text-col">
-            <span class="brand-name">KROSER <span class="brand-subname">MARTÍNEZ</span></span>
-            <span class="brand-tagline">Cotizador Oficial &bull; 40 Años</span>
-          </div>
-        </a>
-        <p>Ferretería, pinturas, herramientas y soluciones para la obra. Cotizá online con stock real y tu descuento de cliente.</p>
-        <div class="footer-badges">
-          <span>Stock real</span>
-          <span>Atención personalizada</span>
+  <footer class="site-footer">
+    <div class="wrap">
+      <div class="footer-grid">
+        <div class="footer-brand-col">
+          <img class="footer-logo" src="/img/logo-krosmart-2x.png" alt="Kroser Martínez" width="150" height="39">
+          <p class="footer-text">Ferretería, pinturas y herramientas. Un asistente que conoce el catálogo y te ayuda a cotizar mejor.</p>
+        </div>
+        <div class="footer-col">
+          <h4>Catálogo</h4>
+          <a href="#catalogoSection">Ver artículos</a>
+          <a href="#catalogoSection" onclick="selectCategory('Pinturas')">Pinturas</a>
+          <a href="#catalogoSection" onclick="selectCategory('Sanitaria')">Sanitaria</a>
+          <a href="#catalogoSection" onclick="selectCategory('Electricidad')">Electricidad</a>
+        </div>
+        <div class="footer-col">
+          <h4>Contacto</h4>
+          <p>2508 3100 / 2509 7508</p>
+          <p>WhatsApp 094 985 189</p>
+          <p>Av. 8 de Octubre 3452</p>
+          <a href="#localesSection">Ver locales y horarios</a>
         </div>
       </div>
-
-      <nav class="footer-col" aria-label="Catálogo">
-        <h4>Catálogo</h4>
-        <a href="#catalogoSection">Ver todos los artículos</a>
-        <a href="#catalogoSection" onclick="selectCategory('Pinturas')">Pinturas</a>
-        <a href="#catalogoSection" onclick="selectCategory('Sanitaria')">Sanitaria</a>
-        <a href="#catalogoSection" onclick="selectCategory('Electricidad')">Electricidad</a>
-        <a href="#promocionesBannerSection">Promociones</a>
-      </nav>
-
-      <div class="footer-col">
-        <h4>Locales</h4>
-        <ul>
-          <li>Local — Av. 8 de Octubre 3452</li>
-          <li>Barraca — Av. 8 de Octubre 3451</li>
-          <li>La Unión, Montevideo</li>
-        </ul>
-        <p class="footer-note">Lun a Vie 08:00–18:00<br>Sáb 08:00–14:00 · Dom cerrado</p>
+      <div class="footer-bottom">
+        <span>© 2026 Kroser Martínez. Todos los derechos reservados.</span>
+        <span>Precios de mostrador y stock actualizados en tiempo real.</span>
+        <a href="/admin/" rel="nofollow" class="footer-internal-link">Acceso interno</a>
       </div>
-
-      <div class="footer-col">
-        <h4>Contacto</h4>
-        <p>Teléfonos<br>
-          <a href="tel:+59825083100">2508 3100</a> · <a href="tel:+59825097508">2509 7508</a>
-        </p>
-        <p>WhatsApp<br>
-          <a href="https://wa.me/59894985189" target="_blank" rel="noopener">094 985 189</a> · <a href="https://wa.me/59895141194" target="_blank" rel="noopener">095 141 194</a>
-        </p>
-        <p class="footer-note">Atención y reclamos. Consultá también desde el chat.</p>
-        <button type="button" class="footer-cta" onclick="openAuthModal('login')">Acceder a mi cuenta</button>
-      </div>
-    </div>
-
-    <div class="footer-bottom">
-      <p>&copy; 2026 <strong>Kroser Martínez</strong> — Ferretería, Pinturas y Herramientas. Todos los derechos reservados.</p>
-      <p>Precios de mostrador, inventario y descuentos actualizados en tiempo real.</p>
     </div>
   </footer>
+
+  <div class="agent-focus-backdrop" id="agentFocusBackdrop" aria-hidden="true"></div>
+  <button type="button" class="agent-reopen-btn" id="btnAgentReopen" onclick="focusAgentChat()" aria-label="Abrir chat con Cotibot">
+    <img src="/img/logo-k-mark-96.png" alt="" width="30" height="30">
+    <span>Cotibot</span>
+  </button>
 
   <!-- Scripts -->
   <script src="/js/app.js"></script>

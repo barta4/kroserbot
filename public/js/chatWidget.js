@@ -450,6 +450,78 @@
     }
   }
 
+  let agentFocusReturnEl = null;
+
+  function focusAgentInput() {
+    setTimeout(() => {
+      const input = document.getElementById('heroSearchInput');
+      if (input) input.focus();
+    }, 120);
+  }
+
+  function setAgentFocus(enabled) {
+    const container = document.getElementById('heroChatContainer');
+    const backdrop = document.getElementById('agentFocusBackdrop');
+    const reopen = document.getElementById('btnAgentReopen');
+    if (!container) return;
+
+    const isEnabled = document.body.classList.contains('agent-focus');
+    if (enabled === isEnabled) {
+      if (enabled) focusAgentInput();
+      return;
+    }
+
+    if (enabled) {
+      agentFocusReturnEl = document.activeElement && document.activeElement !== document.body
+        ? document.activeElement
+        : null;
+
+      document.body.classList.add('agent-focus');
+      container.setAttribute('role', 'dialog');
+      container.setAttribute('aria-modal', 'true');
+      container.setAttribute('aria-label', 'Asistente Cotibot');
+      if (backdrop) {
+        backdrop.classList.add('show');
+        backdrop.setAttribute('aria-hidden', 'false');
+      }
+      if (reopen) {
+        reopen.classList.remove('visible');
+        reopen.setAttribute('aria-expanded', 'true');
+      }
+      focusAgentInput();
+    } else {
+      const hasConversation = container.classList.contains('active-chat');
+
+      document.body.classList.remove('agent-focus');
+      container.removeAttribute('role');
+      container.removeAttribute('aria-modal');
+      container.removeAttribute('aria-label');
+      if (backdrop) {
+        backdrop.classList.remove('show');
+        backdrop.setAttribute('aria-hidden', 'true');
+      }
+      if (reopen) {
+        reopen.classList.toggle('visible', hasConversation);
+        reopen.setAttribute('aria-expanded', 'false');
+      }
+
+      // Devolvemos el foco al punto de origen para no perder el contexto del teclado.
+      const target = hasConversation && reopen ? reopen : agentFocusReturnEl;
+      if (target && typeof target.focus === 'function' && document.body.contains(target)) {
+        try { target.focus({ preventScroll: true }); } catch (_) { target.focus(); }
+      }
+      agentFocusReturnEl = null;
+    }
+  }
+
+  window.focusAgentChat = function focusAgentChat() {
+    setAgentFocus(true);
+  };
+
+  window.minimizeAgentFocus = function minimizeAgentFocus() {
+    setAgentFocus(false);
+  };
+
   function ensureHeroCanvasVisible() {
     const container = document.getElementById('heroChatContainer');
     if (container) {
@@ -467,6 +539,8 @@
     if (input) {
       input.placeholder = 'Consulte otro artículo o responda para ajustar su presupuesto...';
     }
+    // Al iniciar la conversación, el chat pasa a foco central.
+    setAgentFocus(true);
   }
 
   function resetHeroChat() {
@@ -475,6 +549,9 @@
     if (container) {
       container.classList.remove('active-chat');
     }
+    setAgentFocus(false);
+    const reopen = document.getElementById('btnAgentReopen');
+    if (reopen) reopen.classList.remove('visible');
     const header = document.getElementById('heroCanvasHeader');
     if (header) {
       header.style.display = 'none';
@@ -1054,6 +1131,47 @@
       heroEl.scrollTop = heroEl.scrollHeight;
     }
   }
+
+  const agentFocusBackdrop = document.getElementById('agentFocusBackdrop');
+  if (agentFocusBackdrop) {
+    agentFocusBackdrop.addEventListener('click', () => setAgentFocus(false));
+  }
+
+  // Mantiene el foco del teclado dentro del chat cuando está en modo foco.
+  function trapAgentFocus(event) {
+    if (event.key !== 'Tab') return;
+    const container = document.getElementById('heroChatContainer');
+    if (!container) return;
+
+    const focusables = Array.from(container.querySelectorAll(
+      'a[href], button:not([disabled]), textarea, input, select, [tabindex]:not([tabindex="-1"])'
+    )).filter((el) => el.offsetParent !== null && !el.hasAttribute('hidden'));
+
+    if (focusables.length === 0) return;
+    const first = focusables[0];
+    const last = focusables[focusables.length - 1];
+
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  }
+
+  document.addEventListener('keydown', (event) => {
+    if (!document.body.classList.contains('agent-focus')) return;
+    // Dejamos que los modales (login, pedido) manejen sus propios atajos.
+    if (document.querySelector('.auth-modal-backdrop.open, .quote-drawer.open')) return;
+
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      setAgentFocus(false);
+      return;
+    }
+    trapAgentFocus(event);
+  });
 
   document.addEventListener('DOMContentLoaded', initChatWidget);
 

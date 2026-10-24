@@ -1,6 +1,6 @@
 {
   "name": "krosmart",
-  "version": "2.3.8",
+  "version": "2.3.9",
   "description": "Krosmart — Asistente de Cotizaciones, Catálogo y RAG (Kroser Martínez)",
   "main": "backend/index.js",
   "scripts": {
