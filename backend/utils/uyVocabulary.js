@@ -42,7 +42,7 @@ const UY_SYNONYMS = {
   'llave de luz': ['interruptor'],
   tomacorriente: ['toma', 'enchufe'],
   alargue: ['prolongador', 'cable alargue'],
-  zapatilla: ['base multiple', 'prolongador'],
+  zapatilla: ['alargue', 'base multiple', 'prolongador'],
   'cinta aisladora': ['cinta aisladora'],
   termica: ['disyuntor', 'termica'],
 

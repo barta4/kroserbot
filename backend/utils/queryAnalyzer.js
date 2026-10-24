@@ -98,7 +98,7 @@ const LOCAL_SYNONYMS = {
   'cuerito': ['canilla', 'grifo', 'griferia'],
   'cueritos': ['canilla', 'grifo', 'griferia'],
   'alargue': ['prolongador', 'cable alargue'],
-  'zapatilla': ['base multiple', 'prolongador'],
+  'zapatilla': ['alargue', 'base multiple', 'prolongador'],
   'colilla': ['flexible', 'mallado'],
   'fuelle': ['inodoro', 'cisterna'],
   'championes': ['calzado seguridad', 'botas trabajo'],

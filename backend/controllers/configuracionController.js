@@ -51,6 +51,7 @@ const ALLOWED_EXACT_KEYS = new Set([
   'equus_aplicar_iva_venta',
   'classifier_enabled',
   'classifier_timeout_ms',
+  'search_vector_threshold',
 ]);
 
 const ALLOWED_PREFIXES = ['msg_', 'assignee_id_'];

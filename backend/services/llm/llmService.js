@@ -266,6 +266,17 @@ async function callGeminiWithTools({
     parts: functionResponses,
   });
 
+  // WhatsApp: si la búsqueda quedó vacía, responder con teléfono/dirección fijos
+  // sin gastar una segunda ronda del LLM.
+  const deterministicReply = await toolExecutor.getDeterministicToolReply(toolsUsed, toolContext);
+  if (deterministicReply) {
+    return {
+      text: deterministicReply,
+      toolsUsed,
+      createdOrder,
+    };
+  }
+
   const round2Body = {
     systemInstruction: {
       parts: [{ text: systemPrompt }],
@@ -375,6 +386,17 @@ async function callOpenAIWithTools({
   }
 
   // Second call to generate final response
+  // WhatsApp: si la búsqueda quedó vacía, evitar la segunda ronda y responder
+  // con el teléfono/dirección fijos.
+  const deterministicReply = await toolExecutor.getDeterministicToolReply(toolsUsed, toolContext);
+  if (deterministicReply) {
+    return {
+      text: deterministicReply,
+      toolsUsed,
+      createdOrder,
+    };
+  }
+
   // OpenAI and compatible proxies (Groq, OpenRouter, Mistral, Ollama, Gemini-OpenAI)
   // REQUIRE tools to be provided in the request body whenever role: 'tool' messages are in history
   const round2Body = {

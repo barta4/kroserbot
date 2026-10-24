@@ -145,7 +145,7 @@ module.exports = {
       if (tokens.length === 0) return [];
 
       const conditions = tokens
-        .map((_, i) => `(translate(lower(keywords), 'áéíóúü', 'aeiouu') ILIKE $${i + 1} OR translate(lower(titulo), 'áéíóúü', 'aeiouu') ILIKE $${i + 1} OR translate(lower(categoria), 'áéíóúü', 'aeiouu') ILIKE $${i + 1})`)
+        .map((_, i) => `(krosmart_unaccent(keywords) ILIKE $${i + 1} OR krosmart_unaccent(titulo) ILIKE $${i + 1} OR krosmart_unaccent(categoria) ILIKE $${i + 1})`)
         .join(' OR ');
 
       const params = tokens.map((t) => `%${t}%`);

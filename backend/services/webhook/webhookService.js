@@ -16,6 +16,7 @@ const logger = require('../../config/logger');
 const orderExtractor = require('../pedidos/orderExtractor');
 const autoResolveService = require('../chatwoot/autoResolveService');
 const messageSplitter = require('../../utils/messageSplitter');
+const channelPolicyService = require('../channel/channelPolicy');
 
 // Modular pipeline handlers
 const webhookLifecycle = require('./webhookLifecycleHandler');
@@ -80,6 +81,15 @@ module.exports = {
     logger.info('Webhook event received', { correlationId, event: payload.event });
 
     const conversation = payload.conversation || {};
+    const rawChannel = (
+      conversation.channel ||
+      conversation.inbox?.channel_type ||
+      payload.inbox?.channel_type ||
+      payload.channel ||
+      payload.channel_type ||
+      'whatsapp'
+    ).toLowerCase();
+    const channelPolicy = channelPolicyService.resolveChannelPolicy(rawChannel);
     const conversationId = conversation.id || payload.conversation_id;
     const accountId = payload.account?.id || conversation.account_id || 1;
     const botAgentId = await chatwootService.getBotAgentId();
@@ -604,6 +614,7 @@ module.exports = {
       detectedIntent: intentResult.intent,
       messageCount: history.length,
       customerName: sender.name,
+      channelPolicy,
     });
 
     // 17. Call LLM with Agentic Tools & Typing Indicator Active
@@ -616,7 +627,8 @@ module.exports = {
     const toolContext = {
       conversationId,
       accountId,
-      channel: conversation.channel || 'chatwoot',
+      channel: rawChannel,
+      channelPolicy,
       sender,
       lastUserMessage: fullContent,
     };
@@ -736,9 +748,11 @@ module.exports = {
     if (!replyToSend) {
       replyToSend = 'Disculpe, ¿en qué producto o consulta técnica podemos ayudarle?';
     }
+    replyToSend = channelPolicyService.clampReply(replyToSend, channelPolicy);
 
     const chunkingConfig = await configuracionRepo.get('message_chunking_enabled');
-    const isChunkingEnabled = chunkingConfig === 'true';
+    // WhatsApp: un solo mensaje siempre, independientemente del chunking configurado.
+    const isChunkingEnabled = channelPolicy.id !== 'whatsapp' && chunkingConfig === 'true';
 
     const rawChunks = isChunkingEnabled
       ? messageSplitter.splitIntoChunks(replyToSend, 2)

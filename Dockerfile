@@ -21,7 +21,7 @@ LABEL org.opencontainers.image.title="Krosmart" \
       org.opencontainers.image.description="Krosmart — Asistente de IA, RAG y Gestión de Pedidos para Kroser Martínez" \
       org.opencontainers.image.authors="alfredobartaburu" \
       org.opencontainers.image.source="https://github.com/barta4/kroserbot" \
-      org.opencontainers.image.version="2.3.10"
+      org.opencontainers.image.version="2.3.11"
 
 ENV NODE_ENV=production \
     PORT=3000

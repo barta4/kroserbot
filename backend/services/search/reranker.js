@@ -17,6 +17,14 @@ function hasWordMatch(text, token) {
   return new RegExp(`(^|\\s|[^a-zA-Z0-9áéíóúüñ])${escaped}($|\\s|[^a-zA-Z0-9áéíóúüñ])`, 'i').test(text);
 }
 
+function isSpecOrModifierToken(token) {
+  const t = String(token || '').toLowerCase();
+  return (
+    /^\d+([x/]\d+)?(mm|cm|m|kg|w|v|l|bar|hp)?$/i.test(t) ||
+    ['redonda', 'redondo', 'plana', 'plano', 'cuadrada', 'cuadrado', 'chico', 'chica', 'grande', 'largo', 'corta', 'corto', 'mini', 'fino', 'fina', 'grueso', 'gruesa'].includes(t)
+  );
+}
+
 // ──────────────────────────────────────────── Weight Configuration
 const WEIGHTS = {
   // Exact match
@@ -29,6 +37,7 @@ const WEIGHTS = {
   TEXT_MARCA: 30,
   TEXT_CATEGORIA: 20,
   TEXT_FTS_RANK: 20,
+  SYNONYM_FULL: 75,
 
   // Vector similarity (scaled from [THRESHOLD..1] to [0..MAX])
   VECTOR_MAX: 50,
@@ -42,6 +51,9 @@ const WEIGHTS = {
   ATTR_MARCA: 10,
   ATTR_POTENCIA: 15,
   ATTR_DIMENSION: 20,
+
+  // Attribute mismatch (the customer asked for a specific spec and the product differs)
+  ATTR_MISMATCH: -100,
 
   // Business relevance (tiebreakers only, cannot override text mismatch)
   BIZ_IN_STOCK: 8,
@@ -82,15 +94,19 @@ function scoreProduct(product, normalizedQuery, attrs = {}, options = {}) {
     breakdown.exact = WEIGHTS.EXACT_SKU;
   }
 
-  // Helpers for word-boundary matching to prevent short tokens matching inside unrelated words (e.g. 'cal' in 'incalux' or 'escalera')
+  // Helpers for matching tokens even when the catalog name is concatenated
+  // (e.g. "TIJERACORTATUBOSPVCDE42MM...").
+  const SHORT_TECH_TOKENS = new Set(['pvc', 'led', 'gas', 'abs', 'ppr', 'mdf', 'cfl', 'uv', 'hdpe']);
   const matchesToken = (text, token) => {
     if (!text || !token) return false;
-    if (token.length <= 4) {
-      const regex = new RegExp(`(?:^|\\s|[.,;()\\-_/])${token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?:$|\\s|[.,;()\\-_/])`, 'i');
+    const t = String(token).toLowerCase();
+    if (SHORT_TECH_TOKENS.has(t)) return text.includes(t);
+    if (t.length <= 3) {
+      const regex = new RegExp(`(?:^|\\s|[.,;()\\-_/])${t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?:$|\\s|[.,;()\\-_/])`, 'i');
       return regex.test(text);
     }
-    const prefixRegex = new RegExp(`(?:^|\\s|[.,;()\\-_/])${token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'i');
-    return prefixRegex.test(text);
+    // 4+ caracteres: substring para tolerar nombres sin espacios.
+    return text.includes(t);
   };
 
   const matchesFull = (text, target) => {
@@ -99,6 +115,12 @@ function scoreProduct(product, normalizedQuery, attrs = {}, options = {}) {
       return matchesToken(text, target);
     }
     return text.includes(target);
+  };
+
+  const matchesPhrase = (text, phrase) => {
+    if (!text || !phrase) return false;
+    const tokens = normalizeQuery(phrase).split(/\s+/).filter(Boolean);
+    return tokens.length > 0 && tokens.every((t) => matchesToken(text, t));
   };
 
   // ── 2. Text Score
@@ -131,16 +153,19 @@ function scoreProduct(product, normalizedQuery, attrs = {}, options = {}) {
 
       const hasSynonymMatch = Boolean(
         attrs.synonyms &&
-        attrs.synonyms.some((syn) => {
-          const synPattern = new RegExp(`(^|\\s|[^a-zA-Z0-9áéíóúüñ])${syn}($|\\s|[^a-zA-Z0-9áéíóúüñ])`, 'i');
-          return synPattern.test(nombre) || synPattern.test(categoria) || synPattern.test(descripcion);
-        })
+        attrs.synonyms.some((syn) =>
+          matchesPhrase(nombre, syn) || matchesPhrase(categoria, syn) || matchesPhrase(descripcion, syn)
+        )
       );
 
       // If query had substantive noun/product tokens (e.g. "varilla"), but candidate product
       // only matched numbers (e.g. "16") or generic shape adjectives ("redonda"): disqualify!
       // (Unless a recognized Uruguayan synonym matched the product, e.g. "medio tanque" -> "parrilla")
       if (substantiveQueryTokens.length > 0 && substantiveMatchCount === 0 && !hasSynonymMatch) {
+        breakdown.penalty += -100;
+      } else if (options.strictQuery && substantiveQueryTokens.length > 0 && substantiveMatchCount < substantiveQueryTokens.length) {
+        // Para candidatos encontrados por una variante (sinónimo), exigimos que
+        // toda la variante coincida: evita que "base multiple" puntúe por "base".
         breakdown.penalty += -100;
       } else if (queryTokens.length > 0) {
         const matchRatio = tokenMatchCount / queryTokens.length;
@@ -171,14 +196,13 @@ function scoreProduct(product, normalizedQuery, attrs = {}, options = {}) {
       const normalizedRank = Math.min(product._ftsRank / 0.3, 1);
       breakdown.text += Math.round(normalizedRank * WEIGHTS.TEXT_FTS_RANK);
     }
-    // Check synonym matches with whole-word regex (prevents 'asador' matching 'engrasadora')
+    // Check synonym matches with token-wise matching (tolerates concatenated names)
     if (attrs.synonyms && attrs.synonyms.length > 0) {
       for (const syn of attrs.synonyms) {
-        const synPattern = new RegExp(`\\b${syn}\\b`, 'i');
-        if (synPattern.test(nombre)) {
-          breakdown.text += WEIGHTS.TEXT_NOMBRE_FULL;
+        if (matchesPhrase(nombre, syn)) {
+          breakdown.text += WEIGHTS.SYNONYM_FULL;
           break;
-        } else if (synPattern.test(categoria)) {
+        } else if (matchesPhrase(categoria, syn)) {
           breakdown.text += WEIGHTS.TEXT_NOMBRE_PARTIAL;
           break;
         }
@@ -187,46 +211,89 @@ function scoreProduct(product, normalizedQuery, attrs = {}, options = {}) {
   }
 
   // ── 3. Vector Similarity Score
-  if (product.similarity !== undefined && product.similarity >= WEIGHTS.VECTOR_THRESHOLD) {
-    const range = 1 - WEIGHTS.VECTOR_THRESHOLD;
-    const scaled = (product.similarity - WEIGHTS.VECTOR_THRESHOLD) / range;
+  const vectorThreshold = options.vectorThreshold || WEIGHTS.VECTOR_THRESHOLD;
+  if (product.similarity !== undefined && product.similarity >= vectorThreshold) {
+    const range = 1 - vectorThreshold;
+    const scaled = (product.similarity - vectorThreshold) / range;
     breakdown.vector = Math.round(scaled * WEIGHTS.VECTOR_MAX);
   }
 
-  // ── 4. Attribute Match Score
+  // El sustantivo principal de la consulta debe aparecer (o un sinónimo válido).
+  // Evita que un producto con "pvc" gane cuando el cliente pidió "caño pvc".
+  if (normalizedQuery) {
+    const coreTokens = stripStopwords(normalizedQuery).split(/\s+/).filter((t) => t.length >= 2 && !isSpecOrModifierToken(t));
+    const primaryCore = (options.primaryCoreTokens && options.primaryCoreTokens[0]) || coreTokens[0];
+    if (primaryCore) {
+      const primaryMatches =
+        matchesToken(nombre, primaryCore) ||
+        matchesToken(descripcion, primaryCore) ||
+        matchesToken(categoria, primaryCore);
+      const synonymMatches = Boolean(
+        attrs.synonyms &&
+        attrs.synonyms.some((syn) =>
+          matchesPhrase(nombre, syn) || matchesPhrase(categoria, syn) || matchesPhrase(descripcion, syn)
+        )
+      );
+      const vectorMatches = product.similarity !== undefined && product.similarity >= vectorThreshold;
+      if (!primaryMatches && !synonymMatches && !vectorMatches) {
+        breakdown.penalty += -100;
+      }
+    }
+  }
+
+  // Bonus por cantidad de sustantivos núcleo de la consulta original que
+  // aparecen en el producto. Hace que "pintura latex" gane a "pintura para pisos"
+  // aunque ambas coincidan con la palabra "pintura".
+  if (options.coreTokensForBonus && options.coreTokensForBonus.length > 0) {
+    const matchedCore = options.coreTokensForBonus.filter(
+      (t) =>
+        matchesToken(nombre, t) ||
+        matchesToken(descripcion, t) ||
+        matchesToken(categoria, t)
+    ).length;
+    if (matchedCore > 0) breakdown.text += matchedCore * 8;
+  }
+
+  // ── 4. Attribute Match Score (bonus if it matches, penalty if it contradicts)
   const searchable = `${nombre} ${descripcion} ${marca} ${categoria}`;
+  const compact = searchable.replace(/\s+/g, '');
 
   if (attrs.color) {
     if (searchable.includes(attrs.color)) {
       breakdown.attribute += WEIGHTS.ATTR_COLOR;
+    } else if (!options.relaxAttributes) {
+      breakdown.attribute += WEIGHTS.ATTR_MISMATCH;
     }
   }
 
   if (attrs.medida) {
-    // Need to check for fractional measurements (e.g., "1/2")
-    if (searchable.includes(attrs.medida)) {
+    const medida = String(attrs.medida).replace(/\s+/g, '');
+    if (compact.includes(medida)) {
       breakdown.attribute += WEIGHTS.ATTR_MEDIDA;
+    } else if (!options.relaxAttributes) {
+      breakdown.attribute += WEIGHTS.ATTR_MISMATCH;
     }
   }
 
   if (attrs.dimension) {
-    if (searchable.includes(attrs.dimension)) {
+    const dimension = String(attrs.dimension).replace(/\s+/g, '');
+    if (compact.includes(dimension)) {
       breakdown.attribute += WEIGHTS.ATTR_DIMENSION;
+    } else if (!options.relaxAttributes) {
+      breakdown.attribute += WEIGHTS.ATTR_MISMATCH;
     }
   }
 
   if (attrs.volumen) {
-    // Check for "20l", "20 litros", "20 lts", etc.
-    const volPatterns = [
-      `${attrs.volumen}l`,
-      `${attrs.volumen} l`,
-      `${attrs.volumen} litro`,
-      `${attrs.volumen} lt`,
-      `${attrs.volumen}lt`,
-      `${attrs.volumen}lts`,
-    ];
-    if (volPatterns.some((p) => searchable.includes(p))) {
+    const vol = String(attrs.volumen);
+    const volMatches =
+      compact.includes(`${vol}l`) ||
+      compact.includes(`${vol}lt`) ||
+      compact.includes(`${vol}litro`);
+    if (volMatches) {
       breakdown.attribute += WEIGHTS.ATTR_VOLUMEN;
+    } else if (!options.relaxAttributes) {
+      breakdown.attribute += WEIGHTS.ATTR_MISMATCH;
     }
   }
 
@@ -250,8 +317,11 @@ function scoreProduct(product, normalizedQuery, attrs = {}, options = {}) {
   }
 
   if (attrs.potencia) {
-    if (searchable.includes(attrs.potencia)) {
+    const potencia = String(attrs.potencia).replace(/\s+/g, '');
+    if (compact.includes(potencia)) {
       breakdown.attribute += WEIGHTS.ATTR_POTENCIA;
+    } else if (!options.relaxAttributes) {
+      breakdown.attribute += WEIGHTS.ATTR_MISMATCH;
     }
   }
 
@@ -333,6 +403,7 @@ function scoreProduct(product, normalizedQuery, attrs = {}, options = {}) {
   const hasRelevance = breakdown.exact > 0 || breakdown.text > 0 || breakdown.vector > 0;
   if (!hasRelevance) {
     breakdown.business = 0;
+    breakdown.attribute = 0;
   }
 
   // ── Total
@@ -364,7 +435,33 @@ function rerank(products, rawQuery, attrs = {}, options = {}) {
 
   const normalizedQ = normalizeQuery(rawQuery);
 
-  const scored = products.map((p) => scoreProduct(p, normalizedQ, attrs, options));
+  const coreTokensForBonus = stripStopwords(normalizedQ)
+    .split(/\s+/)
+    .filter((t) => t.length >= 2 && !isSpecOrModifierToken(t))
+    .slice(0, 4);
+  const scoringOptions = { ...options, coreTokensForBonus, primaryCoreTokens: coreTokensForBonus };
+
+  const hasSpecAttributes = ['color', 'medida', 'dimension', 'volumen', 'potencia'].some(
+    (key) => attrs[key] !== undefined && attrs[key] !== null && attrs[key] !== ''
+  );
+
+  const scored = products.map((p) => {
+    const primary = scoreProduct(p, normalizedQ, attrs, scoringOptions);
+    if (p._matchedQuery && p._matchedType === 'synonym') {
+      const altQ = normalizeQuery(p._matchedQuery);
+      if (altQ && altQ !== normalizedQ) {
+        const alt = scoreProduct(p, altQ, {}, { ...scoringOptions, strictQuery: true });
+        if (alt._score > primary._score) {
+          return {
+            ...alt,
+            _scoredQuery: p._matchedQuery,
+            ...(hasSpecAttributes ? { _approximate: true } : {}),
+          };
+        }
+      }
+    }
+    return primary;
+  });
 
   // Sort by score descending, then by stock (in_stock first), then by normalized price
   scored.sort((a, b) => {

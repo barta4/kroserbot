@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "description": "Set mínimo de consultas reales de mostrador para medir precisión de búsqueda (texto, sin vector).",
+  "queries": [
+    { "id": "cano-pvc", "query": "caño pvc 1/2", "expect": ["CAÑO"] },
+    { "id": "cortador-cano", "query": "cortador de caño", "expect": ["TIJERA.*TUBO", "CORTA.*TUBO"] },
+    { "id": "disco-corte", "query": "disco corte amoladora", "expect": ["DISCO.*CORTE"] },
+    { "id": "latex-blanco", "query": "pintura latex blanco 20l", "expect": ["LATEX"] },
+    { "id": "membrana", "query": "membrana liquida 20l", "expect": ["MEMBRANA.*LIQUIDA"] },
+    { "id": "foco-led", "query": "foco led 9w", "expect": ["FOCO.*LED"] },
+    { "id": "zapatilla", "query": "zapatilla 4 tomas", "expect": ["ALARGUE", "BASE.*MULTIPLE"] },
+    { "id": "hidrolavadora", "query": "hidrolavadora karcher", "expect": ["HIDROLAVADORA.*KARCHER"] },
+    { "id": "cinta", "query": "cinta aisladora", "expect": ["CINTA.*AISLADORA"] },
+    { "id": "silicona", "query": "silicona transparente", "expect": ["SILICONA.*TRANSPARENTE"] },
+    { "id": "monocomando", "query": "canilla monocomando", "expect": ["MONOCOMANDO"] },
+    { "id": "parrilla", "query": "medio tanque", "expect": ["PARRILLA", "CHULENGO", "BARBACOA", "PARRILLERO"] },
+    { "id": "taladro", "query": "taladro percutor dewalt", "expect": ["TALADRO"] },
+    { "id": "tornillo", "query": "tornillo 8x50", "expect": ["TORNILLO"] },
+    { "id": "lija", "query": "lija madera 120", "expect": ["LIJA"] },
+    { "id": "ausente-varilla", "query": "varilla de 16", "expectAbsent": true },
+    { "id": "ausente-termica", "query": "llave termica 20a", "expectAbsent": true }
+  ]
+}

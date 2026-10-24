@@ -17,6 +17,7 @@ const { normalize } = require('../../utils/textNormalizer');
 const { extractEnrichedProductQuery } = require('../../utils/queryAnalyzer');
 const pricingCalculator = require('../../utils/pricingCalculator');
 const traductorTecnico = require('../../utils/traductorTecnico');
+const channelPolicyService = require('../channel/channelPolicy');
 
 /**
  * Standard definitions of available tools (JSON Schema)
@@ -166,6 +167,12 @@ async function executeBuscarProductos({ consulta = '' }, context = {}) {
   const rawQuery = (consulta || '').trim();
   const lastUserMsg = context?.lastUserMessage || '';
   const enrichedQuery = extractEnrichedProductQuery(rawQuery, lastUserMsg);
+  const channelPolicy = context?.channelPolicy || channelPolicyService.resolveChannelPolicy(context?.channel);
+  const searchOptions = {
+    limit: 5,
+    // WhatsApp exige coincidencia precisa; web/Instagram pueden relajar atributos.
+    allowRelaxed: channelPolicy.id !== 'whatsapp',
+  };
 
   // Agente clasificador (LLM): interpreta mensajes coloquiales / modismos uruguayos.
   // Devuelve null ante cualquier fallo -> se usa el clasificador por reglas.
@@ -221,7 +228,7 @@ async function executeBuscarProductos({ consulta = '' }, context = {}) {
     if (classification && queries.length > 1) {
       // Multi-query: se ejecutan en paralelo y se fusionan por SKU respetando prioridad
       const resultsPerQuery = await Promise.all(
-        queries.slice(0, 5).map((q) => searchService.hybridSearch(q, { limit: 5 }).catch(() => []))
+        queries.slice(0, 5).map((q) => searchService.hybridSearch(q, searchOptions).catch(() => []))
       );
       const seen = new Set();
       for (const list of resultsPerQuery) {
@@ -240,14 +247,14 @@ async function executeBuscarProductos({ consulta = '' }, context = {}) {
       });
     } else {
       const primaryQuery = targetSearch || effectiveQuery;
-      productos = await searchService.hybridSearch(primaryQuery, { limit: 5 });
+      productos = await searchService.hybridSearch(primaryQuery, searchOptions);
       // If the technical/enriched query yielded 0 results, fall back to the LLM's original rawQuery
       if (productos.length === 0 && rawQuery && rawQuery !== primaryQuery && rawQuery !== effectiveQuery) {
         logger.info('executeBuscarProductos: enriched query found 0, falling back to rawQuery', {
           primaryQuery,
           rawQuery,
         });
-        productos = await searchService.hybridSearch(rawQuery, { limit: 5 });
+        productos = await searchService.hybridSearch(rawQuery, searchOptions);
       }
     }
   } catch (pErr) {
@@ -302,13 +309,28 @@ async function executeBuscarProductos({ consulta = '' }, context = {}) {
   }
 
   let directivaVendedor = 'Mencione ÚNICAMENTE el producto principal con su precio en 1 o 2 oraciones breves de chat. NO arme listas con viñetas ni mencione varios artículos. Pregunte de forma cordial si le sirve esa opción.';
+  let respuestaCerrada = null;
 
   if (productos.length === 0) {
-    directivaVendedor = EMPTY_SEARCH_DIRECTIVE;
+    if (channelPolicy.zeroResultStrategy === 'contact') {
+      respuestaCerrada = await channelPolicyService.getWhatsAppZeroResultMessage();
+      directivaVendedor = `NO se encontraron artículos coincidentes en catálogo. DIRECTIVA OBLIGATORIA (WHATSAPP, COSTO POR MENSAJE): responda EXACTAMENTE "${respuestaCerrada}" en un solo mensaje. PROHIBIDO ofrecer productos similares, pedir ubicación o hacer preguntas.`;
+    } else {
+      directivaVendedor = EMPTY_SEARCH_DIRECTIVE;
+    }
   } else if (productos.length > 1 && fichaTecnica.faltante) {
     // 3. ROL: El Vendedor del Mostrador (Variantes en depósito pero falta dato técnico clave)
     const variantesTexto = productos.slice(0, 3).map((p) => `${p.nombre} (${formatCurrencyPrice(p)})`).join(' y ');
     directivaVendedor = `El Encargado del Depósito confirmó stock de ${productos.length} opciones (${variantesTexto}). El Traductor Técnico indica que falta definir: ${fichaTecnica.faltante}. Como Vendedor del Mostrador, confirme amablemente que tenemos en stock, mencione las opciones disponibles con sus precios, y consulte de forma cálida el dato faltante para asesorar al cliente.`;
+  }
+
+  if (channelPolicy.id === 'whatsapp' && productos.length > 0) {
+    directivaVendedor += ' CANAL WHATSAPP: máximo 2 oraciones y 300 caracteres, sin listas ni preguntas de seguimiento.';
+  }
+
+  const hasApproximate = productos.some((p) => p._approximate);
+  if (hasApproximate && channelPolicy.id !== 'whatsapp') {
+    directivaVendedor = `No hay coincidencia exacta para todos los datos pedidos. Ofrezca hasta 3 opciones disponibles con precio y stock y pida UNA aclaración breve sobre el dato faltante (medida, color, volumen o potencia). No invente especificaciones.`;
   }
 
   const client = context?.cliente;
@@ -330,6 +352,7 @@ async function executeBuscarProductos({ consulta = '' }, context = {}) {
         precio_numerico: parseFloat(p.precio_oferta || p.precio) || 0,
         moneda: p.moneda || 'UYU',
         stock_status: p.stock_status,
+        aproximado: Boolean(p._approximate),
       };
       if (p.marca && p.marca !== 'N/A') item.marca = p.marca;
       if (p.producto_url) item.enlace_web = p.producto_url;
@@ -346,7 +369,9 @@ async function executeBuscarProductos({ consulta = '' }, context = {}) {
       marca: (productos[0].marca && productos[0].marca !== 'N/A') ? productos[0].marca : undefined,
     } : null,
     total_coincidencias: productos.length,
+    coincidencia_exacta: productos.length > 0 && !hasApproximate,
     directiva_vendedor: directivaVendedor,
+    ...(respuestaCerrada ? { respuesta_cerrada: respuestaCerrada } : {}),
   };
 
   // Ficha técnica del Traductor y Reporte del Depósito para enriquecer la decisión del Vendedor
@@ -631,6 +656,54 @@ async function executeRegistrarPedido({ cliente = {}, items = [] }, context = {}
   }
 }
 
+function hasUsefulNonProductResult(tool) {
+  const result = tool && tool.result;
+  if (!result || result.error) return false;
+  if (Array.isArray(result.sucursales) && result.sucursales.length > 0) return true;
+  if (Array.isArray(result.zonas_envio) && result.zonas_envio.length > 0) return true;
+  if (Array.isArray(result.formas_pago) && result.formas_pago.length > 0) return true;
+  if (Array.isArray(result.guias) && result.guias.length > 0) return true;
+  if (Array.isArray(result.guias_tecnicas) && result.guias_tecnicas.length > 0) return true;
+  if (result.pedido || result.createdOrder) return true;
+  return false;
+}
+
+/**
+ * Respuesta cerrada para canales que cobran por mensaje (WhatsApp).
+ * Si la única herramienta útil fue una búsqueda vacía, evita una segunda
+ * ronda del LLM y devuelve el teléfono/dirección fijos.
+ */
+async function getDeterministicToolReply(toolsUsed = [], context = {}) {
+  const policy = context?.channelPolicy || channelPolicyService.resolveChannelPolicy(context?.channel);
+  if (policy.zeroResultStrategy !== 'contact') return null;
+
+  // Si el mensaje también pregunta por pagos, envíos, horarios o pedidos,
+  // conviene que el LLM combine la respuesta y no la tape con el fallback fijo.
+  const lastMessage = String(context?.lastUserMessage || '').toLowerCase();
+  if (/(pago|tarjeta|cuota|transferencia|envio|envío|horario|sucursal|pedido|factura)/.test(lastMessage)) {
+    return null;
+  }
+
+  const productTools = (toolsUsed || []).filter((t) => t && t.name === 'buscar_productos');
+  if (productTools.length === 0) return null;
+
+  const allEmpty = productTools.every(
+    (t) => Array.isArray(t.result?.productos) && t.result.productos.length === 0
+  );
+  if (!allEmpty) return null;
+
+  const hasOtherUseful = (toolsUsed || []).some(
+    (t) => t && t.name !== 'buscar_productos' && hasUsefulNonProductResult(t)
+  );
+  if (hasOtherUseful) return null;
+
+  const explicitReply = productTools
+    .map((t) => t.result?.respuesta_cerrada)
+    .filter(Boolean)
+    .pop();
+  return explicitReply || (await channelPolicyService.getWhatsAppZeroResultMessage());
+}
+
 /**
  * Main dispatcher: executes tool by name with arguments and context
  */
@@ -661,4 +734,5 @@ module.exports = {
   getGeminiTools,
   getOpenAITools,
   executeTool,
+  getDeterministicToolReply,
 };

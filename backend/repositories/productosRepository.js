@@ -75,17 +75,17 @@ module.exports = {
     let paramIdx = 2;
 
     if (filters.marca) {
-      conditions.push(`translate(lower(marca), 'áéíóúü', 'aeiouu') ILIKE $${paramIdx}`);
+      conditions.push(`krosmart_unaccent(marca) ILIKE $${paramIdx}`);
       params.push(`%${filters.marca}%`);
       paramIdx++;
     }
     if (filters.categoria) {
-      conditions.push(`translate(lower(categoria), 'áéíóúü', 'aeiouu') ILIKE $${paramIdx}`);
+      conditions.push(`krosmart_unaccent(categoria) ILIKE $${paramIdx}`);
       params.push(`%${filters.categoria}%`);
       paramIdx++;
     }
     if (filters.nombreContains) {
-      conditions.push(`translate(lower(nombre), 'áéíóúü', 'aeiouu') ILIKE $${paramIdx}`);
+      conditions.push(`krosmart_unaccent(nombre) ILIKE $${paramIdx}`);
       params.push(`%${filters.nombreContains}%`);
       paramIdx++;
     }
@@ -120,7 +120,7 @@ module.exports = {
     return res.rows;
   },
 
-  async searchByKeyword(keyword, limit = 5) {
+  async searchByKeyword(keyword, limit = 5, { allowRelaxed = true } = {}) {
     if (!keyword || typeof keyword !== 'string') return [];
     const cleanKeyword = keyword.trim();
     if (!cleanKeyword) return [];
@@ -133,14 +133,14 @@ module.exports = {
       SELECT ${PRODUCT_COLUMNS}
       FROM productos
       WHERE discontinuado = FALSE 
-        AND (translate(lower(nombre), 'áéíóúü', 'aeiouu') ILIKE $1
-             OR translate(lower(categoria), 'áéíóúü', 'aeiouu') ILIKE $1
-             OR translate(lower(marca), 'áéíóúü', 'aeiouu') ILIKE $1
-             OR translate(lower(coalesce(descripcion, '')), 'áéíóúü', 'aeiouu') ILIKE $1)
+        AND (krosmart_unaccent(nombre) ILIKE $1
+             OR krosmart_unaccent(categoria) ILIKE $1
+             OR krosmart_unaccent(marca) ILIKE $1
+             OR krosmart_unaccent(coalesce(descripcion, '')) ILIKE $1)
       ORDER BY
-        (CASE WHEN translate(lower(nombre), 'áéíóúü', 'aeiouu') ILIKE $1 THEN 5 ELSE 0 END
-         + CASE WHEN translate(lower(marca), 'áéíóúü', 'aeiouu') ILIKE $1 THEN 4 ELSE 0 END
-         + CASE WHEN translate(lower(categoria), 'áéíóúü', 'aeiouu') ILIKE $1 THEN 2 ELSE 0 END) DESC,
+        (CASE WHEN krosmart_unaccent(nombre) ILIKE $1 THEN 5 ELSE 0 END
+         + CASE WHEN krosmart_unaccent(marca) ILIKE $1 THEN 4 ELSE 0 END
+         + CASE WHEN krosmart_unaccent(categoria) ILIKE $1 THEN 2 ELSE 0 END) DESC,
         (CASE WHEN stock_status = 'in_stock' THEN 1 ELSE 0 END) DESC,
         precio ASC
       LIMIT $2;
@@ -192,13 +192,13 @@ module.exports = {
       const conds = tList
         .map(
           (_, i) =>
-            `(translate(lower(nombre), 'áéíóúü', 'aeiouu') ILIKE $${i + 1} OR translate(lower(categoria), 'áéíóúü', 'aeiouu') ILIKE $${i + 1} OR translate(lower(marca), 'áéíóúü', 'aeiouu') ILIKE $${i + 1} OR translate(lower(coalesce(descripcion, '')), 'áéíóúü', 'aeiouu') ILIKE $${i + 1})`
+            `(krosmart_unaccent(nombre) ILIKE $${i + 1} OR krosmart_unaccent(categoria) ILIKE $${i + 1} OR krosmart_unaccent(marca) ILIKE $${i + 1} OR krosmart_unaccent(coalesce(descripcion, '')) ILIKE $${i + 1})`
         )
         .join(` ${operator} `);
       const scores = tList
         .map(
           (_, i) =>
-            `(CASE WHEN translate(lower(nombre), 'áéíóúü', 'aeiouu') ILIKE $${i + 1} THEN 5 WHEN translate(lower(marca), 'áéíóúü', 'aeiouu') ILIKE $${i + 1} THEN 4 WHEN translate(lower(categoria), 'áéíóúü', 'aeiouu') ILIKE $${i + 1} THEN 2 WHEN translate(lower(coalesce(descripcion, '')), 'áéíóúü', 'aeiouu') ILIKE $${i + 1} THEN 1 ELSE 0 END)`
+            `(CASE WHEN krosmart_unaccent(nombre) ILIKE $${i + 1} THEN 5 WHEN krosmart_unaccent(marca) ILIKE $${i + 1} THEN 4 WHEN krosmart_unaccent(categoria) ILIKE $${i + 1} THEN 2 WHEN krosmart_unaccent(coalesce(descripcion, '')) ILIKE $${i + 1} THEN 1 ELSE 0 END)`
         )
         .join(' + ');
       return { conds, scores };
@@ -244,7 +244,31 @@ module.exports = {
         LIMIT $${paramsCore.length};
       `;
       const resCore = await db.query(sqlCore, paramsCore);
-      return resCore.rows;
+      if (resCore.rows.length > 0) {
+        return resCore.rows;
+      }
+
+      if (!allowRelaxed) {
+        return [];
+      }
+
+      // 2b. Relaxed OR fallback: alguno de los sustantivos núcleo alcanza.
+      // El re-ranker ordena después por coincidencia de tokens y atributos.
+      const { conds: condsOr, scores: scoresOr } = buildCondition(coreNounTokens, 'OR');
+      const paramsOr = coreNounTokens.map((t) => `%${t}%`);
+      paramsOr.push(limit);
+      const sqlOr = `
+        SELECT ${PRODUCT_COLUMNS}
+        FROM productos
+        WHERE discontinuado = FALSE AND (${condsOr})
+        ORDER BY 
+          (${scoresOr}) DESC,
+          (CASE WHEN stock_status = 'in_stock' THEN 1 ELSE 0 END) DESC,
+          precio ASC
+        LIMIT $${paramsOr.length};
+      `;
+      const resOr = await db.query(sqlOr, paramsOr);
+      return resOr.rows;
     }
 
     // Single token: if it's a pure number or generic adjective, do not search blindly
@@ -267,6 +291,27 @@ module.exports = {
     `;
     const resSingle = await db.query(sqlSingle, paramsSingle);
     return resSingle.rows;
+  },
+
+  async searchByPrefix(keyword, limit = 5) {
+    if (!keyword || typeof keyword !== 'string') return [];
+    const clean = keyword.trim();
+    if (!clean) return [];
+    const sql = `
+      SELECT ${PRODUCT_COLUMNS}
+      FROM productos
+      WHERE discontinuado = FALSE
+        AND (krosmart_unaccent(nombre) ILIKE $1 || '%'
+             OR krosmart_unaccent(categoria) ILIKE $1 || '%'
+             OR krosmart_unaccent(marca) ILIKE $1 || '%')
+      ORDER BY
+        (CASE WHEN krosmart_unaccent(nombre) ILIKE $1 || '%' THEN 10 ELSE 0 END) DESC,
+        (CASE WHEN stock_status = 'in_stock' THEN 1 ELSE 0 END) DESC,
+        precio ASC
+      LIMIT $2;
+    `;
+    const res = await db.query(sql, [clean, limit]);
+    return res.rows;
   },
 
   async getBySku(sku) {

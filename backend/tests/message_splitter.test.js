@@ -76,9 +76,11 @@ describe('Message Splitter & Human Typing Pacing (Anti-Libro)', () => {
       await redis.del(`conv_memory:${testConvId}`);
       await redis.del(`conv_buffer:${testConvId}`);
       await redis.del(`human_active:${testConvId}`);
+      await redis.del(`recent_in_msgs:${testConvId}`);
+      await redis.del(`bot_turns:${testConvId}`);
     });
 
-    test('envía múltiples mensajes y activa estado de tipeo entre fragmentos cuando message_chunking_enabled es true', async () => {
+    test('envía múltiples mensajes y activa estado de tipeo entre fragmentos en canales sin costo por mensaje', async () => {
       const originalGet = configuracionRepo.get.bind(configuracionRepo);
       const getSpy = jest.spyOn(configuracionRepo, 'get').mockImplementation(async (key) => {
         if (key === 'message_chunking_enabled') return 'true';
@@ -100,7 +102,7 @@ describe('Message Splitter & Human Typing Pacing (Anti-Libro)', () => {
         event: 'message_created',
         message_type: 'incoming',
         content: 'Tienen membrana sika de 20kg?',
-        conversation: { id: testConvId, channel: 'whatsapp' },
+        conversation: { id: testConvId, channel: 'Channel::WebWidget' },
         sender: { id: 50, name: 'Martín Test' },
         account: { id: 1 },
       };
@@ -119,6 +121,42 @@ describe('Message Splitter & Human Typing Pacing (Anti-Libro)', () => {
       // Verify typing status was toggled between chunks
       expect(typingSpy).toHaveBeenCalledWith(1, testConvId, 'on');
       expect(typingSpy).toHaveBeenCalledWith(1, testConvId, 'off');
+
+      getSpy.mockRestore();
+      sendSpy.mockRestore();
+      typingSpy.mockRestore();
+    });
+
+    test('WhatsApp ignora el chunking y envía un solo mensaje aunque esté habilitado', async () => {
+      const originalGet = configuracionRepo.get.bind(configuracionRepo);
+      const getSpy = jest.spyOn(configuracionRepo, 'get').mockImplementation(async (key) => {
+        if (key === 'message_chunking_enabled') return 'true';
+        return originalGet(key);
+      });
+      const sendSpy = jest.spyOn(chatwootService, 'sendMessage').mockResolvedValue({ success: true, id: 9991 });
+      const typingSpy = jest.spyOn(chatwootService, 'toggleTypingStatus').mockResolvedValue({ success: true });
+      jest.spyOn(conversacionesRepo, 'logMessage').mockResolvedValue({});
+      jest.spyOn(llmService, 'generateWithTools').mockResolvedValue({
+        reply:
+          '¡Hola! Sí, disponemos de membrana líquida Sika de 20kg en stock a $3.890 pesos.\n\n¿Le gustaría coordinar el envío a domicilio o prefiere retirar en sucursal?',
+        toolsUsed: [],
+        createdOrder: null,
+      });
+
+      const payload = {
+        event: 'message_created',
+        message_type: 'incoming',
+        content: 'Tienen membrana sika de 20kg?',
+        conversation: { id: testConvId, channel: 'whatsapp' },
+        sender: { id: 50, name: 'Martín Test' },
+        account: { id: 1 },
+      };
+
+      const res = await webhookService.processWebhookEvent(payload);
+
+      expect(res.status).toBe('processed');
+      expect(res.chunks).toHaveLength(1);
+      expect(sendSpy).toHaveBeenCalledTimes(1);
 
       getSpy.mockRestore();
       sendSpy.mockRestore();

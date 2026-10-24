@@ -1,6 +1,6 @@
 {
   "name": "krosmart",
-  "version": "2.3.10",
+  "version": "2.3.11",
   "description": "Krosmart — Asistente de Cotizaciones, Catálogo y RAG (Kroser Martínez)",
   "main": "backend/index.js",
   "scripts": {
@@ -15,6 +15,7 @@
     "test:python": "python -m pytest scraper/tests -q",
     "test:all": "npm test && npm run test:python",
     "test:schema": "node db/test-schema.js",
+    "search:eval": "node scripts/eval-search.js",
     "embeddings:generate": "node backend/services/embeddings/generateEmbeddings.js",
     "embeddings:status": "node -e \"require('./backend/services/embeddings/generateEmbeddings').getEmbeddingsStatus().then(s => console.log(JSON.stringify(s, null, 2))).then(() => process.exit(0))\""
   },

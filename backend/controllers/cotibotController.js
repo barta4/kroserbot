@@ -14,6 +14,8 @@ const productosRepo = require('../repositories/productosRepository');
 const clientesRepo = require('../repositories/clientesRepository');
 const emailService = require('../services/email/emailService');
 const { formatCurrencyPrice } = require('../utils/formatCurrency');
+const channelPolicyService = require('../services/channel/channelPolicy');
+const guardrailService = require('../services/guardrails/guardrailService');
 
 function parseMaterialList(text) {
   if (!text || typeof text !== 'string') return [];
@@ -280,6 +282,7 @@ module.exports = {
       const detectedEmotion = intentAnalysis.emotion || 'neutral';
       const detectedIntent = intentAnalysis.intent || 'consulta_general';
       const messageCount = (history.filter((h) => h.role === 'user').length || 0) + 1;
+      const channelPolicy = channelPolicyService.resolveChannelPolicy('web');
 
       // 2. Build Profile String with Discount Awareness
       let customerProfileStr = `DATOS DEL CLIENTE EN KROSER MARTÍNEZ (COTIZADOR OFICIAL):
@@ -305,6 +308,7 @@ module.exports = {
         detectedIntent,
         messageCount,
         customerName: clientName,
+        channelPolicy,
       });
 
       // 4. Provider and Models
@@ -329,6 +333,7 @@ module.exports = {
         conversationId,
         accountId: 1,
         channel: 'landing_cotibot',
+        channelPolicy,
         customerName: clientName,
         cliente: client,
         lastUserMessage: trimmedMessage,
@@ -384,6 +389,9 @@ module.exports = {
           stock_status: p.stock_status,
         };
       });
+
+      finalReply = channelPolicyService.clampReply(finalReply, channelPolicy);
+      finalReply = guardrailService.filterOutput(finalReply);
 
       const latencyMs = Date.now() - startTime;
 

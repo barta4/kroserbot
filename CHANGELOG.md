@@ -3,6 +3,28 @@
 Todos los cambios notables en este proyecto están documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/), y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.4.html).
 
+## [2.3.11] - 2026-10-24
+
+### ✂️ WhatsApp separado del resto de los canales
+* Nueva política de canal (`channelPolicy`): WhatsApp responde en **1 solo mensaje, máximo 300 caracteres**, sin listas ni preguntas de seguimiento; web/Instagram mantienen respuestas más amplias.
+* WhatsApp ignora `message_chunking_enabled` y nunca fragmenta la respuesta.
+* Si `buscar_productos` devuelve 0, WhatsApp responde de forma determinista con dirección y teléfonos fijos (Av. 8 de Octubre 3452 — 2508 3100 / 2509 7508), sin segunda ronda del LLM. El texto se puede sobreescribir con `msg_sin_resultado_whatsapp`.
+* Si el mensaje también consulta pagos, envíos, horarios o pedidos, se deja responder al LLM para no tapar esa consulta.
+
+### 🎯 Precisión de búsqueda
+* Normalización de **ñ** mediante `krosmart_unaccent` + migración de índices trigram. Antes, 27 productos con “CAÑO” eran invisibles al buscar “cano”.
+* Matching tolerante a **nombres concatenados** (1.159 productos sin espacios) y sinónimos evaluados por frase completa.
+* **Relajación progresiva** de atributos sólo en web; WhatsApp conserva coincidencia estricta.
+* Penalización por **medida, potencia, volumen o color incompatible** y exigencia del sustantivo principal.
+* Búsqueda por **prefijo** para que “caño” no pierda contra “americano”, y bonus por múltiples sustantivos núcleo.
+* Umbral vectorial configurable con `search_vector_threshold`.
+
+### 🧪 Evaluación y pruebas
+* Nuevo `npm run search:eval` con set de 17 consultas reales: **15/15 hit@1 y hit@5** en web y **2/2 ausencias correctas**.
+* Suite completa: **36 suites / 463 tests** en verde.
+
+---
+
 ## [2.3.10] - 2026-10-24
 
 ### 🐛 Correcciones
