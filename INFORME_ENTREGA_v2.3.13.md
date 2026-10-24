@@ -2,9 +2,9 @@
 
 **Fecha:** 24/10/2026  
 **Estado:** listo para validación del cliente (no cerrar como aprobado hasta su OK)  
-**Commit:** `PENDIENTE`
+**Commit:** `30f8352` — `fix(catalogo): limpiar filtro de promociones al volver al catalogo (v2.3.13)`
 **Imagen:** `alfredobartaburu/krosmart:v2.3.13` y `:latest` (linux/amd64)
-**Digest:** `PENDIENTE`
+**Digest:** `sha256:b00b790bd02467be251c3e6742e7a177cc83e72c3b10be11f7ea981d1d7f29ad`
 
 ---
 
