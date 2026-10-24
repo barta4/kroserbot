@@ -537,7 +537,8 @@
     }
     const input = document.getElementById('heroSearchInput');
     if (input) {
-      input.placeholder = 'Consulte otro artículo o responda para ajustar su presupuesto...';
+      input.placeholder = 'Escribí otro artículo o ajustá tu presupuesto...';
+      if (window.updateSearchInputUI) window.updateSearchInputUI();
     }
     // Si el catálogo quedó filtrado por una búsqueda previa, lo restauramos al iniciar el chat.
     if (window.AppState && window.AppState.searchQuery) {

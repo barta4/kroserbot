@@ -3,6 +3,22 @@
 Todos los cambios notables en este proyecto están documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/), y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.4.html).
 
+## [2.3.12] - 2026-10-24
+
+### 💅 Pulido visual del composer de Cotibot
+* Reemplazo del scrollbar nativo del textarea por uno fino (4 px), sin flechas y sólo visible cuando hace falta.
+* Textarea autoexpandible hasta 132 px; el campo vacío ya no muestra scrollbar.
+* Caja de entrada modernizada: fondo con degradado sutil, borde más limpio, foco amarillo y botón de envío más prolijo.
+* Barra inferior con indicador verde y texto alineado a la izquierda.
+* Píldora de “lista detectada · cotizando cada ítem” más compacta.
+* Mismo tratamiento de scrollbar para el historial de mensajes.
+
+### ✅ Verificación
+* Suite completa: **36 suites / 463 tests** en verde.
+* Revisión visual en 1440 px y 390 px, con campo vacío y listas largas.
+
+---
+
 ## [2.3.11] - 2026-10-24
 
 ### ✂️ WhatsApp separado del resto de los canales

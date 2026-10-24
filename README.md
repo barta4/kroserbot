@@ -1,10 +1,10 @@
-# Cotizador Kroser Martínez (Krosmart v2.3.11) — RAG + Pedidos + Scraper + Panel Admin
+# Cotizador Kroser Martínez (Krosmart v2.3.12) — RAG + Pedidos + Scraper + Panel Admin
 
 Sistema integral de atención inteligente, recomendación técnica, búsqueda híbrida de catálogo (Full-Text + Vectorial RAG), cotización web y módulo de gestión de pedidos para **Kroser Martínez** (Kroser Uruguay), con **2 locales en La Unión, Montevideo**: Av. 8 de Octubre 3452 y su barraca en el 3451.
 
 > **Krosmart** (Kroser Martínez) es el nombre comercial y de despliegue del proyecto. `kroserbot` se conserva únicamente como nombre técnico del repositorio de GitHub, la base de datos, los contenedores y los volúmenes existentes, para no romper compatibilidad.
 
-> 📄 **Entrega v2.3.11:** cambios por canal, precisión de búsqueda, despliegue y criterios de aceptación en [`INFORME_ENTREGA_v2.3.11.md`](INFORME_ENTREGA_v2.3.11.md).
+> 📄 **Entrega v2.3.11:** cambios por canal, precisión de búsqueda, despliegue y criterios de aceptación en [`INFORME_ENTREGA_v2.3.12.md`](INFORME_ENTREGA_v2.3.12.md).
 
 ---
 
@@ -84,7 +84,7 @@ curl -b admin_cookie.txt "http://localhost:3000/api/facturapp/estimate?mode=init
 ## 🐳 Docker Hub & Despliegue en Producción
 
 ### Imágenes Oficiales en Docker Hub (`alfredobartaburu/krosmart`):
-- `alfredobartaburu/krosmart:v2.3.11`
+- `alfredobartaburu/krosmart:v2.3.12`
 - `alfredobartaburu/krosmart:latest`
 - `alfredobartaburu/krosmart-scraper:v1.5`
 - `alfredobartaburu/krosmart-scraper:latest`

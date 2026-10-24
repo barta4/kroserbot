@@ -76,10 +76,14 @@ function updateSearchInputUI() {
   const btnText = document.getElementById('btnHeroSearchText');
   if (!input) return;
 
-  // Auto-expand textarea height
+  // Auto-expand textarea height (máximo 132px) y scrollbar sólo si hace falta.
   input.style.height = 'auto';
-  const newHeight = Math.min(Math.max(input.scrollHeight, 44), 140);
+  const contentHeight = input.scrollHeight;
+  const newHeight = Math.min(Math.max(contentHeight, 44), 132);
   input.style.height = `${newHeight}px`;
+  const needsScroll = contentHeight > newHeight + 1;
+  input.classList.toggle('is-scrollable', needsScroll);
+  input.style.overflowY = needsScroll ? 'auto' : 'hidden';
 
   const val = input.value.trim();
   const isList = isMaterialListQuery(val);

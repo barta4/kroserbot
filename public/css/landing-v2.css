@@ -335,60 +335,124 @@ body::before,
 }
 
 .chatgpt-prompt-box {
-  background: rgba(255, 255, 255, 0.07);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 14px;
-  padding: 0.55rem 0.55rem 0.55rem 0.8rem;
-  box-shadow: none;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0.045));
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 18px;
+  padding: 0.6rem 0.7rem 0.55rem;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .chatgpt-prompt-box:focus-within {
-  border-color: rgba(244, 196, 0, 0.6);
-  box-shadow: 0 0 0 3px rgba(244, 196, 0, 0.12);
+  border-color: rgba(244, 196, 0, 0.55);
+  box-shadow: 0 0 0 3px rgba(244, 196, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
 .chatgpt-prompt-top {
-  gap: 0.35rem;
+  gap: 0.4rem;
 }
 
 .btn-prompt-media-tool {
-  color: rgba(255, 255, 255, 0.65);
+  width: 34px;
+  height: 34px;
+  color: rgba(255, 255, 255, 0.55);
 }
 
 .btn-prompt-media-tool:hover {
   color: var(--v2-yellow);
   background: rgba(255, 255, 255, 0.08);
+  transform: none;
 }
 
 .search-input-hero {
   color: #fff;
-  font-size: 0.9rem;
+  font-size: 0.94rem;
+  line-height: 1.5;
+  min-height: 26px;
+  max-height: 132px;
+  padding: 0.3rem 0.1rem;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.22) transparent;
+}
+
+.search-input-hero.is-scrollable {
+  overflow-y: auto;
+  padding-right: 0.4rem;
+}
+
+.search-input-hero::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+.search-input-hero::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.search-input-hero::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.22);
+  border-radius: 999px;
+}
+
+.search-input-hero::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.34);
+}
+
+.search-input-hero::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
 }
 
 .search-input-hero::placeholder {
-  color: rgba(255, 255, 255, 0.48);
+  color: rgba(255, 255, 255, 0.5);
 }
 
-/* El anillo de foco lo dibuja el contenedor del prompt (focus-within). */
 #heroSearchInput:focus-visible {
   outline: none !important;
 }
 
 .btn-chatgpt-send-circle {
+  width: 40px;
+  height: 40px;
   background: var(--v2-yellow);
   color: var(--v2-navy);
   border: none;
+  box-shadow: 0 4px 14px rgba(244, 196, 0, 0.25);
 }
 
 .btn-chatgpt-send-circle:hover,
 .btn-chatgpt-send-circle.has-content {
   background: #ffd633;
   color: var(--v2-navy);
+  border: none;
+  transform: none;
+  box-shadow: 0 6px 18px rgba(244, 196, 0, 0.35);
 }
 
 .chatgpt-prompt-bottom {
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  margin-top: 0.45rem;
   padding-top: 0.55rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding-left: 0.15rem;
+  padding-right: 0.15rem;
+}
+
+.chatgpt-status-badge {
+  width: auto;
+  justify-content: flex-start;
+  text-align: left;
+  gap: 0.45rem;
+}
+
+.chatgpt-status-badge::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #4ade80;
+  box-shadow: 0 0 0 3px rgba(74, 222, 128, 0.12);
+  flex-shrink: 0;
 }
 
 .chatgpt-status-badge,
@@ -466,6 +530,31 @@ body::before,
 .stream-messages-list {
   max-height: 420px;
   padding-right: 0.25rem;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+}
+
+.stream-messages-list::-webkit-scrollbar {
+  width: 5px;
+}
+
+.stream-messages-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.stream-messages-list::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+}
+
+.stream-messages-list::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.stream-messages-list::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
 }
 
 .stream-messages-list .chat-bubble.user {
@@ -488,9 +577,12 @@ body::before,
 }
 
 .hero-list-pill {
-  background: rgba(244, 196, 0, 0.12);
-  border-color: rgba(244, 196, 0, 0.35);
+  background: rgba(244, 196, 0, 0.08);
+  border-color: rgba(244, 196, 0, 0.25);
   color: #ffe066;
+  font-size: 0.72rem;
+  padding: 0.3rem 0.55rem;
+  border-radius: 10px;
 }
 
 /* ---------- Process and capabilities ---------- */

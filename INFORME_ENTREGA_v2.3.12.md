@@ -1,10 +1,10 @@
-# Informe de entrega — Krosmart v2.3.11
+# Informe de entrega — Krosmart v2.3.12
 
 **Fecha:** 24/10/2026  
 **Estado:** listo para validación del cliente (no cerrar como aprobado hasta su OK)  
-**Commit:** `2e683ca` — `feat(bot): separar WhatsApp con fallback fijo y mejorar precision de busqueda (v2.3.11)`  
-**Imagen:** `alfredobartaburu/krosmart:v2.3.11` y `:latest` (linux/amd64)  
-**Digest:** `sha256:eb4aaa5d3c2ab218b0d6d98480667703b4d0a38a5c31208ae387abd48163dcbd`
+**Commit:** `PENDIENTE`
+**Imagen:** `alfredobartaburu/krosmart:v2.3.12` y `:latest` (linux/amd64)
+**Digest:** `PENDIENTE`
 
 ---
 
@@ -20,6 +20,17 @@ Resultado actual:
 - **36 suites / 463 tests Jest en verde**.
 - **15/15 hit@1 y hit@5** en el set de evaluación web.
 - **2/2 ausencias correctas** (consultas que realmente no están en catálogo).
+
+### Pulido visual del composer (v2.3.12)
+
+Se corrigió el scrollbar nativo que aparecía dentro del cuadro de chat y se modernizó la caja de entrada:
+
+- Scrollbar nativo reemplazado por uno fino (4 px) y sin flechas; sólo aparece cuando el texto supera el alto máximo.
+- Textarea autoexpandible hasta 132 px; sin scrollbar cuando el campo está vacío.
+- Caja de entrada con fondo degradado sutil, borde más limpio, foco amarillo y botón de envío más prolijo.
+- Barra inferior con indicador verde y texto alineado a la izquierda.
+- La píldora de “lista de materiales detectada” se redujo y acortó.
+- Mismo tratamiento para el scrollbar del historial de mensajes.
 
 ---
 
@@ -103,6 +114,10 @@ Salida esperada (capa textual, sin vector):
 | `backend/tests/search_precision.test.js` | Cobertura de precisión |
 | `backend/tests/whatsapp_channel.test.js` | Fallback y una sola ronda |
 | `backend/tests/message_splitter.test.js` | WhatsApp no fragmenta |
+| `public/css/landing-v2.css` | Composer moderno, scrollbars finos |
+| `public/js/app.js` | Auto-grow y control de overflow |
+| `public/js/chatWidget.js` | Placeholder contextual y refresh del alto |
+| `public/index.html` | Píldora de lista más corta |
 | `backend/controllers/configuracionController.js` | `search_vector_threshold` habilitado |
 
 ---
@@ -212,6 +227,7 @@ Estos puntos **no bloquean la aprobación funcional**, pero deben quedar visible
 - [ ] Web: consultas ambigüas pueden pedir aclaración u ofrecer alternativas.
 - [ ] Búsquedas de muestra: caño, cortador de caño, látex, membrana, foco, tornillo, zapatilla.
 - [ ] Facturapp: prueba de 2 páginas y reanudación.
+- [ ] Composer: sin scrollbar nativo, textarea autoexpandible y estética aprobada.
 - [ ] Panel admin: estado de Facturapp, créditos y historial.
 - [ ] Aprobación explícita del cliente para continuar con las fases pendientes.
 
