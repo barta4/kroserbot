@@ -3,6 +3,19 @@
 Todos los cambios notables en este proyecto están documentados en este archivo.
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/), y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.4.html).
 
+## [2.3.10] - 2026-10-24
+
+### 🐛 Correcciones
+* El compositor del chat ya no filtra el catálogo: al escribir o enviar un mensaje a Cotibot, la frase se guardaba en `AppState.searchQuery` y el catálogo quedaba vacío ("No encontramos artículos").
+* Al iniciar una conversación se limpia cualquier búsqueda heredada y se recarga el catálogo completo.
+* Se eliminó la detección de consultas conversacionales que ya no se utilizaba en el buscador del hero.
+
+### ✅ Verificación
+* Reproducido con API simulada: antes se consultaba `/api/productos?search=pintura+para+humedad` y el catálogo quedaba vacío; ahora solo se hace la consulta inicial sin `search` y las tarjetas permanecen visibles.
+* Flujo de foco/minimizar del chat y sintaxis de los scripts verificados.
+
+---
+
 ## [2.3.9] - 2026-10-23
 
 ### 🎨 Rediseño de la landing pública

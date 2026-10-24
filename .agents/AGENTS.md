@@ -10,4 +10,4 @@ Consulta el archivo maestro completo en la raíz del repositorio: [`AGENTS.md`](
 5. **Multimodal**: Audios WhatsApp (`.opus`/`.oga`) e Imágenes (`analyzeImage`) se envían en Base64 con fail-safe bidireccional Gemini <-> OpenAI.
 6. **Scraper en Dokploy/Easypanel**: `restart: "no"`. Se programa con cron `0 3 * * * docker start kroserbot-scraper`.
 7. **Tests obligatorios**: `npm test` (33 suites, 442 tests) y `npm run test:python` (24 tests) deben pasar al 100%.
-8. **Docker Hub**: `alfredobartaburu/krosmart` con versión incremental (`v2.3.9`) y dual-tag `:latest`.
+8. **Docker Hub**: `alfredobartaburu/krosmart` con versión incremental (`v2.3.10`) y dual-tag `:latest`.

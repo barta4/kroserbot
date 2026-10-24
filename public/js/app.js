@@ -70,22 +70,6 @@ function isMaterialListQuery(text) {
   return false;
 }
 
-function isConversationalQuery(text) {
-  if (!text || typeof text !== 'string') return false;
-  const t = text.trim().toLowerCase();
-  if (t.includes('?') || t.includes('¿')) return true;
-  const conversationalStarters = [
-    'hola', 'buenas', 'buenos', 'che', 'consulta', 'pregunta',
-    'tenes', 'tenés', 'tienen', 'tendras', 'tendrás', 'hay',
-    'preciso', 'necesito', 'busco', 'cuanto', 'cuánto', 'precio',
-    'como', 'cómo', 'donde', 'dónde', 'que', 'qué', 'gracias', 'por favor'
-  ];
-  const firstWord = t.split(/\s+/)[0];
-  if (conversationalStarters.includes(firstWord)) return true;
-  if (t.split(/\s+/).length > 4) return true;
-  return false;
-}
-
 function updateSearchInputUI() {
   const input = document.getElementById('heroSearchInput');
   const pill = document.getElementById('heroListDetectionPill');
@@ -123,18 +107,12 @@ function executeHeroSearch() {
   const hasPendingMedia = window.hasPendingHeroMedia ? window.hasPendingHeroMedia() : false;
   if (!val && !hasPendingMedia) return;
 
-  // El buscador principal actúa directamente como ChatGPT con Cotibot IA
+  // El buscador del hero es el compositor del chat: siempre consulta a Cotibot
+  // y nunca filtra el catálogo (antes lo dejaba vacío al iniciar una conversación).
   if (window.submitHeroPrompt) {
     window.submitHeroPrompt(val);
   } else if (window.CotibotChat) {
     window.CotibotChat.sendMessage(val);
-  }
-
-  // Solo actualizar el catálogo si es un término de búsqueda concreto (no una pregunta conversacional ni lista)
-  if (val && !isMaterialListQuery(val) && !isConversationalQuery(val)) {
-    AppState.searchQuery = val;
-    AppState.currentPage = 1;
-    loadProducts();
   }
 
   // Limpiar y resetear el prompt box
@@ -144,35 +122,10 @@ function executeHeroSearch() {
 window.executeHeroSearch = executeHeroSearch;
 
 function setupEventListeners() {
-  // Hero Search input
+  // Hero Search input (compositor de Cotibot)
   const searchInput = document.getElementById('heroSearchInput');
   if (searchInput) {
-    let debounceTimer;
-
-    searchInput.addEventListener('input', () => {
-      updateSearchInputUI();
-      const val = searchInput.value.trim();
-      const isList = isMaterialListQuery(val);
-      const isConversational = isConversationalQuery(val);
-
-      clearTimeout(debounceTimer);
-      // Solo autofiltrar catálogo si es una búsqueda de término de producto (no pregunta ni lista)
-      if (!isList && !isConversational && val.length >= 2) {
-        debounceTimer = setTimeout(() => {
-          AppState.searchQuery = val;
-          AppState.currentPage = 1;
-          loadProducts();
-        }, 500);
-      } else if (val.length === 0) {
-        debounceTimer = setTimeout(() => {
-          if (AppState.searchQuery) {
-            AppState.searchQuery = '';
-            AppState.currentPage = 1;
-            loadProducts();
-          }
-        }, 300);
-      }
-    });
+    searchInput.addEventListener('input', updateSearchInputUI);
 
     searchInput.addEventListener('paste', () => {
       setTimeout(updateSearchInputUI, 20);
@@ -1392,6 +1345,7 @@ document.addEventListener('keydown', (event) => {
 });
 
 // Expose quote & drawer utilities globally
+window.loadProducts = loadProducts;
 window.saveCartToStorage = saveCartToStorage;
 window.loadCartFromStorage = loadCartFromStorage;
 window.updateCartBadge = updateCartBadge;

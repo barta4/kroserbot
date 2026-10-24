@@ -539,6 +539,12 @@
     if (input) {
       input.placeholder = 'Consulte otro artículo o responda para ajustar su presupuesto...';
     }
+    // Si el catálogo quedó filtrado por una búsqueda previa, lo restauramos al iniciar el chat.
+    if (window.AppState && window.AppState.searchQuery) {
+      window.AppState.searchQuery = '';
+      window.AppState.currentPage = 1;
+      if (typeof window.loadProducts === 'function') window.loadProducts();
+    }
     // Al iniciar la conversación, el chat pasa a foco central.
     setAgentFocus(true);
   }
